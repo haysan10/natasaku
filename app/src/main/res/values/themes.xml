@@ -1,9 +1,0 @@
-<resources>
-    <style name="Theme.NataSaku" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
-
-    <style name="Theme.NataSaku.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
-        <item name="postSplashScreenTheme">@style/Theme.NataSaku</item>
-    </style>
-</resources>
