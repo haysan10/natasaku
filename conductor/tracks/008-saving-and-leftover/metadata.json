@@ -1,0 +1,15 @@
+{
+  "id": "008",
+  "slug": "008-saving-and-leftover",
+  "title": "Saving and Leftover",
+  "priority": "P1",
+  "status": "done",
+  "depends_on": [
+    "003",
+    "004",
+    "006"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

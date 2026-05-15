@@ -1,0 +1,34 @@
+{
+  "project": "NataSaku",
+  "folder": "docs",
+  "contains_prd": false,
+  "files": [
+    "README.md",
+    "accessibility-guidelines.md",
+    "app-flow.md",
+    "backup-restore-spec.md",
+    "calculation-rules.md",
+    "component-system.md",
+    "copywriting.md",
+    "data-model.md",
+    "design-tokens.md",
+    "export-spec.md",
+    "microinteractions.md",
+    "monthly-report-spec.md",
+    "release-checklist.md",
+    "testing-checklist.md",
+    "ui-screen-spec.md"
+  ],
+  "purpose": "Detailed project documentation for Android offline-first budgeting app development in Antigravity",
+  "non_negotiables": [
+    "No login",
+    "No backend",
+    "No cloud sync",
+    "No bank integration",
+    "Offline-first",
+    "Local data only",
+    "Kotlin",
+    "Jetpack Compose",
+    "Material Design 3"
+  ]
+}

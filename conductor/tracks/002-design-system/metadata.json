@@ -1,0 +1,13 @@
+{
+  "id": "002",
+  "slug": "002-design-system",
+  "title": "Design System",
+  "priority": "P0",
+  "status": "done",
+  "depends_on": [
+    "001"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

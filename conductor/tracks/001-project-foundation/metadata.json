@@ -1,0 +1,11 @@
+{
+  "id": "001",
+  "slug": "001-project-foundation",
+  "title": "Project Foundation",
+  "priority": "P0",
+  "status": "done",
+  "depends_on": [],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

@@ -1,0 +1,15 @@
+{
+  "project": "NataSaku",
+  "folder": "prompts",
+  "target_tool": "Antigravity",
+  "contains_prd": false,
+  "files": [
+    "build-track.md",
+    "final-release-check.md",
+    "fix-bug.md",
+    "review-code.md",
+    "run-qa.md",
+    "start-project.md"
+  ],
+  "purpose": "Copy-paste prompts for Antigravity agent workflow"
+}
