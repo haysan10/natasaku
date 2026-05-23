@@ -11,6 +11,7 @@ import '../../../data/models/bill_model.dart';
 import '../../budgeting/budgeting_engine.dart';
 import '../../../core/services/android_widget_service.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/sound/nata_sound_player.dart';
 
 class DashboardState {
   final BudgetPeriod? period;
@@ -269,7 +270,16 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     );
     await repo.saveSavingGoal(updatedGoal);
 
+    final wasReached = goal.currentAmount >= goal.targetAmount;
+    final isReached = updatedGoal.currentAmount >= goal.targetAmount;
+
     await loadData();
+
+    if (isReached && !wasReached && goal.targetAmount > 0) {
+      await NataSoundPlayer.playAchievement();
+    } else {
+      await NataSoundPlayer.playSuccess();
+    }
   }
 
   Future<void> transferToGoal(double amount, SavingGoal goal) async {
@@ -299,7 +309,16 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     );
     await repo.upsertSavingGoal(updatedGoal);
 
+    final wasReached = goal.currentAmount >= goal.targetAmount;
+    final isReached = updatedGoal.currentAmount >= goal.targetAmount;
+
     await loadData();
+
+    if (isReached && !wasReached && goal.targetAmount > 0) {
+      await NataSoundPlayer.playAchievement();
+    } else {
+      await NataSoundPlayer.playSuccess();
+    }
   }
 
   Future<void> updateAutoSaving(bool enabled) async {
@@ -318,9 +337,18 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   }
 
   Future<void> addTransaction(TransactionModel transaction) async {
+    final wasOver = state.todayExpense > state.dailySafeBudget;
+    
     final repo = _ref.read(budgetRepositoryProvider);
     await repo.addTransaction(transaction);
     await loadData();
+
+    final isOver = state.todayExpense > state.dailySafeBudget;
+    if (isOver && !wasOver && transaction.isExpense) {
+      await NataSoundPlayer.playWarning();
+    } else {
+      await NataSoundPlayer.playSuccess();
+    }
   }
 
   Future<void> deleteTransaction(String id) async {
@@ -342,6 +370,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     );
     
     await loadData();
+    await NataSoundPlayer.playDelete();
   }
 
   Future<void> _syncHomeWidget() async {

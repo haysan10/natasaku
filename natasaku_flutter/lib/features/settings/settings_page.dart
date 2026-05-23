@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/routing/app_router.dart';
 import '../../core/services/backup_service.dart';
@@ -19,6 +20,28 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   final BackupService _backupService = BackupService();
   String? _status;
+  bool _soundEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _soundEnabled = prefs.getBool('sound_enabled') ?? true;
+    });
+  }
+
+  Future<void> _toggleSound(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sound_enabled', value);
+    setState(() {
+      _soundEnabled = value;
+    });
+  }
 
   Future<void> _exportBackup() async {
     final file = await _backupService.exportBackup();
@@ -160,6 +183,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ref.read(securityProvider.notifier).removePin();
                     }
                   },
+                ),
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: const Text('Efek Suara NataSaku 🔊'),
+                subtitle: const Text(
+                  'Mainkan nada bel yang ramah pada saat mencatat transaksi atau mencapai target.',
+                ),
+                trailing: Switch(
+                  value: _soundEnabled,
+                  onChanged: _toggleSound,
                 ),
               ),
             ),
