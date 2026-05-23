@@ -1355,12 +1355,19 @@ class _SummaryItemCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            CurrencyService.formatRupiah(amount).replaceAll('Rp', ''),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : Colors.black,
-            ),
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: amount),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            builder: (context, val, _) {
+              return Text(
+                CurrencyService.formatRupiah(val).replaceAll('Rp', ''),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              );
+            },
           ),
         ],
       ),
