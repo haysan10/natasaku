@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
+import '../../core/animations/nata_animations.dart';
 import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/repository_providers.dart';
@@ -31,6 +33,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
   List<SavingGoal> _goals = [];
   List<Map<String, dynamic>> _history = [];
   UserSettings _settings = const UserSettings();
+  String? _expandedGoalId;
 
   @override
   void initState() {
@@ -72,6 +75,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
   }
 
   Future<void> _toggleAutoSaving(bool enabled) async {
+    HapticFeedback.lightImpact();
     final repo = ref.read(budgetRepositoryProvider);
     final updated = UserSettings(
       dailyReminderEnabled: _settings.dailyReminderEnabled,
@@ -85,6 +89,130 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     await ref.read(dashboardProvider.notifier).updateAutoSaving(enabled);
     if (!mounted) return;
     setState(() => _settings = updated);
+  }
+
+  void _showAutoSavingExplanation() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'Bagaimana Auto-Celengan Bekerja? ⚡',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Dengan mengaktifkan Auto-celengan:',
+                style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              _buildExplanationItem(
+                Icons.trending_up_rounded,
+                'Pertumbuhan Otomatis',
+                'Sisa jatah harian kamu yang tidak terpakai atau nominal terjadwal akan otomatis dipindahkan ke Celengan Impian saat penutupan hari.',
+                isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildExplanationItem(
+                Icons.shield_rounded,
+                'Keuangan Tetap Aman',
+                'Alokasi dilakukan tanpa mengganggu budget bulanan pokok kamu, sehingga kamu bisa menabung dengan tenang.',
+                isDark,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Batal'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _toggleAutoSaving(true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Aktifkan'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExplanationItem(IconData icon, String title, String desc, bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(desc, style: TextStyle(color: isDark ? Colors.grey : Colors.black54, fontSize: 11)),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _upsertGoal([SavingGoal? existingGoal]) async {
@@ -860,54 +988,67 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     const SizedBox(height: 24),
 
                     // Auto-saving Switch Panel
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceVariantDark : Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                    Builder(
+                      builder: (context) {
+                        final totalAutoSave = _goals.fold<double>(0.0, (sum, g) => sum + (g.autoSaveAmount ?? 0.0));
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.bolt_rounded, color: AppColors.accent, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Auto-celengan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _settings.autoSavingEnabled 
-                                    ? 'Sapu sisa jatah belanja otomatis' 
-                                    : 'Auto-celengan dinonaktifkan',
-                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
                                 ),
-                              ],
-                            ),
+                                child: const Icon(Icons.bolt_rounded, color: AppColors.accent, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Auto-celengan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _settings.autoSavingEnabled 
+                                        ? (totalAutoSave > 0 
+                                            ? 'Setiap hari, ${CurrencyService.formatRupiah(totalAutoSave)} disisihkan otomatis dari jatah harianmu. Alokasi berikutnya: besok'
+                                            : 'Setiap hari, sisa jatah belanja otomatis disisihkan ke celengan impianmu. Alokasi berikutnya: besok')
+                                        : 'Auto-celengan dinonaktifkan',
+                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _settings.autoSavingEnabled,
+                                activeThumbColor: AppColors.primary,
+                                activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+                                onChanged: (value) {
+                                  if (value) {
+                                    _showAutoSavingExplanation();
+                                  } else {
+                                    _toggleAutoSaving(false);
+                                  }
+                                },
+                              ),
+                            ],
                           ),
-                          Switch.adaptive(
-                            value: _settings.autoSavingEnabled,
-                            activeThumbColor: AppColors.primary,
-                            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
-                            onChanged: _toggleAutoSaving,
-                          ),
-                        ],
-                      ),
+                        );
+                      }
                     ).animate().fade(delay: 200.ms),
                     const SizedBox(height: 28),
 
@@ -1007,125 +1148,277 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                     ? 'Hari ini' 
                                     : 'Sisa $days hari lagi';
                           }
+                          final transactions = ref.watch(dashboardProvider).transactions;
+                          final goalAllocations = <Map<String, dynamic>>[];
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceVariantDark : Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        goal.name,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          // 1. From transaction history (manual transfers)
+                          for (final tx in transactions) {
+                            if (tx.category == 'Menabung' && tx.note != null && tx.note!.contains(goal.name)) {
+                              goalAllocations.add({
+                                'date': tx.date.toIso8601String(),
+                                'amount': tx.amount,
+                                'source': 'Transfer Manual',
+                              });
+                            }
+                          }
+
+                          // 2. From saving allocations history (auto allocations)
+                          for (final alloc in _history) {
+                            final source = (alloc['source'] as String?) ?? '';
+                            if (source == goal.name || source.contains(goal.name)) {
+                              goalAllocations.add({
+                                'date': alloc['date'] as String,
+                                'amount': (alloc['amount'] as num).toDouble(),
+                                'source': 'Auto-celengan',
+                              });
+                            }
+                          }
+
+                          // Sort by date descending
+                          goalAllocations.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+
+                          final isUnder20 = progress < 0.20;
+                          final kurangColor = isUnder20 
+                              ? (isDark ? const Color(0xFFFBBF24) : Colors.amber.shade800)
+                              : Theme.of(context).colorScheme.primary;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (_expandedGoalId == goal.id) {
+                                  _expandedGoalId = null;
+                                } else {
+                                  _expandedGoalId = goal.id;
+                                }
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          goal.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
                                       ),
-                                    ),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          onPressed: () => _upsertGoal(goal),
-                                          icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.grey),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        IconButton(
-                                          onPressed: () => _deleteGoal(goal.id),
-                                          icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.alert),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.calendar_month_rounded, size: 12, color: Colors.grey),
-                                    const SizedBox(width: 4),
-                                    Text(timelineText, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Terkumpul: ${CurrencyService.formatRupiah(goal.currentAmount)}',
-                                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
-                                    ),
-                                    Text(
-                                      '${(progress * 100).toInt()}%',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                NataProgressBar(
-                                  value: progress,
-                                  height: 8,
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Target: ${CurrencyService.formatRupiah(goal.targetAmount)}',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                    ),
-                                    Text(
-                                      'Kurang: ${CurrencyService.formatRupiah(remaining)}',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                const Divider(height: 1),
-                                const SizedBox(height: 10),
-                                NataPressScale(
-                                  onTap: () => _quickTransfer(goal),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: const [
-                                        Icon(Icons.add_circle_rounded, size: 18, color: AppColors.primary),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Amankan Jatah Ke Sini',
-                                          style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            onPressed: () => _upsertGoal(goal),
+                                            icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.grey),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          IconButton(
+                                            onPressed: () => _deleteGoal(goal.id),
+                                            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.alert),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.calendar_month_rounded, size: 12, color: Colors.grey),
+                                      const SizedBox(width: 4),
+                                      Text(timelineText, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Terkumpul: ${CurrencyService.formatRupiah(goal.currentAmount)}',
+                                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
+                                      ),
+                                      Text(
+                                        '${(progress * 100).toInt()}%',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  goal.currentAmount == 0
+                                      ? Shimmer.fromColors(
+                                          baseColor: isDark ? const Color(0xFF1E2F2D) : const Color(0xFFE0F2F1),
+                                          highlightColor: isDark ? const Color(0xFF2DD4BF).withOpacity(0.3) : const Color(0xFFB2DFDB),
+                                          child: NataProgressBar(
+                                            value: 0.05,
+                                            height: 8,
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFF00B4A6), Color(0xFF00D4C8)],
+                                            ),
+                                          ),
+                                        )
+                                      : NataProgressBar(
+                                          value: progress,
+                                          height: 8,
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFF00B4A6), Color(0xFF00D4C8)],
                                           ),
                                         ),
-                                      ],
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Target: ${CurrencyService.formatRupiah(goal.targetAmount)}',
+                                        style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                      ),
+                                      Text(
+                                        'Kurang: ${CurrencyService.formatRupiah(remaining)}',
+                                        style: TextStyle(color: kurangColor, fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 10),
+                                  NataPressScale(
+                                    onTap: () => _quickTransfer(goal),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.add_circle_rounded, size: 18, color: AppColors.primary),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Amankan Jatah Ke Sini',
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  AnimatedSize(
+                                    duration: NataDuration.normal,
+                                    curve: NataCurve.smooth,
+                                    alignment: Alignment.topCenter,
+                                    child: _expandedGoalId == goal.id
+                                        ? Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const SizedBox(height: 16),
+                                              const Divider(height: 1),
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                'Riwayat Alokasi 🕒',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                  color: isDark ? Colors.white70 : Colors.black87,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              if (goalAllocations.isEmpty)
+                                                const Padding(
+                                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                                  child: Text(
+                                                    'Belum ada riwayat alokasi untuk celengan ini. Yuk, mulai menabung! 🌱',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.grey,
+                                                      fontStyle: FontStyle.italic,
+                                                    ),
+                                                  ),
+                                                )
+                                              else
+                                                ListView.builder(
+                                                  shrinkWrap: true,
+                                                  physics: const NeverScrollableScrollPhysics(),
+                                                  itemCount: goalAllocations.length > 5 ? 5 : goalAllocations.length,
+                                                  itemBuilder: (context, allocIndex) {
+                                                    final alloc = goalAllocations[allocIndex];
+                                                    final allocAmount = alloc['amount'] as double;
+                                                    final allocDateStr = alloc['date'] as String;
+                                                    final allocSource = alloc['source'] as String;
+                                                    
+                                                    // Format date to Indonesian
+                                                    DateTime? parsedDate = DateTime.tryParse(allocDateStr);
+                                                    String formattedDate = '';
+                                                    if (parsedDate != null) {
+                                                      formattedDate = DateFormat('d MMM yyyy', 'id_ID').format(parsedDate);
+                                                    } else {
+                                                      formattedDate = allocDateStr.split('T').first;
+                                                    }
+
+                                                    return Padding(
+                                                      padding: const EdgeInsets.symmetric(vertical: 6),
+                                                      child: Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                          Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              Text(
+                                                                formattedDate,
+                                                                style: const TextStyle(
+                                                                  fontSize: 11,
+                                                                  fontWeight: FontWeight.w600,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                allocSource,
+                                                                style: const TextStyle(
+                                                                  fontSize: 9,
+                                                                  color: Colors.grey,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          Text(
+                                                            '+${CurrencyService.formatRupiah(allocAmount)}',
+                                                            style: const TextStyle(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: AppColors.primary,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                            ],
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
+                                ],
+                              ),
                             ),
                           ).animate().fade(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.05);
                         },
