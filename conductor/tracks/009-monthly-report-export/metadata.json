@@ -1,0 +1,15 @@
+{
+  "id": "009",
+  "slug": "009-monthly-report-export",
+  "title": "Monthly Report Export",
+  "priority": "P1",
+  "status": "planned",
+  "depends_on": [
+    "003",
+    "004",
+    "007"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

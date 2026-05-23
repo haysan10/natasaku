@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- Frosted glass semi-transparent background (75% opacity white) -->
+    <solid android:color="#CFFFFFFF" />
+    
+    <!-- Semi-transparent light border -->
+    <stroke
+        android:width="1.5dp"
+        android:color="#500D9488" />
+        
+    <!-- Smooth large corner radius -->
+    <corners android:radius="24dp" />
+</shape>

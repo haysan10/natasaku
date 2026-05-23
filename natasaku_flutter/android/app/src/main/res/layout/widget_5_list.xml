@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="12dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ringkasan Cepat"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="#1F2937" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Hari ini"
+        android:textSize="10sp"
+        android:textColor="#6B7280" />
+    <TextView
+        android:id="@+id/tv_item_1_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rp0"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#111827" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Sisa dana"
+        android:textSize="10sp"
+        android:textColor="#6B7280" />
+    <TextView
+        android:id="@+id/tv_item_2_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rp0"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#0F766E" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Batas aman"
+        android:textSize="10sp"
+        android:textColor="#6B7280" />
+    <TextView
+        android:id="@+id/tv_item_3_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rp0"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#0369A1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_action_1"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Dashboard"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:background="@drawable/natasaku_widget_btn_bg" />
+
+        <TextView
+            android:id="@+id/btn_action_2"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:gravity="center"
+            android:text="Catat"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:background="@drawable/natasaku_widget_btn_bg" />
+    </LinearLayout>
+</LinearLayout>

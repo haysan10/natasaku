@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+
+class AppColors {
+  // Brand Palette
+  static const Color primary = Color(0xFF0D9488); // Deep Emerald/Teal
+  static const Color primaryDark = Color(0xFF0F766E);
+  static const Color primarySoft = Color(0xFFCCFBF1);
+  static const Color primaryContainer = Color(0xFF134E4A);
+
+  static const Color accent = Color(0xFF10B981); // Bright Emerald for positive actions
+  static const Color alert = Color(0xFFF43F5E); // Bold Rose for negative/expenses
+
+  // Neutral Palette (Light)
+  static const Color backgroundLight = Color(0xFFF8FAFC);
+  static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color surfaceVariantLight = Color(0xFFF1F5F9);
+  static const Color textPrimaryLight = Color(0xFF0F172A);
+  static const Color textSecondaryLight = Color(0xFF64748B);
+  static const Color borderLight = Color(0xFFE2E8F0);
+
+  // Neutral Palette (Dark) - Deep sleek dark mode
+  static const Color backgroundDark = Color(0xFF0B0F19); // Very deep blue-black
+  static const Color surfaceDark = Color(0xFF131B2B);
+  static const Color surfaceVariantDark = Color(0xFF1E293B);
+  static const Color textPrimaryDark = Color(0xFFF8FAFC);
+  static const Color textSecondaryDark = Color(0xFF94A3B8);
+  static const Color borderDark = Color(0xFF1E293B);
+
+  // Gradients for premium feel
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF0D9488), Color(0xFF10B981)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient darkCardGradient = LinearGradient(
+    colors: [Color(0xFF1A2235), Color(0xFF111827)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}

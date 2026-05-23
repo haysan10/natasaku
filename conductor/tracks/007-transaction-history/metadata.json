@@ -1,0 +1,15 @@
+{
+  "id": "007",
+  "slug": "007-transaction-history",
+  "title": "Transaction History",
+  "priority": "P0",
+  "status": "done",
+  "depends_on": [
+    "003",
+    "004",
+    "006"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

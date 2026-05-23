@@ -1,0 +1,13 @@
+{
+  "id": "010",
+  "slug": "010-settings-backup-restore",
+  "title": "Settings Backup Restore",
+  "priority": "P1",
+  "status": "planned",
+  "depends_on": [
+    "003"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

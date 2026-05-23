@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NataSaku</string>
+    <string name="natasaku_widget_desc">NataSaku Widget</string>
+    <string name="natasaku_widget_compact_desc">NataSaku Compact Quick Add</string>
+    <string name="natasaku_widget_today_desc">NataSaku Today Snapshot</string>
+    <string name="natasaku_widget_actions_desc">NataSaku Quick Actions</string>
+    <string name="natasaku_widget_progress_desc">NataSaku Budget Progress</string>
+    <string name="natasaku_widget_list_desc">NataSaku Quick Summary</string>
+    <string name="natasaku_widget_focus_desc">NataSaku Focus Reminder</string>
+    <string name="natasaku_widget_dashboard_desc">NataSaku Full Dashboard</string>
+    <string name="natasaku_widget_minimal_desc">NataSaku Minimal Tape</string>
+</resources>

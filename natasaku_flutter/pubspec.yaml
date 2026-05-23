@@ -1,0 +1,52 @@
+name: natasaku_flutter
+description: NataSaku Flutter migration - Batch 1 foundation
+publish_to: 'none'
+version: 1.2.0+3
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: ^0.19.0
+  shared_preferences: ^2.2.3
+  path_provider: ^2.1.5
+  pdf: ^3.12.0
+  fl_chart: ^0.69.0
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.1
+  open_filex: ^4.5.0
+  permission_handler: ^11.3.1
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.1.4
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
+  phosphor_flutter: ^2.0.0
+  share_plus: ^10.1.4
+  audioplayers: ^6.6.0
+  excel: ^4.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_native_splash: ^2.4.0
+
+flutter_native_splash:
+  color: "#0B0F19" # BackgroundDark
+  color_dark: "#0B0F19"
+  image: assets/branding/logo-natasaku-mark.png
+  android_12:
+    image: assets/branding/logo-natasaku-mark.png
+    color: "#0B0F19"
+    color_dark: "#0B0F19"
+  android: true
+  ios: true
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/
+    - assets/sounds/
