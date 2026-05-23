@@ -15,6 +15,7 @@ import '../../data/models/user_settings.dart';
 import '../../shared/widgets/nata_shimmer.dart';
 import '../../shared/widgets/nata_progress_bar.dart';
 import '../../shared/widgets/nata_press_scale.dart';
+import '../../shared/widgets/nata_money_input.dart';
 import '../dashboard/providers/dashboard_provider.dart';
 
 class SavingsPage extends ConsumerStatefulWidget {
@@ -42,7 +43,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     final repo = ref.read(budgetRepositoryProvider);
     final settings = await repo.loadUserSettings();
     final balance = await repo.loadSavingBalance();
-    
+
     var goals = await repo.loadSavingGoals();
     // Backwards-compatibility migration for single goal
     if (goals.isEmpty) {
@@ -55,8 +56,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     }
 
     final history = await repo.loadSavingAllocations();
-    
-    history.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+
+    history
+        .sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
 
     if (!mounted) return;
     setState(() {
@@ -66,7 +68,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
       _history = history;
       _loading = false;
     });
-    
+
     // Also sync Riverpod state so that dashboard is up-to-date
     ref.read(dashboardProvider.notifier).loadData();
   }
@@ -110,7 +112,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    color:
+                        isDark ? AppColors.borderDark : AppColors.borderLight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -124,13 +127,17 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 28),
+                    child: const Icon(Icons.bolt_rounded,
+                        color: AppColors.primary, size: 28),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       'Bagaimana Auto-Celengan Bekerja? ⚡',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -138,7 +145,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
               const SizedBox(height: 20),
               Text(
                 'Dengan mengaktifkan Auto-celengan:',
-                style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white70 : Colors.black87),
               ),
               const SizedBox(height: 12),
               _buildExplanationItem(
@@ -162,7 +171,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
                       child: const Text('Batal'),
                     ),
@@ -178,7 +188,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
                       child: const Text('Aktifkan'),
                     ),
@@ -192,7 +203,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     );
   }
 
-  Widget _buildExplanationItem(IconData icon, String title, String desc, bool isDark) {
+  Widget _buildExplanationItem(
+      IconData icon, String title, String desc, bool isDark) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -202,9 +214,14 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 2),
-              Text(desc, style: TextStyle(color: isDark ? Colors.grey : Colors.black54, fontSize: 11)),
+              Text(desc,
+                  style: TextStyle(
+                      color: isDark ? Colors.grey : Colors.black54,
+                      fontSize: 11)),
             ],
           ),
         ),
@@ -213,7 +230,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
   }
 
   Future<void> _upsertGoal([SavingGoal? existingGoal]) async {
-    final nameController = TextEditingController(text: existingGoal?.name ?? '');
+    final nameController =
+        TextEditingController(text: existingGoal?.name ?? '');
     final targetController = TextEditingController(
       text: existingGoal == null ? '' : existingGoal.targetAmount.toString(),
     );
@@ -221,10 +239,13 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
       text: existingGoal == null ? '0' : existingGoal.currentAmount.toString(),
     );
     final autoSaveAmountController = TextEditingController(
-      text: existingGoal?.autoSaveAmount == null ? '' : existingGoal!.autoSaveAmount!.toString(),
+      text: existingGoal?.autoSaveAmount == null
+          ? ''
+          : existingGoal!.autoSaveAmount!.toString(),
     );
     DateTime? targetDate = existingGoal?.targetDate;
-    bool autoSaveEnabled = existingGoal?.autoSaveAmount != null && existingGoal!.autoSaveAmount! > 0;
+    bool autoSaveEnabled = existingGoal?.autoSaveAmount != null &&
+        existingGoal!.autoSaveAmount! > 0;
     String autoSaveFrequency = existingGoal?.autoSaveFrequency ?? 'daily';
     String? modalErrorMessage;
 
@@ -242,10 +263,12 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
-              padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+              padding: EdgeInsets.fromLTRB(
+                  24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -257,7 +280,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                          color: isDark
+                              ? AppColors.borderDark
+                              : AppColors.borderLight,
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -267,8 +292,13 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       children: [
                         Expanded(
                           child: Text(
-                            existingGoal == null ? 'Buat Celengan Impian 🚀' : 'Sunting Celengan ✏️',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            existingGoal == null
+                                ? 'Buat Celengan Impian 🚀'
+                                : 'Sunting Celengan ✏️',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
                         IconButton(
@@ -283,20 +313,26 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     if (modalErrorMessage != null) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: AppColors.alert.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.alert.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: AppColors.alert.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline_rounded, color: AppColors.alert),
+                            const Icon(Icons.error_outline_rounded,
+                                color: AppColors.alert),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 modalErrorMessage!,
-                                style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: const TextStyle(
+                                    color: AppColors.alert,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13),
                               ),
                             ),
                           ],
@@ -311,33 +347,46 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'Nama Impian',
-                        hintText: 'Contoh: Laptop Baru, Liburan Bali, Dana Darurat',
-                        prefixIcon: const Icon(Icons.star_outline_rounded, color: AppColors.primary),
+                        hintText:
+                            'Contoh: Laptop Baru, Liburan Bali, Dana Darurat',
+                        prefixIcon: const Icon(Icons.star_outline_rounded,
+                            color: AppColors.primary),
                         filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+                        fillColor: isDark
+                            ? AppColors.surfaceVariantDark
+                                .withValues(alpha: 0.3)
+                            : AppColors.surfaceVariantLight
+                                .withValues(alpha: 0.4),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    NataMoneyInput(
                       controller: targetController,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'Nominal Target (Rp)',
-                        prefixIcon: const Icon(Icons.track_changes_rounded, color: AppColors.primary),
+                        prefixIcon: const Icon(Icons.track_changes_rounded,
+                            color: AppColors.primary),
                         filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+                        fillColor: isDark
+                            ? AppColors.surfaceVariantDark
+                                .withValues(alpha: 0.3)
+                            : AppColors.surfaceVariantLight
+                                .withValues(alpha: 0.4),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    NataMoneyInput(
                       controller: currentController,
-                      keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'Saldo Terkumpul Awal (Rp)',
-                        prefixIcon: const Icon(Icons.wallet, color: AppColors.primary),
+                        prefixIcon:
+                            const Icon(Icons.wallet, color: AppColors.primary),
                         filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+                        fillColor: isDark
+                            ? AppColors.surfaceVariantDark
+                                .withValues(alpha: 0.3)
+                            : AppColors.surfaceVariantLight
+                                .withValues(alpha: 0.4),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -347,16 +396,21 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         onPressed: () async {
                           final picked = await showDatePicker(
                             context: context,
-                            initialDate: targetDate ?? DateTime.now().add(const Duration(days: 30)),
-                            firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                            initialDate: targetDate ??
+                                DateTime.now().add(const Duration(days: 30)),
+                            firstDate: DateTime.now()
+                                .subtract(const Duration(days: 1)),
                             lastDate: DateTime(2100),
                             builder: (context, child) {
                               return Theme(
                                 data: Theme.of(context).copyWith(
-                                  colorScheme: Theme.of(context).colorScheme.copyWith(
-                                    primary: AppColors.primary,
-                                    surface: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                                  ),
+                                  colorScheme:
+                                      Theme.of(context).colorScheme.copyWith(
+                                            primary: AppColors.primary,
+                                            surface: isDark
+                                                ? AppColors.surfaceDark
+                                                : AppColors.surfaceLight,
+                                          ),
                                 ),
                                 child: child!,
                               );
@@ -369,14 +423,18 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: AppColors.primary),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
                         ),
-                        icon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+                        icon: const Icon(Icons.calendar_month_rounded,
+                            color: AppColors.primary),
                         label: Text(
                           targetDate == null
                               ? 'Pilih Tanggal Target (Opsional)'
                               : 'Target Tanggal: ${DateFormat('dd MMM yyyy').format(targetDate!)}',
-                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -384,11 +442,17 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
 
                     // Automated Savings Section
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceVariantDark : Colors.grey.shade100,
+                        color: isDark
+                            ? AppColors.surfaceVariantDark
+                            : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                        border: Border.all(
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.borderLight),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,21 +462,30 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.12),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.sync_rounded, color: AppColors.primary, size: 20),
+                                child: const Icon(Icons.sync_rounded,
+                                    color: AppColors.primary, size: 20),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Nabung Otomatis (Auto-save)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const Text('Nabung Otomatis (Auto-save)',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13)),
                                     const SizedBox(height: 2),
                                     Text(
                                       'Tabung rutin secara terjadwal otomatis',
-                                      style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600),
                                     ),
                                   ],
                                 ),
@@ -420,24 +493,31 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                               Switch.adaptive(
                                 value: autoSaveEnabled,
                                 activeThumbColor: AppColors.primary,
-                                onChanged: (value) => setModalState(() => autoSaveEnabled = value),
+                                onChanged: (value) => setModalState(
+                                    () => autoSaveEnabled = value),
                               ),
                             ],
                           ),
                           if (autoSaveEnabled) ...[
                             const SizedBox(height: 16),
-                            TextField(
+                            NataMoneyInput(
                               controller: autoSaveAmountController,
-                              keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Nominal Tabungan Rutin (Rp)',
-                                prefixIcon: const Icon(Icons.add_card_rounded, color: AppColors.primary),
+                                prefixIcon: const Icon(Icons.add_card_rounded,
+                                    color: AppColors.primary),
                                 filled: true,
-                                fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                                fillColor: isDark
+                                    ? AppColors.surfaceDark
+                                    : Colors.white,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            const Text('Frekuensi Menabung', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                            const Text('Frekuensi Menabung',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey)),
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -445,9 +525,13 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                   child: ChoiceChip(
                                     label: const Text('Harian'),
                                     selected: autoSaveFrequency == 'daily',
-                                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                                    selectedColor: AppColors.primary
+                                        .withValues(alpha: 0.2),
                                     onSelected: (selected) {
-                                      if (selected) setModalState(() => autoSaveFrequency = 'daily');
+                                      if (selected) {
+                                        setModalState(
+                                            () => autoSaveFrequency = 'daily');
+                                      }
                                     },
                                   ),
                                 ),
@@ -456,9 +540,13 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                   child: ChoiceChip(
                                     label: const Text('Mingguan'),
                                     selected: autoSaveFrequency == 'weekly',
-                                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                                    selectedColor: AppColors.primary
+                                        .withValues(alpha: 0.2),
                                     onSelected: (selected) {
-                                      if (selected) setModalState(() => autoSaveFrequency = 'weekly');
+                                      if (selected) {
+                                        setModalState(
+                                            () => autoSaveFrequency = 'weekly');
+                                      }
                                     },
                                   ),
                                 ),
@@ -467,9 +555,13 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                   child: ChoiceChip(
                                     label: const Text('Bulanan'),
                                     selected: autoSaveFrequency == 'monthly',
-                                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                                    selectedColor: AppColors.primary
+                                        .withValues(alpha: 0.2),
                                     onSelected: (selected) {
-                                      if (selected) setModalState(() => autoSaveFrequency = 'monthly');
+                                      if (selected) {
+                                        setModalState(() =>
+                                            autoSaveFrequency = 'monthly');
+                                      }
                                     },
                                   ),
                                 ),
@@ -487,37 +579,45 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         final name = nameController.text.trim();
                         final target = parseAmount(targetController.text);
                         final current = parseAmount(currentController.text);
-                        final autoSaveAmount = autoSaveEnabled ? parseAmount(autoSaveAmountController.text) : null;
+                        final autoSaveAmount = autoSaveEnabled
+                            ? parseAmount(autoSaveAmountController.text)
+                            : null;
 
                         // Validation checks
                         if (name.isEmpty) {
-                          setModalState(() => modalErrorMessage = 'Nama impian tidak boleh kosong!');
+                          setModalState(() => modalErrorMessage =
+                              'Nama impian tidak boleh kosong!');
                           HapticFeedback.heavyImpact();
                           return;
                         }
                         if (target <= 0) {
-                          setModalState(() => modalErrorMessage = 'Nominal target harus lebih dari Rp 0!');
+                          setModalState(() => modalErrorMessage =
+                              'Nominal target harus lebih dari Rp 0!');
                           HapticFeedback.heavyImpact();
                           return;
                         }
                         if (target > 9999999999999) {
-                          setModalState(() => modalErrorMessage = 'Nominal target terlalu besar!');
+                          setModalState(() => modalErrorMessage =
+                              'Nominal target terlalu besar!');
                           HapticFeedback.heavyImpact();
                           return;
                         }
                         if (current < 0) {
-                          setModalState(() => modalErrorMessage = 'Saldo awal terkumpul tidak boleh kurang dari Rp 0!');
+                          setModalState(() => modalErrorMessage =
+                              'Saldo awal terkumpul tidak boleh kurang dari Rp 0!');
                           HapticFeedback.heavyImpact();
                           return;
                         }
                         if (autoSaveEnabled) {
                           if (autoSaveAmount == null || autoSaveAmount <= 0) {
-                            setModalState(() => modalErrorMessage = 'Nominal tabungan rutin harus lebih dari Rp 0!');
+                            setModalState(() => modalErrorMessage =
+                                'Nominal tabungan rutin harus lebih dari Rp 0!');
                             HapticFeedback.heavyImpact();
                             return;
                           }
                           if (autoSaveAmount > target) {
-                            setModalState(() => modalErrorMessage = 'Nominal tabungan rutin tidak boleh melebihi target!');
+                            setModalState(() => modalErrorMessage =
+                                'Nominal tabungan rutin tidak boleh melebihi target!');
                             HapticFeedback.heavyImpact();
                             return;
                           }
@@ -525,24 +625,30 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
 
                         if (targetDate != null) {
                           final today = DateTime.now();
-                          final todayZero = DateTime(today.year, today.month, today.day);
+                          final todayZero =
+                              DateTime(today.year, today.month, today.day);
                           if (targetDate!.isBefore(todayZero)) {
-                            setModalState(() => modalErrorMessage = 'Tanggal target tidak boleh di masa lalu!');
+                            setModalState(() => modalErrorMessage =
+                                'Tanggal target tidak boleh di masa lalu!');
                             HapticFeedback.heavyImpact();
                             return;
                           }
                         }
-                        
+
                         final repo = ref.read(budgetRepositoryProvider);
                         await repo.upsertSavingGoal(
                           SavingGoal(
-                            id: existingGoal?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+                            id: existingGoal?.id ??
+                                DateTime.now()
+                                    .microsecondsSinceEpoch
+                                    .toString(),
                             name: name,
                             targetAmount: target,
                             currentAmount: current,
                             targetDate: targetDate,
                             autoSaveAmount: autoSaveAmount,
-                            autoSaveFrequency: autoSaveEnabled ? autoSaveFrequency : null,
+                            autoSaveFrequency:
+                                autoSaveEnabled ? autoSaveFrequency : null,
                             lastAutoSaveDate: existingGoal?.lastAutoSaveDate,
                           ),
                         );
@@ -552,10 +658,12 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Simpan Celengan', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('Simpan Celengan',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -578,7 +686,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Celengan?'),
-        content: const Text('Apakah Anda yakin ingin menghapus celengan ini? Saldo celengan akan hilang dari target.'),
+        content: const Text(
+            'Apakah Anda yakin ingin menghapus celengan ini? Saldo celengan akan hilang dari target.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -617,12 +726,14 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -633,7 +744,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                      color:
+                          isDark ? AppColors.borderDark : AppColors.borderLight,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -641,7 +753,10 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                 const SizedBox(height: 24),
                 Text(
                   'Amankan Anggaran ke Celengan 💸',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -650,24 +765,30 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.wallet_rounded, color: AppColors.primary),
+                      const Icon(Icons.wallet_rounded,
+                          color: AppColors.primary),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Sisa Dana Fleksibel Tersedia', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                            const Text('Sisa Dana Fleksibel Tersedia',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey)),
                             Text(
                               CurrencyService.formatRupiah(remainingBudget),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                           ],
                         ),
@@ -676,16 +797,19 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                TextField(
+                NataMoneyInput(
                   controller: amountController,
-                  keyboardType: TextInputType.number,
                   autofocus: true,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
                     labelText: 'Nominal Transfer (Rp)',
-                    prefixIcon: const Icon(Icons.add_card_rounded, color: AppColors.primary),
+                    prefixIcon: const Icon(Icons.add_card_rounded,
+                        color: AppColors.primary),
                     filled: true,
-                    fillColor: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+                    fillColor: isDark
+                        ? AppColors.surfaceVariantDark.withValues(alpha: 0.3)
+                        : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -696,7 +820,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     if (amount > remainingBudget) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Anggaran tidak cukup! Kurangi nominal transfer Anda.'),
+                          content: Text(
+                              'Anggaran tidak cukup! Kurangi nominal transfer Anda.'),
                           backgroundColor: AppColors.alert,
                         ),
                       );
@@ -704,8 +829,10 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     }
 
                     // Perform transfer
-                    await ref.read(dashboardProvider.notifier).transferToGoal(amount, goal);
-                    
+                    await ref
+                        .read(dashboardProvider.notifier)
+                        .transferToGoal(amount, goal);
+
                     if (context.mounted) {
                       Navigator.pop(context, true);
                     }
@@ -713,10 +840,12 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   icon: const Icon(Icons.check_circle_rounded),
-                  label: const Text('Konfirmasi & Transfer Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: const Text('Konfirmasi & Transfer Sekarang',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -730,21 +859,21 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Berhasil memindahkan jatah belanja ke celengan "${goal.name}"! 🥳'),
+          content: Text(
+              'Berhasil memindahkan jatah belanja ke celengan "${goal.name}"! 🥳'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
       await _load();
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Calculate Multi Saving Summaries
     double totalCollected = 0.0;
     double totalTarget = 0.0;
@@ -754,8 +883,11 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     }
     // Include general auto-balance
     final grandTotalCollected = totalCollected + _balance;
-    final totalProgress = totalTarget <= 0 ? 0.0 : (grandTotalCollected / totalTarget).clamp(0.0, 1.0);
-    final totalRemaining = (totalTarget - grandTotalCollected).clamp(0.0, double.infinity);
+    final totalProgress = totalTarget <= 0
+        ? 0.0
+        : (grandTotalCollected / totalTarget).clamp(0.0, 1.0);
+    final totalRemaining =
+        (totalTarget - grandTotalCollected).clamp(0.0, double.infinity);
 
     return Scaffold(
       body: SafeArea(
@@ -766,7 +898,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                 color: AppColors.primary,
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics()),
                   children: [
                     // Executive Page Header
                     Row(
@@ -777,22 +910,34 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           children: [
                             Text(
                               'Tabungan & Celengan',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(color: AppColors.primary),
                             ),
                             Text(
                               'Brankas Impian',
-                              style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ).animate().fade().slideX(begin: -0.1),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                            color: isDark
+                                ? AppColors.surfaceVariantDark
+                                : Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                            border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.borderLight),
                           ),
-                          child: const PhosphorIcon(PhosphorIconsRegular.vault, color: AppColors.primary, size: 28),
+                          child: const PhosphorIcon(PhosphorIconsRegular.vault,
+                              color: AppColors.primary, size: 28),
                         ).animate().scale(delay: 200.ms),
                       ],
                     ),
@@ -820,17 +965,26 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                             children: [
                               Text(
                                 'Total Celengan Terkumpul',
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w600, fontSize: 13),
+                                style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(100),
                                 ),
                                 child: Text(
-                                  _goals.isNotEmpty ? 'Target aktif' : 'Belum ada target',
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                  _goals.isNotEmpty
+                                      ? 'Target aktif'
+                                      : 'Belum ada target',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -838,16 +992,22 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           const SizedBox(height: 12),
                           Text(
                             'Terkumpul',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             CurrencyService.formatRupiah(grandTotalCollected),
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              color: Colors.white,
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w900,
+                                ),
                           ),
                           if (totalTarget > 0) ...[
                             const SizedBox(height: 20),
@@ -856,11 +1016,18 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                               children: [
                                 Text(
                                   'Progres Kumulatif Target',
-                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   '${(totalProgress * 100).toInt()}%',
-                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900),
                                 ),
                               ],
                             ),
@@ -876,7 +1043,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
-                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.2),
                             ),
                             const SizedBox(height: 12),
                             Row(
@@ -884,11 +1052,17 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                               children: [
                                 Text(
                                   'Target: ${CurrencyService.formatRupiah(totalTarget)}',
-                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11),
+                                  style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.85),
+                                      fontSize: 11),
                                 ),
                                 Text(
                                   'Kurang: ${CurrencyService.formatRupiah(totalRemaining)}',
-                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11),
+                                  style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.85),
+                                      fontSize: 11),
                                 ),
                               ],
                             ),
@@ -905,12 +1079,18 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                              color: isDark
+                                  ? AppColors.surfaceVariantDark
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                              border: Border.all(
+                                  color: isDark
+                                      ? AppColors.borderDark
+                                      : AppColors.borderLight),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                                  color: Colors.black
+                                      .withValues(alpha: isDark ? 0.2 : 0.03),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
                                 ),
@@ -922,15 +1102,24 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.accent.withValues(alpha: 0.12),
+                                    color: AppColors.accent
+                                        .withValues(alpha: 0.12),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.auto_awesome_rounded, color: AppColors.accent, size: 18),
+                                  child: const Icon(Icons.auto_awesome_rounded,
+                                      color: AppColors.accent, size: 18),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text('Saldo Auto-Celengan', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const Text('Saldo Auto-Celengan',
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                Text(CurrencyService.formatRupiah(_balance), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text(CurrencyService.formatRupiah(_balance),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
                               ],
                             ),
                           ),
@@ -940,12 +1129,18 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                              color: isDark
+                                  ? AppColors.surfaceVariantDark
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                              border: Border.all(
+                                  color: isDark
+                                      ? AppColors.borderDark
+                                      : AppColors.borderLight),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                                  color: Colors.black
+                                      .withValues(alpha: isDark ? 0.2 : 0.03),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
                                 ),
@@ -957,15 +1152,26 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.12),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.12),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.wallet_rounded, color: AppColors.primary, size: 18),
+                                  child: const Icon(Icons.wallet_rounded,
+                                      color: AppColors.primary, size: 18),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text('Sisa menuju target', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const Text('Sisa menuju target',
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                Text(CurrencyService.formatRupiah(totalRemaining), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text(
+                                    CurrencyService.formatRupiah(
+                                        totalRemaining),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
                               ],
                             ),
                           ),
@@ -975,68 +1181,80 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     const SizedBox(height: 24),
 
                     // Auto-saving Switch Panel
-                    Builder(
-                      builder: (context) {
-                        final totalAutoSave = _goals.fold(0, (sum, g) => sum + (g.autoSaveAmount ?? 0));
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceVariantDark : Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                    Builder(builder: (context) {
+                      final totalAutoSave = _goals.fold(
+                          0, (sum, g) => sum + (g.autoSaveAmount ?? 0));
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                              color: isDark
+                                  ? AppColors.borderDark
+                                  : AppColors.borderLight),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black
+                                  .withValues(alpha: isDark ? 0.18 : 0.04),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.bolt_rounded, color: AppColors.accent, size: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Auto-celengan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _settings.autoSavingEnabled 
-                                        ? (totalAutoSave > 0 
+                              child: const Icon(Icons.bolt_rounded,
+                                  color: AppColors.accent, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Auto-celengan',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _settings.autoSavingEnabled
+                                        ? (totalAutoSave > 0
                                             ? 'Setiap hari, ${CurrencyService.formatRupiah(totalAutoSave)} disisihkan otomatis dari jatah harianmu. Alokasi berikutnya: besok'
                                             : 'Setiap hari, sisa jatah belanja otomatis disisihkan ke celengan impianmu. Alokasi berikutnya: besok')
                                         : 'Auto-celengan dinonaktifkan',
-                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey),
+                                  ),
+                                ],
                               ),
-                              Switch.adaptive(
-                                value: _settings.autoSavingEnabled,
-                                activeThumbColor: AppColors.primary,
-                                activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
-                                onChanged: (value) {
-                                  if (value) {
-                                    _showAutoSavingExplanation();
-                                  } else {
-                                    _toggleAutoSaving(false);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    ).animate().fade(delay: 200.ms),
+                            ),
+                            Switch.adaptive(
+                              value: _settings.autoSavingEnabled,
+                              activeThumbColor: AppColors.primary,
+                              activeTrackColor:
+                                  AppColors.primary.withValues(alpha: 0.3),
+                              onChanged: (value) {
+                                if (value) {
+                                  _showAutoSavingExplanation();
+                                } else {
+                                  _toggleAutoSaving(false);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }).animate().fade(delay: 200.ms),
                     const SizedBox(height: 28),
 
                     // Multi Savings Title & Add button
@@ -1045,13 +1263,18 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       children: [
                         Text(
                           'Celengan Impian Anda',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         TextButton.icon(
                           onPressed: () => _upsertGoal(),
-                          icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                          icon: const Icon(Icons.add_circle_outline_rounded,
+                              size: 18),
                           label: const Text('Atur Target'),
-                          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primary),
                         ),
                       ],
                     ).animate().fade(delay: 220.ms),
@@ -1060,14 +1283,21 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     // Multi-Goal Cards Grid
                     if (_goals.isEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 40, horizontal: 20),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                          border: Border.all(
+                              color: isDark
+                                  ? AppColors.borderDark
+                                  : AppColors.borderLight),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+                              color: Colors.black
+                                  .withValues(alpha: isDark ? 0.15 : 0.03),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -1075,7 +1305,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         ),
                         child: Column(
                           children: [
-                            Icon(Icons.savings_outlined, color: Colors.grey.withValues(alpha: 0.5), size: 48),
+                            Icon(Icons.savings_outlined,
+                                color: Colors.grey.withValues(alpha: 0.5),
+                                size: 48),
                             const SizedBox(height: 12),
                             const Text(
                               'Belum ada celengan impian.\nYuk buat celengan pertamamu sekarang! 💎',
@@ -1086,13 +1318,15 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                             NataPressScale(
                               onTap: () => _upsertGoal(),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: AppColors.primary,
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.25),
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.25),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
@@ -1101,11 +1335,15 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.add, size: 18, color: Colors.white),
+                                    Icon(Icons.add,
+                                        size: 18, color: Colors.white),
                                     SizedBox(width: 8),
                                     Text(
                                       'Buat Celengan Sekarang',
-                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
                                     ),
                                   ],
                                 ),
@@ -1121,28 +1359,35 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                         itemCount: _goals.length,
                         itemBuilder: (context, index) {
                           final goal = _goals[index];
-                          final progress = goal.targetAmount <= 0 
-                              ? 0.0 
-                              : (goal.currentAmount / goal.targetAmount).clamp(0.0, 1.0);
-                          final remaining = goal.targetAmount > goal.currentAmount
-                              ? goal.targetAmount - goal.currentAmount
-                              : 0;
-                          
+                          final progress = goal.targetAmount <= 0
+                              ? 0.0
+                              : (goal.currentAmount / goal.targetAmount)
+                                  .clamp(0.0, 1.0);
+                          final remaining =
+                              goal.targetAmount > goal.currentAmount
+                                  ? goal.targetAmount - goal.currentAmount
+                                  : 0;
+
                           String timelineText = 'Tanpa batas waktu';
                           if (goal.targetDate != null) {
-                            final days = goal.targetDate!.difference(DateTime.now()).inDays;
-                            timelineText = days < 0 
-                                ? 'Lewat target' 
-                                : days == 0 
-                                    ? 'Hari ini' 
+                            final days = goal.targetDate!
+                                .difference(DateTime.now())
+                                .inDays;
+                            timelineText = days < 0
+                                ? 'Lewat target'
+                                : days == 0
+                                    ? 'Hari ini'
                                     : 'Sisa $days hari lagi';
                           }
-                          final transactions = ref.watch(dashboardProvider).transactions;
+                          final transactions =
+                              ref.watch(dashboardProvider).transactions;
                           final goalAllocations = <Map<String, dynamic>>[];
 
                           // 1. From transaction history (manual transfers)
                           for (final tx in transactions) {
-                            if (tx.category == 'Menabung' && tx.note != null && tx.note!.contains(goal.name)) {
+                            if (tx.category == 'Menabung' &&
+                                tx.note != null &&
+                                tx.note!.contains(goal.name)) {
                               goalAllocations.add({
                                 'date': tx.date.toIso8601String(),
                                 'amount': tx.amount,
@@ -1154,7 +1399,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           // 2. From saving allocations history (auto allocations)
                           for (final alloc in _history) {
                             final source = (alloc['source'] as String?) ?? '';
-                            if (source == goal.name || source.contains(goal.name)) {
+                            if (source == goal.name ||
+                                source.contains(goal.name)) {
                               goalAllocations.add({
                                 'date': alloc['date'] as String,
                                 'amount': (alloc['amount'] as num).toDouble(),
@@ -1164,11 +1410,14 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           }
 
                           // Sort by date descending
-                          goalAllocations.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+                          goalAllocations.sort((a, b) => (b['date'] as String)
+                              .compareTo(a['date'] as String));
 
                           final isUnder20 = progress < 0.20;
-                          final kurangColor = isUnder20 
-                              ? (isDark ? const Color(0xFFFBBF24) : Colors.amber.shade800)
+                          final kurangColor = isUnder20
+                              ? (isDark
+                                  ? const Color(0xFFFBBF24)
+                                  : Colors.amber.shade800)
                               : Theme.of(context).colorScheme.primary;
 
                           return GestureDetector(
@@ -1185,12 +1434,18 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                               margin: const EdgeInsets.only(bottom: 16),
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                                color: isDark
+                                    ? AppColors.surfaceVariantDark
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                                border: Border.all(
+                                    color: isDark
+                                        ? AppColors.borderDark
+                                        : AppColors.borderLight),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                                    color: Colors.black.withValues(
+                                        alpha: isDark ? 0.25 : 0.05),
                                     blurRadius: 16,
                                     offset: const Offset(0, 8),
                                   ),
@@ -1200,26 +1455,34 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Text(
                                           goal.name,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
                                         ),
                                       ),
                                       Row(
                                         children: [
                                           IconButton(
                                             onPressed: () => _upsertGoal(goal),
-                                            icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.grey),
+                                            icon: const Icon(Icons.edit_rounded,
+                                                size: 18, color: Colors.grey),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                           ),
                                           const SizedBox(width: 12),
                                           IconButton(
-                                            onPressed: () => _deleteGoal(goal.id),
-                                            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.alert),
+                                            onPressed: () =>
+                                                _deleteGoal(goal.id),
+                                            icon: const Icon(
+                                                Icons.delete_outline_rounded,
+                                                size: 18,
+                                                color: AppColors.alert),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                           ),
@@ -1230,35 +1493,56 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(Icons.calendar_month_rounded, size: 12, color: Colors.grey),
+                                      const Icon(Icons.calendar_month_rounded,
+                                          size: 12, color: Colors.grey),
                                       const SizedBox(width: 4),
-                                      Text(timelineText, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                      Text(timelineText,
+                                          style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 11)),
                                     ],
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Terkumpul: ${CurrencyService.formatRupiah(goal.currentAmount)}',
-                                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87),
                                       ),
                                       Text(
                                         '${(progress * 100).toInt()}%',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: AppColors.primary),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 6),
                                   goal.currentAmount == 0
                                       ? Shimmer.fromColors(
-                                          baseColor: isDark ? const Color(0xFF1E2F2D) : const Color(0xFFE0F2F1),
-                                          highlightColor: isDark ? const Color(0xFF2DD4BF).withValues(alpha: 0.3) : const Color(0xFFB2DFDB),
+                                          baseColor: isDark
+                                              ? const Color(0xFF1E2F2D)
+                                              : const Color(0xFFE0F2F1),
+                                          highlightColor: isDark
+                                              ? const Color(0xFF2DD4BF)
+                                                  .withValues(alpha: 0.3)
+                                              : const Color(0xFFB2DFDB),
                                           child: const NataProgressBar(
                                             value: 0.05,
                                             height: 8,
                                             gradient: LinearGradient(
-                                              colors: [Color(0xFF00B4A6), Color(0xFF00D4C8)],
+                                              colors: [
+                                                Color(0xFF00B4A6),
+                                                Color(0xFF00D4C8)
+                                              ],
                                             ),
                                           ),
                                         )
@@ -1266,20 +1550,28 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                           value: progress,
                                           height: 8,
                                           gradient: const LinearGradient(
-                                            colors: [Color(0xFF00B4A6), Color(0xFF00D4C8)],
+                                            colors: [
+                                              Color(0xFF00B4A6),
+                                              Color(0xFF00D4C8)
+                                            ],
                                           ),
                                         ),
                                   const SizedBox(height: 12),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Target: ${CurrencyService.formatRupiah(goal.targetAmount)}',
-                                        style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                        style: const TextStyle(
+                                            color: Colors.grey, fontSize: 11),
                                       ),
                                       Text(
                                         'Kurang: ${CurrencyService.formatRupiah(remaining)}',
-                                        style: TextStyle(color: kurangColor, fontSize: 11, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                            color: kurangColor,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
@@ -1290,16 +1582,23 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                     onTap: () => _quickTransfer(goal),
                                     child: Container(
                                       width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(alpha: 0.08),
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.08),
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                                        border: Border.all(
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.15)),
                                       ),
                                       child: const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.add_circle_rounded, size: 18, color: AppColors.primary),
+                                          Icon(Icons.add_circle_rounded,
+                                              size: 18,
+                                              color: AppColors.primary),
                                           SizedBox(width: 8),
                                           Text(
                                             'Amankan Jatah Ke Sini',
@@ -1319,7 +1618,8 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                     alignment: Alignment.topCenter,
                                     child: _expandedGoalId == goal.id
                                         ? Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               const SizedBox(height: 16),
                                               const Divider(height: 1),
@@ -1329,72 +1629,114 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 12,
-                                                  color: isDark ? Colors.white70 : Colors.black87,
+                                                  color: isDark
+                                                      ? Colors.white70
+                                                      : Colors.black87,
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
                                               if (goalAllocations.isEmpty)
                                                 const Padding(
-                                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                                  padding: EdgeInsets.symmetric(
+                                                      vertical: 8),
                                                   child: Text(
                                                     'Belum ada riwayat alokasi untuk celengan ini. Yuk, mulai menabung! 🌱',
                                                     style: TextStyle(
                                                       fontSize: 11,
                                                       color: Colors.grey,
-                                                      fontStyle: FontStyle.italic,
+                                                      fontStyle:
+                                                          FontStyle.italic,
                                                     ),
                                                   ),
                                                 )
                                               else
                                                 ListView.builder(
                                                   shrinkWrap: true,
-                                                  physics: const NeverScrollableScrollPhysics(),
-                                                  itemCount: goalAllocations.length > 5 ? 5 : goalAllocations.length,
-                                                  itemBuilder: (context, allocIndex) {
-                                                    final alloc = goalAllocations[allocIndex];
-                                                    final allocAmount = alloc['amount'] as double;
-                                                    final allocDateStr = alloc['date'] as String;
-                                                    final allocSource = alloc['source'] as String;
-                                                    
+                                                  physics:
+                                                      const NeverScrollableScrollPhysics(),
+                                                  itemCount:
+                                                      goalAllocations.length > 5
+                                                          ? 5
+                                                          : goalAllocations
+                                                              .length,
+                                                  itemBuilder:
+                                                      (context, allocIndex) {
+                                                    final alloc =
+                                                        goalAllocations[
+                                                            allocIndex];
+                                                    final allocAmount =
+                                                        alloc['amount']
+                                                            as double;
+                                                    final allocDateStr =
+                                                        alloc['date'] as String;
+                                                    final allocSource =
+                                                        alloc['source']
+                                                            as String;
+
                                                     // Format date to Indonesian
-                                                    DateTime? parsedDate = DateTime.tryParse(allocDateStr);
+                                                    DateTime? parsedDate =
+                                                        DateTime.tryParse(
+                                                            allocDateStr);
                                                     String formattedDate = '';
                                                     if (parsedDate != null) {
-                                                      formattedDate = DateFormat('d MMM yyyy', 'id_ID').format(parsedDate);
+                                                      formattedDate =
+                                                          DateFormat(
+                                                                  'd MMM yyyy',
+                                                                  'id_ID')
+                                                              .format(
+                                                                  parsedDate);
                                                     } else {
-                                                      formattedDate = allocDateStr.split('T').first;
+                                                      formattedDate =
+                                                          allocDateStr
+                                                              .split('T')
+                                                              .first;
                                                     }
 
                                                     return Padding(
-                                                      padding: const EdgeInsets.symmetric(vertical: 6),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 6),
                                                       child: Row(
-                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
                                                         children: [
                                                           Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
                                                             children: [
                                                               Text(
                                                                 formattedDate,
-                                                                style: const TextStyle(
+                                                                style:
+                                                                    const TextStyle(
                                                                   fontSize: 11,
-                                                                  fontWeight: FontWeight.w600,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
                                                                 ),
                                                               ),
                                                               Text(
                                                                 allocSource,
-                                                                style: const TextStyle(
+                                                                style:
+                                                                    const TextStyle(
                                                                   fontSize: 9,
-                                                                  color: Colors.grey,
+                                                                  color: Colors
+                                                                      .grey,
                                                                 ),
                                                               ),
                                                             ],
                                                           ),
                                                           Text(
                                                             '+${CurrencyService.formatRupiah(allocAmount)}',
-                                                            style: const TextStyle(
+                                                            style:
+                                                                const TextStyle(
                                                               fontSize: 11,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: AppColors.primary,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: AppColors
+                                                                  .primary,
                                                             ),
                                                           ),
                                                         ],
@@ -1409,23 +1751,32 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                 ],
                               ),
                             ),
-                          ).animate().fade(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.05);
+                          )
+                              .animate()
+                              .fade(delay: Duration(milliseconds: 100 * index))
+                              .slideX(begin: 0.05);
                         },
                       ),
                     ],
-                    
+
                     const SizedBox(height: 28),
 
                     // Savings Flow Panel
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                        color: isDark
+                            ? AppColors.surfaceVariantDark
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                        border: Border.all(
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.borderLight),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                            color: Colors.black
+                                .withValues(alpha: isDark ? 0.2 : 0.03),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -1434,24 +1785,31 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Alur tabungan', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          Text('Alur tabungan',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 16),
                           _buildFlowStep(
                             number: '1',
                             title: 'Simpan Anggaran',
-                            body: 'Masukkan nominal alokasi tabungan bulanan saat setup keuangan.',
+                            body:
+                                'Masukkan nominal alokasi tabungan bulanan saat setup keuangan.',
                             active: true,
                           ),
                           _buildFlowStep(
                             number: '2',
                             title: 'Amankan Jatah Harian',
-                            body: 'Setiap hari Anda bisa amankan sisa jatah belanja ke celengan spesifik secara manual atau otomatis.',
+                            body:
+                                'Setiap hari Anda bisa amankan sisa jatah belanja ke celengan spesifik secara manual atau otomatis.',
                             active: _settings.autoSavingEnabled,
                           ),
                           _buildFlowStep(
                             number: '3',
                             title: 'Impian Tercapai!',
-                            body: 'Saldo celengan naik, mengantarkan Anda mewujudkan mimpi-mimpi finansial.',
+                            body:
+                                'Saldo celengan naik, mengantarkan Anda mewujudkan mimpi-mimpi finansial.',
                             active: true,
                             isLast: true,
                           ),
@@ -1464,35 +1822,51 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     // Savings Allocation History
                     Text(
                       'Riwayat Alokasi Tabungan',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ).animate().fade(delay: 320.ms),
                     const SizedBox(height: 12),
 
                     if (_history.isEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 24, horizontal: 20),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                          border: Border.all(
+                              color: isDark
+                                  ? AppColors.borderDark
+                                  : AppColors.borderLight),
                         ),
                         child: const Center(
                           child: Text(
                             'Belum ada riwayat alokasi otomatis.\nRiwayat terkumpul saat auto-saving aktif di tengah malam.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.3),
+                            style: TextStyle(
+                                color: Colors.grey, fontSize: 13, height: 1.3),
                           ),
                         ),
                       ).animate().fade(delay: 350.ms),
                     ] else ...[
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                          border: Border.all(
+                              color: isDark
+                                  ? AppColors.borderDark
+                                  : AppColors.borderLight),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+                              color: Colors.black
+                                  .withValues(alpha: isDark ? 0.15 : 0.03),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -1503,44 +1877,65 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           child: ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _history.length > 5 ? 5 : _history.length,
-                            separatorBuilder: (_, __) => Divider(height: 1, color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                            itemCount:
+                                _history.length > 5 ? 5 : _history.length,
+                            separatorBuilder: (_, __) => Divider(
+                                height: 1,
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.borderLight),
                             itemBuilder: (context, index) {
                               final item = _history[index];
                               final amount = (item['amount'] as num).toDouble();
-                              final dateStr = ((item['date'] as String?) ?? '').split('T').first;
-                              final source = (item['source'] as String?) ?? 'auto';
+                              final dateStr = ((item['date'] as String?) ?? '')
+                                  .split('T')
+                                  .first;
+                              final source =
+                                  (item['source'] as String?) ?? 'auto';
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 14),
                                 child: Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: AppColors.accent.withValues(alpha: 0.12),
+                                        color: AppColors.accent
+                                            .withValues(alpha: 0.12),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.add_rounded, color: AppColors.accent, size: 16),
+                                      child: const Icon(Icons.add_rounded,
+                                          color: AppColors.accent, size: 16),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          Text(dateStr,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13)),
                                           Text(
-                                            source == 'auto' || source == 'daily_closing'
-                                              ? 'Auto-celengan dari Tutup Hari' 
-                                              : source,
-                                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                            source == 'auto' ||
+                                                    source == 'daily_closing'
+                                                ? 'Auto-celengan dari Tutup Hari'
+                                                : source,
+                                            style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 11),
                                           ),
                                         ],
                                       ),
                                     ),
                                     Text(
                                       '+${CurrencyService.formatRupiah(amount)}',
-                                      style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: const TextStyle(
+                                          color: AppColors.accent,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
                                     ),
                                   ],
                                 ),
@@ -1579,7 +1974,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
               decoration: BoxDecoration(
                 color: active
                     ? AppColors.primary.withValues(alpha: 0.12)
-                    : (isDark ? AppColors.surfaceVariantDark : Colors.grey.shade100),
+                    : (isDark
+                        ? AppColors.surfaceVariantDark
+                        : Colors.grey.shade100),
                 shape: BoxShape.circle,
               ),
               child: Text(
@@ -1608,12 +2005,14 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   body,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12, height: 1.35),
+                  style: const TextStyle(
+                      color: Colors.grey, fontSize: 12, height: 1.35),
                 ),
               ],
             ),
@@ -1636,31 +2035,55 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  NataShimmer(width: 140, height: 16, borderRadius: BorderRadius.circular(8)),
+                  NataShimmer(
+                      width: 140,
+                      height: 16,
+                      borderRadius: BorderRadius.circular(8)),
                   const SizedBox(height: 8),
-                  NataShimmer(width: 200, height: 32, borderRadius: BorderRadius.circular(8)),
+                  NataShimmer(
+                      width: 200,
+                      height: 32,
+                      borderRadius: BorderRadius.circular(8)),
                 ],
               ),
-              NataShimmer(width: 52, height: 52, borderRadius: BorderRadius.circular(26)),
+              NataShimmer(
+                  width: 52,
+                  height: 52,
+                  borderRadius: BorderRadius.circular(26)),
             ],
           ),
           const SizedBox(height: 20),
           // Hero card shimmer
-          NataShimmer(width: double.infinity, height: 210, borderRadius: BorderRadius.circular(28)),
+          NataShimmer(
+              width: double.infinity,
+              height: 210,
+              borderRadius: BorderRadius.circular(28)),
           const SizedBox(height: 28),
           // Section title
-          NataShimmer(width: 120, height: 20, borderRadius: BorderRadius.circular(8)),
+          NataShimmer(
+              width: 120, height: 20, borderRadius: BorderRadius.circular(8)),
           const SizedBox(height: 12),
           // Savings goals list (simulated cards)
           Row(
             children: [
-              Expanded(child: NataShimmer(width: double.infinity, height: 140, borderRadius: BorderRadius.circular(24))),
+              Expanded(
+                  child: NataShimmer(
+                      width: double.infinity,
+                      height: 140,
+                      borderRadius: BorderRadius.circular(24))),
               const SizedBox(width: 12),
-              Expanded(child: NataShimmer(width: double.infinity, height: 140, borderRadius: BorderRadius.circular(24))),
+              Expanded(
+                  child: NataShimmer(
+                      width: double.infinity,
+                      height: 140,
+                      borderRadius: BorderRadius.circular(24))),
             ],
           ),
           const SizedBox(height: 12),
-          NataShimmer(width: double.infinity, height: 120, borderRadius: BorderRadius.circular(24)),
+          NataShimmer(
+              width: double.infinity,
+              height: 120,
+              borderRadius: BorderRadius.circular(24)),
         ],
       ),
     );

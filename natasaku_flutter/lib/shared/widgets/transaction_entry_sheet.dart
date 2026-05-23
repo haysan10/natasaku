@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../data/datasources/local/local_storage.dart';
 import '../../data/repositories/budget_repository.dart';
 import '../../core/theme/app_colors.dart';
+import 'nata_money_input.dart';
 
 class TransactionDraft {
   const TransactionDraft({
@@ -80,7 +81,8 @@ class _TransactionEntryContent extends StatefulWidget {
   });
 
   @override
-  State<_TransactionEntryContent> createState() => _TransactionEntryContentState();
+  State<_TransactionEntryContent> createState() =>
+      _TransactionEntryContentState();
 }
 
 class _TransactionEntryContentState extends State<_TransactionEntryContent> {
@@ -120,53 +122,6 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
     return int.tryParse(digits) ?? 0;
   }
 
-  void _onNumpadPressed(String value) {
-    if (_isSaving) return;
-    
-    setState(() {
-      _errorMessage = null;
-    });
-
-    final currentDigits = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    String newDigits = currentDigits;
-
-    if (value == '⌫') {
-      if (currentDigits.isNotEmpty) {
-        newDigits = currentDigits.substring(0, currentDigits.length - 1);
-      }
-    } else if (value == 'C') {
-      newDigits = '';
-    } else if (value == '000') {
-      if (currentDigits.isNotEmpty) {
-        newDigits = '${currentDigits}000';
-      }
-    } else {
-      if (currentDigits == '0') {
-        newDigits = value;
-      } else {
-        newDigits = '$currentDigits$value';
-      }
-    }
-
-    if (newDigits.length > 12) {
-      newDigits = newDigits.substring(0, 12);
-    }
-
-    if (newDigits.isEmpty) {
-      _amountController.text = '';
-      return;
-    }
-
-    final val = int.tryParse(newDigits) ?? 0;
-    final formatter = NumberFormat.decimalPattern('id');
-    final formatted = 'Rp ${formatter.format(val)}';
-    
-    _amountController.value = TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-
   bool get _canSubmit => !_isSaving && _parsedAmount > 0 && _category != null;
 
   Future<void> _pickDate() async {
@@ -193,8 +148,8 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: _isExpense ? AppColors.alert : AppColors.accent,
-            ),
+                  primary: _isExpense ? AppColors.alert : AppColors.accent,
+                ),
           ),
           child: child!,
         );
@@ -217,13 +172,19 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
           maxLength: 200, // Updated UX constraint to 200 characters
           decoration: const InputDecoration(
             hintText: 'Tulis sesuatu...',
-            counterText: '', // We can custom render or use standard. Let's use custom text field or standard. Standard length display is good.
+            counterText:
+                '', // We can custom render or use standard. Let's use custom text field or standard. Standard length display is good.
           ),
-          buildCounter: (context, {required currentLength, required isFocused, required maxLength}) {
+          buildCounter: (context,
+              {required currentLength,
+              required isFocused,
+              required maxLength}) {
             return Text(
               '$currentLength/$maxLength',
               style: TextStyle(
-                color: currentLength > 180 ? AppColors.alert : AppColors.textSecondaryLight,
+                color: currentLength > 180
+                    ? AppColors.alert
+                    : AppColors.textSecondaryLight,
                 fontSize: 12,
               ),
             );
@@ -231,9 +192,13 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
           textCapitalization: TextCapitalization.sentences,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: _isExpense ? AppColors.alert : AppColors.accent),
+            style: FilledButton.styleFrom(
+                backgroundColor:
+                    _isExpense ? AppColors.alert : AppColors.accent),
             onPressed: () => Navigator.pop(context, controller.text),
             child: const Text('Simpan'),
           ),
@@ -259,15 +224,18 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pilih Kategori', style: Theme.of(context).textTheme.headlineSmall),
+            Text('Pilih Kategori',
+                style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: nataCategories.map((c) => ActionChip(
-                label: Text(c),
-                onPressed: () => Navigator.pop(context, c),
-              )).toList(),
+              children: nataCategories
+                  .map((c) => ActionChip(
+                        label: Text(c),
+                        onPressed: () => Navigator.pop(context, c),
+                      ))
+                  .toList(),
             ),
           ],
         ),
@@ -369,20 +337,26 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.alert.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.alert.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppColors.alert.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: AppColors.alert, size: 20),
+                      const Icon(Icons.error_outline_rounded,
+                          color: AppColors.alert, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                              color: AppColors.alert,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
                         ),
                       ),
                     ],
@@ -397,23 +371,25 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: activeColor.withValues(alpha: 0.3), width: 2),
+                  border: Border.all(
+                      color: activeColor.withValues(alpha: 0.3), width: 2),
                 ),
                 child: TextField(
                   controller: _amountController,
                   autofocus: false,
                   readOnly: true,
-                  showCursor: true,
+                  showCursor: false,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontSize: 32,
-                    color: activeColor,
-                    fontWeight: FontWeight.w900,
-                  ),
+                        fontSize: 32,
+                        color: activeColor,
+                        fontWeight: FontWeight.w900,
+                      ),
                   decoration: InputDecoration(
                     hintText: 'Rp 0',
                     hintStyle: TextStyle(
@@ -425,7 +401,8 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                     contentPadding: EdgeInsets.zero,
                     suffixIcon: _parsedAmount > 0
                         ? IconButton(
-                            icon: Icon(Icons.cancel, color: activeColor.withValues(alpha: 0.5)),
+                            icon: Icon(Icons.cancel,
+                                color: activeColor.withValues(alpha: 0.5)),
                             onPressed: () {
                               setState(() {
                                 _amountController.clear();
@@ -463,7 +440,11 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                   const SizedBox(width: 8),
                   _MetaChip(
                     icon: PhosphorIconsRegular.textAa,
-                    label: _note == null ? 'Catatan' : (_note!.length > 10 ? '${_note!.substring(0, 10)}...' : _note!),
+                    label: _note == null
+                        ? 'Catatan'
+                        : (_note!.length > 10
+                            ? '${_note!.substring(0, 10)}...'
+                            : _note!),
                     onTap: _addNote,
                     activeColor: activeColor,
                     isSet: _note != null,
@@ -474,66 +455,33 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
 
             const SizedBox(height: 16),
 
-            // Custom Numpad Grid
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      _NumpadKey(label: '1', onTap: () => _onNumpadPressed('1'), activeColor: activeColor),
-                      _NumpadKey(label: '2', onTap: () => _onNumpadPressed('2'), activeColor: activeColor),
-                      _NumpadKey(label: '3', onTap: () => _onNumpadPressed('3'), activeColor: activeColor),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      _NumpadKey(label: '4', onTap: () => _onNumpadPressed('4'), activeColor: activeColor),
-                      _NumpadKey(label: '5', onTap: () => _onNumpadPressed('5'), activeColor: activeColor),
-                      _NumpadKey(label: '6', onTap: () => _onNumpadPressed('6'), activeColor: activeColor),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      _NumpadKey(label: '7', onTap: () => _onNumpadPressed('7'), activeColor: activeColor),
-                      _NumpadKey(label: '8', onTap: () => _onNumpadPressed('8'), activeColor: activeColor),
-                      _NumpadKey(label: '9', onTap: () => _onNumpadPressed('9'), activeColor: activeColor),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      _NumpadKey(label: '000', onTap: () => _onNumpadPressed('000'), activeColor: activeColor),
-                      _NumpadKey(label: '0', onTap: () => _onNumpadPressed('0'), activeColor: activeColor),
-                      _NumpadKey(
-                        label: '',
-                        icon: Icon(
-                          Icons.backspace_outlined,
-                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                          size: 20,
-                        ),
-                        onTap: () => _onNumpadPressed('⌫'),
-                        activeColor: activeColor,
-                      ),
-                    ],
-                  ),
-                ],
+              child: NataMoneyNumpad(
+                controller: _amountController,
+                activeColor: activeColor,
+                enabled: !_isSaving,
+                withPrefix: true,
+                onChanged: (_) {
+                  setState(() => _errorMessage = null);
+                },
               ),
             ),
-            
+
             // Save Button Panel (replacing custom numpad)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  )
-                ]
-              ),
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    )
+                  ]),
               child: SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -541,7 +489,8 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                   style: FilledButton.styleFrom(
                     backgroundColor: activeColor,
                     disabledBackgroundColor: activeColor.withValues(alpha: 0.4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                   ),
                   onPressed: _canSubmit ? _submit : null,
                   child: AnimatedSwitcher(
@@ -552,13 +501,17 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
                             'Simpan',
                             key: ValueKey('save_text'),
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
                           ),
                   ),
                 ),
@@ -589,8 +542,12 @@ class _TypeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isSelected ? activeColor : (isDark ? AppColors.surfaceVariantDark : Colors.white);
-    final fgColor = isSelected ? Colors.white : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight);
+    final bgColor = isSelected
+        ? activeColor
+        : (isDark ? AppColors.surfaceVariantDark : Colors.white);
+    final fgColor = isSelected
+        ? Colors.white
+        : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight);
 
     return Material(
       color: bgColor,
@@ -602,14 +559,19 @@ class _TypeToggle extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isSelected ? activeColor : (isDark ? AppColors.borderDark : AppColors.borderLight)),
+            border: Border.all(
+                color: isSelected
+                    ? activeColor
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               PhosphorIcon(icon, color: fgColor, size: 18),
               const SizedBox(width: 8),
-              Text(title, style: TextStyle(color: fgColor, fontWeight: FontWeight.w600)),
+              Text(title,
+                  style:
+                      TextStyle(color: fgColor, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -636,10 +598,14 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isSet ? activeColor : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight);
-    
+    final color = isSet
+        ? activeColor
+        : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight);
+
     return Material(
-      color: isSet ? activeColor.withValues(alpha: 0.1) : (isDark ? AppColors.surfaceVariantDark : Colors.white),
+      color: isSet
+          ? activeColor.withValues(alpha: 0.1)
+          : (isDark ? AppColors.surfaceVariantDark : Colors.white),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -648,60 +614,19 @@ class _MetaChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isSet ? activeColor.withValues(alpha: 0.3) : (isDark ? AppColors.borderDark : AppColors.borderLight)),
+            border: Border.all(
+                color: isSet
+                    ? activeColor.withValues(alpha: 0.3)
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight)),
           ),
           child: Row(
             children: [
               PhosphorIcon(icon, size: 16, color: color),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(label,
+                  style: TextStyle(
+                      color: color, fontSize: 13, fontWeight: FontWeight.w600)),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-class _NumpadKey extends StatelessWidget {
-  final String label;
-  final Widget? icon;
-  final VoidCallback onTap;
-  final Color activeColor;
-
-  const _NumpadKey({
-    required this.label,
-    this.icon,
-    required this.onTap,
-    required this.activeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Material(
-          color: isDark ? AppColors.surfaceVariantDark : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              height: 48,
-              alignment: Alignment.center,
-              child: icon ?? Text(
-                label,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                ),
-              ),
-            ),
           ),
         ),
       ),

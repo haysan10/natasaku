@@ -14,11 +14,11 @@ import '../../data/models/budget_mode.dart';
 import '../../data/models/budget_period.dart';
 import '../../data/models/saving_goal.dart';
 import '../dashboard/providers/dashboard_provider.dart';
-import '../../core/utils/rupiah_input_formatter.dart';
 import '../../core/theme/app_shadows.dart';
 import '../../data/models/fixed_expense_item.dart';
 import '../../core/services/currency_service.dart';
 import '../../core/utils/nominal_input_validator.dart';
+import '../../shared/widgets/nata_money_input.dart';
 
 class SetupPage extends ConsumerStatefulWidget {
   const SetupPage({super.key});
@@ -65,7 +65,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
 
   void _updateFixedExpensesTotal() {
     final total = FixedExpenseItem.totalOf(_fixedExpenseItems);
-    _fixedExpensesController.text = total > 0 ? NumberFormat('#,###', 'id_ID').format(total) : '';
+    _fixedExpensesController.text =
+        total > 0 ? NumberFormat('#,###', 'id_ID').format(total) : '';
   }
 
   void _addFixedExpenseItem(FixedExpenseItem item) {
@@ -131,7 +132,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final fund = _parseAmount(_fundController.text);
     final fixed = _parseAmount(_fixedExpensesController.text);
     final allocation = _parseAmount(_savingAllocationController.text);
@@ -172,7 +173,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(foregroundColor: AppColors.textSecondaryLight),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textSecondaryLight),
               child: const Text('Batal & Perbaiki'),
             ),
             TextButton(
@@ -206,7 +208,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         mode: _mode,
       ),
     );
-    
+
     if (savingName.isNotEmpty && savingTarget > 0) {
       await repo.saveSavingGoal(
         SavingGoal(
@@ -249,10 +251,13 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.primary,
-              surface: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-            ),
+                  primary: AppColors.primary,
+                  surface:
+                      isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  onSurface: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
+                ),
           ),
           child: child!,
         );
@@ -275,7 +280,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
     });
   }
 
-  Future<void> _showAddEditFixedExpenseSheet([FixedExpenseItem? editingItem]) async {
+  Future<void> _showAddEditFixedExpenseSheet(
+      [FixedExpenseItem? editingItem]) async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: editingItem?.name);
     final amountController = TextEditingController(
@@ -283,7 +289,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
           ? NumberFormat('#,###', 'id_ID').format(editingItem.amount)
           : '',
     );
-    FixedExpenseCategory selectedCategory = editingItem?.category ?? FixedExpenseCategory.lainnya;
+    FixedExpenseCategory selectedCategory =
+        editingItem?.category ?? FixedExpenseCategory.lainnya;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -294,13 +301,10 @@ class _SetupPageState extends ConsumerState<SetupPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           padding: EdgeInsets.fromLTRB(
-            24, 
-            24, 
-            24, 
-            MediaQuery.of(context).viewInsets.bottom + 32
-          ),
+              24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 32),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+            color:
+                isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Form(
@@ -310,18 +314,25 @@ class _SetupPageState extends ConsumerState<SetupPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  editingItem == null ? 'Tambah Tagihan Rutin' : 'Ubah Tagihan Rutin',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  editingItem == null
+                      ? 'Tambah Tagihan Rutin'
+                      : 'Ubah Tagihan Rutin',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Name field
                 TextFormField(
                   controller: nameController,
                   autofocus: editingItem == null,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                   decoration: _buildInputDecoration(
                     labelText: 'Nama Tagihan',
@@ -329,7 +340,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                     hintText: 'Contoh: Biaya Kos',
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Nama tagihan wajib diisi';
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Nama tagihan wajib diisi';
+                    }
                     return null;
                   },
                 ),
@@ -338,19 +351,25 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 // Category field
                 DropdownButtonFormField<FixedExpenseCategory>(
                   initialValue: selectedCategory,
-                  dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  dropdownColor:
+                      isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                   decoration: _buildInputDecoration(
                     labelText: 'Kategori Tagihan',
                     prefixIcon: PhosphorIconsRegular.tag,
                   ),
-                  items: FixedExpenseCategory.values.map((cat) => DropdownMenuItem(
-                    value: cat,
-                    child: Text('${getCategoryEmoji(cat)}  ${getCategoryLabel(cat)}'),
-                  )).toList(),
+                  items: FixedExpenseCategory.values
+                      .map((cat) => DropdownMenuItem(
+                            value: cat,
+                            child: Text(
+                                '${getCategoryEmoji(cat)}  ${getCategoryLabel(cat)}'),
+                          ))
+                      .toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setModalState(() {
@@ -362,15 +381,15 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 const SizedBox(height: 16),
 
                 // Amount field
-                TextFormField(
+                NataMoneyInput(
                   controller: amountController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [RupiahInputFormatter()],
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                     letterSpacing: 0.5,
                   ),
                   decoration: _buildInputDecoration(
@@ -379,7 +398,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                     hintText: 'Masukkan nominal rupiah',
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Nominal wajib diisi';
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Nominal wajib diisi';
+                    }
                     final parsed = _parseAmount(val);
                     if (parsed <= 0) return 'Nominal harus lebih dari Rp 0';
                     if (parsed > 999999999999) return 'Nominal terlalu besar';
@@ -396,7 +417,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
                         ),
                         child: const Text('Batal'),
                       ),
@@ -411,7 +433,10 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                             Navigator.pop(
                               context,
                               FixedExpenseItem(
-                                id: editingItem?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                                id: editingItem?.id ??
+                                    DateTime.now()
+                                        .millisecondsSinceEpoch
+                                        .toString(),
                                 name: name,
                                 amount: amount,
                                 category: selectedCategory,
@@ -424,7 +449,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
                         ),
                         child: const Text('Simpan'),
                       ),
@@ -466,7 +492,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
             : AppColors.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isNegative ? AppColors.alert.withValues(alpha: 0.3) : AppColors.accent.withValues(alpha: 0.2),
+          color: isNegative
+              ? AppColors.alert.withValues(alpha: 0.3)
+              : AppColors.accent.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -502,7 +530,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
     String? tooltipText,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(24),
@@ -510,7 +538,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: isDark ? AppColors.borderDark.withValues(alpha: 0.5) : AppColors.borderLight.withValues(alpha: 0.8),
+          color: isDark
+              ? AppColors.borderDark.withValues(alpha: 0.5)
+              : AppColors.borderLight.withValues(alpha: 0.8),
           width: 1.5,
         ),
         boxShadow: AppShadows.card(isDark: isDark),
@@ -534,7 +564,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(100),
@@ -542,10 +573,10 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       child: Text(
                         'LANGKAH 0$step',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -554,10 +585,15 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                         Expanded(
                           child: Text(
                             title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimaryLight,
+                                ),
                           ),
                         ),
                         if (tooltipText != null) ...[
@@ -569,7 +605,10 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                             child: Icon(
                               Icons.help_outline_rounded,
                               size: 18,
-                              color: (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight).withValues(alpha: 0.6),
+                              color: (isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondaryLight)
+                                  .withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -584,9 +623,11 @@ class _SetupPageState extends ConsumerState<SetupPage> {
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-              height: 1.4,
-            ),
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                  height: 1.4,
+                ),
           ),
           const SizedBox(height: 20),
           child,
@@ -610,7 +651,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
       ),
       prefixIconConstraints: const BoxConstraints(minWidth: 40),
       labelStyle: TextStyle(
-        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+        color:
+            isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
         fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: const TextStyle(
@@ -618,7 +660,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         fontWeight: FontWeight.bold,
       ),
       filled: true,
-      fillColor: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+      fillColor: isDark
+          ? AppColors.surfaceVariantDark.withValues(alpha: 0.3)
+          : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -654,16 +698,18 @@ class _SetupPageState extends ConsumerState<SetupPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
           onPressed: () {
             if (Navigator.canPop(context)) {
@@ -676,7 +722,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         title: Text(
           'Atur Keuangan',
           style: TextStyle(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             fontWeight: FontWeight.w900,
             fontSize: 20,
             letterSpacing: 0.5,
@@ -717,9 +764,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   Text(
                     'Ayo Buat Rencana! 🚀',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
@@ -735,23 +782,24 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ],
               ),
             ).animate().fade().slideY(begin: -0.1),
-            
+
             // Step 1: Fund
             _buildStepCard(
               step: 1,
               title: 'Uang yang Bisa Dipakai',
               subtitle: 'Berapa uang yang kamu punya untuk dipakai bulan ini?',
-              tooltipText: 'Total uang yang bebas kamu pakai bulan ini — setelah dikurangi tagihan rutin dan tabungan wajib.',
+              tooltipText:
+                  'Total uang yang bebas kamu pakai bulan ini — setelah dikurangi tagihan rutin dan tabungan wajib.',
               icon: PhosphorIconsRegular.money,
-              child: TextFormField(
+              child: NataMoneyInput(
                 controller: _fundController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [RupiahInputFormatter()],
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                   letterSpacing: 0.5,
                 ),
                 decoration: _buildInputDecoration(
@@ -759,15 +807,17 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   prefixIcon: PhosphorIconsRegular.wallet,
                   hintText: 'Masukkan nominal rupiah',
                 ),
-                validator: (value) => NominalInputValidator.validateAmount(value ?? ''),
+                validator: (value) =>
+                    NominalInputValidator.validateAmount(value ?? ''),
               ),
             ).animate().fade(delay: 150.ms).slideX(begin: 0.05),
-            
+
             // Step 2: Period
             _buildStepCard(
               step: 2,
               title: 'Periode Waktu',
-              subtitle: 'Dana di atas harus cukup untuk dipakai sampai tanggal berapa?',
+              subtitle:
+                  'Dana di atas harus cukup untuk dipakai sampai tanggal berapa?',
               icon: PhosphorIconsRegular.calendar,
               child: Row(
                 children: [
@@ -776,18 +826,28 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => _pickDate(isStart: true),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                                  .withValues(alpha: 0.3)
+                              : AppColors.surfaceVariantLight
+                                  .withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.borderLight,
                             width: 1.5,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const PhosphorIcon(PhosphorIconsRegular.calendarPlus, color: AppColors.primary, size: 20),
+                            const PhosphorIcon(
+                                PhosphorIconsRegular.calendarPlus,
+                                color: AppColors.primary,
+                                size: 20),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -797,17 +857,25 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                                     'Mulai',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _startDate.toLocal().toString().split(' ').first,
+                                    _startDate
+                                        .toLocal()
+                                        .toString()
+                                        .split(' ')
+                                        .first,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                      color: isDark
+                                          ? AppColors.textPrimaryDark
+                                          : AppColors.textPrimaryLight,
                                     ),
                                   ),
                                 ],
@@ -820,25 +888,36 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: PhosphorIcon(PhosphorIconsRegular.arrowRight, color: AppColors.primary, size: 16),
+                    child: PhosphorIcon(PhosphorIconsRegular.arrowRight,
+                        color: AppColors.primary, size: 16),
                   ),
                   Expanded(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => _pickDate(isStart: false),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                                  .withValues(alpha: 0.3)
+                              : AppColors.surfaceVariantLight
+                                  .withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.borderLight,
                             width: 1.5,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const PhosphorIcon(PhosphorIconsRegular.calendarCheck, color: AppColors.primary, size: 20),
+                            const PhosphorIcon(
+                                PhosphorIconsRegular.calendarCheck,
+                                color: AppColors.primary,
+                                size: 20),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -848,17 +927,25 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                                     'Sampai',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _endDate.toLocal().toString().split(' ').first,
+                                    _endDate
+                                        .toLocal()
+                                        .toString()
+                                        .split(' ')
+                                        .first,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                      color: isDark
+                                          ? AppColors.textPrimaryDark
+                                          : AppColors.textPrimaryLight,
                                     ),
                                   ),
                                 ],
@@ -872,13 +959,15 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ],
               ),
             ).animate().fade(delay: 200.ms).slideX(begin: 0.05),
-            
+
             // Step 3: Fixed Monthly Expenses (Tagihan Rutin Bulanan)
             _buildStepCard(
               step: 3,
               title: 'Tagihan Rutin Bulanan',
-              subtitle: 'Tambahkan semua tagihan tetapmu. NataSaku akan menjumlahkan otomatis.',
-              tooltipText: 'Tagihan rutin bulanan seperti sewa kos, cicilan kendaraan, internet, air, listrik, dll.',
+              subtitle:
+                  'Tambahkan semua tagihan tetapmu. NataSaku akan menjumlahkan otomatis.',
+              tooltipText:
+                  'Tagihan rutin bulanan seperti sewa kos, cicilan kendaraan, internet, air, listrik, dll.',
               icon: PhosphorIconsRegular.receipt,
               child: Column(
                 children: [
@@ -887,8 +976,11 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       controller: _fixedExpensesController,
                       validator: (value) {
                         if (value != null && value.trim().isNotEmpty) {
-                          final parsed = NominalInputValidator.parseNominal(value);
-                          if (parsed > 999999999999) return 'Nominal terlalu besar';
+                          final parsed =
+                              NominalInputValidator.parseNominal(value);
+                          if (parsed > 999999999999) {
+                            return 'Nominal terlalu besar';
+                          }
                         }
                         return null;
                       },
@@ -904,23 +996,25 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ],
               ),
             ).animate().fade(delay: 250.ms).slideX(begin: 0.05),
-            
+
             // Step 4: Monthly Savings Allocation
             _buildStepCard(
               step: 4,
               title: 'Berapa Ingin Kamu Tabung?',
-              subtitle: 'Berapa yang ingin kamu sisihkan untuk tabungan per bulan ini?',
-              tooltipText: 'Berapa yang ingin kamu sisihkan setiap bulan. NataSaku akan mengamankan ini dulu sebelum menghitung jatah harianmu.',
+              subtitle:
+                  'Berapa yang ingin kamu sisihkan untuk tabungan per bulan ini?',
+              tooltipText:
+                  'Berapa yang ingin kamu sisihkan setiap bulan. NataSaku akan mengamankan ini dulu sebelum menghitung jatah harianmu.',
               icon: PhosphorIconsRegular.vault,
-              child: TextFormField(
+              child: NataMoneyInput(
                 controller: _savingAllocationController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [RupiahInputFormatter()],
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                   letterSpacing: 0.5,
                 ),
                 decoration: _buildInputDecoration(
@@ -931,7 +1025,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
                     final parsed = NominalInputValidator.parseNominal(value);
-                    if (parsed > 999999999999) return 'Nominal terlalu besar. Maksimum Rp 999.999.999.999';
+                    if (parsed > 999999999999) {
+                      return 'Nominal terlalu besar. Maksimum Rp 999.999.999.999';
+                    }
                   }
                   return null;
                 },
@@ -940,12 +1036,13 @@ class _SetupPageState extends ConsumerState<SetupPage> {
 
             // Real-time Budget Preview
             _buildBudgetPreview(),
-            
+
             // Step 5: Savings Goal
             _buildStepCard(
               step: 5,
               title: 'Target Tabungan',
-              subtitle: 'Opsional. Punya impian/barang impian yang ingin segera Anda miliki?',
+              subtitle:
+                  'Opsional. Punya impian/barang impian yang ingin segera Anda miliki?',
               icon: PhosphorIconsRegular.star,
               child: Column(
                 children: [
@@ -953,7 +1050,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                     controller: _savingNameController,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                     decoration: _buildInputDecoration(
                       labelText: 'Nama impian',
@@ -962,14 +1061,14 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  NataMoneyInput(
                     controller: _savingTargetController,
-                    keyboardType: TextInputType.number,
                     autovalidateMode: AutovalidateMode.onUserInteraction,
-                    inputFormatters: [RupiahInputFormatter()],
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                     ),
                     decoration: _buildInputDecoration(
                       labelText: 'Nominal target',
@@ -977,9 +1076,12 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       hintText: 'Masukkan nominal target tabungan',
                     ),
                     validator: (value) {
-                      final hasName = _savingNameController.text.trim().isNotEmpty;
+                      final hasName =
+                          _savingNameController.text.trim().isNotEmpty;
                       final hasAmount = (value ?? '').trim().isNotEmpty;
-                      if (hasName && NominalInputValidator.parseNominal(value ?? '') <= 0) {
+                      if (hasName &&
+                          NominalInputValidator.parseNominal(value ?? '') <=
+                              0) {
                         return 'Nominal target wajib diisi';
                       }
                       if (!hasName && hasAmount) {
@@ -988,10 +1090,14 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       if (hasAmount) {
                         final fund = _parseAmount(_fundController.text);
                         final valErr = NominalInputValidator.validateSavingGoal(
-                          targetAmount: NominalInputValidator.parseNominal(value ?? ''),
+                          targetAmount:
+                              NominalInputValidator.parseNominal(value ?? ''),
                           totalIncome: fund.round(),
                         );
-                        if (valErr != null && valErr.contains('terlalu besar')) return valErr;
+                        if (valErr != null &&
+                            valErr.contains('terlalu besar')) {
+                          return valErr;
+                        }
                       }
                       return null;
                     },
@@ -999,22 +1105,27 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ],
               ),
             ).animate().fade(delay: 350.ms).slideX(begin: 0.05),
-            
+
             // Step 6: Mode
             _buildStepCard(
               step: 6,
               title: 'Gaya Pemakaian',
-              subtitle: 'Pilih mode budget untuk menyesuaikan tingkat kehematan pengeluaran Anda.',
+              subtitle:
+                  'Pilih mode budget untuk menyesuaikan tingkat kehematan pengeluaran Anda.',
               icon: PhosphorIconsRegular.sliders,
               child: DropdownButtonFormField<BudgetMode>(
                 initialValue: _mode,
-                icon: const PhosphorIcon(PhosphorIconsRegular.caretDown, color: AppColors.primary),
-                dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                icon: const PhosphorIcon(PhosphorIconsRegular.caretDown,
+                    color: AppColors.primary),
+                dropdownColor:
+                    isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(16),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
                 items: BudgetMode.values
                     .map((mode) => DropdownMenuItem(
@@ -1023,7 +1134,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                           _modeLabel(mode),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
                           ),
                         )))
                     .toList(),
@@ -1035,9 +1148,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ),
               ),
             ).animate().fade(delay: 300.ms).slideX(begin: 0.05),
-            
+
             const SizedBox(height: 16),
-            
+
             // Premium Primary Action Button
             Container(
               decoration: BoxDecoration(
@@ -1053,11 +1166,18 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                icon: _saving 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                  : const PhosphorIcon(PhosphorIconsFill.checkCircle, size: 20),
+                icon: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
+                    : const PhosphorIcon(PhosphorIconsFill.checkCircle,
+                        size: 20),
                 label: Text(
-                  _saving ? 'MENYIMPAN RENCANA...' : 'Siap! Mulai Atur Keuanganku 🚀',
+                  _saving
+                      ? 'MENYIMPAN RENCANA...'
+                      : 'Siap! Mulai Atur Keuanganku 🚀',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
@@ -1066,22 +1186,24 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ),
               ),
             ).animate().fade(delay: 350.ms).scale(curve: Curves.easeOutBack),
-            
+
             const SizedBox(height: 18),
-            
+
             Text(
               'Rencana ini bisa Anda perbarui/ubah kapan saja secara bebas.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
                 fontSize: 12,
               ),
             ).animate().fade(delay: 400.ms),
-            
+
             const SizedBox(height: 32),
             const Divider(),
             const SizedBox(height: 16),
-            
+
             // Dev / Testing Shortcut (🧪 Muat Data Tes)
             OutlinedButton.icon(
               onPressed: _saving ? null : _seedMockData,
@@ -1103,13 +1225,15 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 ),
               ),
             ).animate().fade(delay: 450.ms),
-            
+
             const SizedBox(height: 8),
             Text(
               'Menyediakan data realistis gaji UMR Jakarta terpopulasi lengkap untuk uji coba seluruh visualisasi.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
                 fontSize: 11,
                 height: 1.3,
               ),
@@ -1122,9 +1246,12 @@ class _SetupPageState extends ConsumerState<SetupPage> {
 
   String _modeLabel(BudgetMode mode) {
     switch (mode) {
-      case BudgetMode.normal: return 'Normal (Bebas Belanja)';
-      case BudgetMode.hemat: return 'Hemat (Tahan Tabungan)';
-      case BudgetMode.krisis: return 'Mode Darurat';
+      case BudgetMode.normal:
+        return 'Normal (Bebas Belanja)';
+      case BudgetMode.hemat:
+        return 'Hemat (Tahan Tabungan)';
+      case BudgetMode.krisis:
+        return 'Mode Darurat';
     }
   }
 }
@@ -1133,37 +1260,63 @@ class _SetupPageState extends ConsumerState<SetupPage> {
 
 String getCategoryEmoji(FixedExpenseCategory cat) {
   switch (cat) {
-    case FixedExpenseCategory.sewakos: return '🏠';
-    case FixedExpenseCategory.cicilanKendaraan: return '🚗';
-    case FixedExpenseCategory.cicilanRumah: return '🏡';
-    case FixedExpenseCategory.asuransi: return '🛡️';
-    case FixedExpenseCategory.internet: return '📶';
-    case FixedExpenseCategory.listrik: return '⚡';
-    case FixedExpenseCategory.air: return '💧';
-    case FixedExpenseCategory.gas: return '🔥';
-    case FixedExpenseCategory.streaming: return '📺';
-    case FixedExpenseCategory.gymKesehatan: return '💪';
-    case FixedExpenseCategory.sekolahKuliah: return '📚';
-    case FixedExpenseCategory.tabunganWajib: return '🏦';
-    case FixedExpenseCategory.lainnya: return '➕';
+    case FixedExpenseCategory.sewakos:
+      return '🏠';
+    case FixedExpenseCategory.cicilanKendaraan:
+      return '🚗';
+    case FixedExpenseCategory.cicilanRumah:
+      return '🏡';
+    case FixedExpenseCategory.asuransi:
+      return '🛡️';
+    case FixedExpenseCategory.internet:
+      return '📶';
+    case FixedExpenseCategory.listrik:
+      return '⚡';
+    case FixedExpenseCategory.air:
+      return '💧';
+    case FixedExpenseCategory.gas:
+      return '🔥';
+    case FixedExpenseCategory.streaming:
+      return '📺';
+    case FixedExpenseCategory.gymKesehatan:
+      return '💪';
+    case FixedExpenseCategory.sekolahKuliah:
+      return '📚';
+    case FixedExpenseCategory.tabunganWajib:
+      return '🏦';
+    case FixedExpenseCategory.lainnya:
+      return '➕';
   }
 }
 
 String getCategoryLabel(FixedExpenseCategory cat) {
   switch (cat) {
-    case FixedExpenseCategory.sewakos: return 'Sewa/Kos';
-    case FixedExpenseCategory.cicilanKendaraan: return 'Cicilan Kendaraan';
-    case FixedExpenseCategory.cicilanRumah: return 'Cicilan Rumah';
-    case FixedExpenseCategory.asuransi: return 'Asuransi';
-    case FixedExpenseCategory.internet: return 'Internet/WiFi';
-    case FixedExpenseCategory.listrik: return 'Listrik';
-    case FixedExpenseCategory.air: return 'Air';
-    case FixedExpenseCategory.gas: return 'Gas';
-    case FixedExpenseCategory.streaming: return 'Streaming';
-    case FixedExpenseCategory.gymKesehatan: return 'Gym/Kesehatan';
-    case FixedExpenseCategory.sekolahKuliah: return 'Sekolah/Kuliah';
-    case FixedExpenseCategory.tabunganWajib: return 'Tabungan Wajib';
-    case FixedExpenseCategory.lainnya: return 'Lainnya';
+    case FixedExpenseCategory.sewakos:
+      return 'Sewa/Kos';
+    case FixedExpenseCategory.cicilanKendaraan:
+      return 'Cicilan Kendaraan';
+    case FixedExpenseCategory.cicilanRumah:
+      return 'Cicilan Rumah';
+    case FixedExpenseCategory.asuransi:
+      return 'Asuransi';
+    case FixedExpenseCategory.internet:
+      return 'Internet/WiFi';
+    case FixedExpenseCategory.listrik:
+      return 'Listrik';
+    case FixedExpenseCategory.air:
+      return 'Air';
+    case FixedExpenseCategory.gas:
+      return 'Gas';
+    case FixedExpenseCategory.streaming:
+      return 'Streaming';
+    case FixedExpenseCategory.gymKesehatan:
+      return 'Gym/Kesehatan';
+    case FixedExpenseCategory.sekolahKuliah:
+      return 'Sekolah/Kuliah';
+    case FixedExpenseCategory.tabunganWajib:
+      return 'Tabungan Wajib';
+    case FixedExpenseCategory.lainnya:
+      return 'Lainnya';
   }
 }
 
@@ -1175,7 +1328,8 @@ class _PreviewRow extends StatelessWidget {
   final Color color;
   final bool isBold;
 
-  const _PreviewRow(this.label, this.amount, {required this.color, this.isBold = false});
+  const _PreviewRow(this.label, this.amount,
+      {required this.color, this.isBold = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1192,7 +1346,8 @@ class _PreviewRow extends StatelessWidget {
             ),
           ),
           Text(
-            (amount < 0 ? '-' : '') + CurrencyService.formatRupiah(amount.abs()),
+            (amount < 0 ? '-' : '') +
+                CurrencyService.formatRupiah(amount.abs()),
             style: TextStyle(
               color: color,
               fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
@@ -1238,11 +1393,13 @@ class _FixedExpenseListBuilder extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.receipt_long, color: AppColors.alert, size: 16),
+                const Icon(Icons.receipt_long,
+                    color: AppColors.alert, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   'Total: ${CurrencyService.formatRupiah(total)}',
-                  style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: AppColors.alert, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -1250,11 +1407,11 @@ class _FixedExpenseListBuilder extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         ...items.map((item) => _FixedExpenseTile(
-          item: item,
-          onEdit: () => onEdit(item),
-          onDelete: () => onDelete(item.id),
-          onToggle: () => onToggle(item.id),
-        )),
+              item: item,
+              onEdit: () => onEdit(item),
+              onDelete: () => onDelete(item.id),
+              onToggle: () => onToggle(item.id),
+            )),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: onAdd,
@@ -1263,7 +1420,8 @@ class _FixedExpenseListBuilder extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
@@ -1296,13 +1454,18 @@ class _FixedExpenseTile extends StatelessWidget {
           color: isDark ? AppColors.surfaceVariantDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: item.isActive ? AppColors.alert.withValues(alpha: 0.2) : (isDark ? AppColors.borderDark : AppColors.borderLight),
+            color: item.isActive
+                ? AppColors.alert.withValues(alpha: 0.2)
+                : (isDark ? AppColors.borderDark : AppColors.borderLight),
           ),
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: Text(item.emoji, style: const TextStyle(fontSize: 24)),
-          title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          title: Text(item.name,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           subtitle: Text(CurrencyService.formatRupiah(item.amount)),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1317,7 +1480,8 @@ class _FixedExpenseTile extends StatelessWidget {
                 onPressed: onEdit,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.alert),
+                icon: const Icon(Icons.delete_outline,
+                    size: 18, color: AppColors.alert),
                 onPressed: onDelete,
               ),
             ],

@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../data/models/bill_model.dart';
+import '../../../shared/widgets/nata_money_input.dart';
 import 'providers/bills_provider.dart';
 
 class BillsPage extends ConsumerStatefulWidget {
@@ -23,21 +24,24 @@ class _BillsPageState extends ConsumerState<BillsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Tagihan Bulanan',
           style: TextStyle(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             fontWeight: FontWeight.w900,
             fontSize: 20,
             letterSpacing: 0.5,
@@ -46,7 +50,8 @@ class _BillsPageState extends ConsumerState<BillsPage> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const PhosphorIcon(PhosphorIconsRegular.arrowCounterClockwise, color: AppColors.primary),
+            icon: const PhosphorIcon(PhosphorIconsRegular.arrowCounterClockwise,
+                color: AppColors.primary),
             onPressed: () async {
               HapticFeedback.lightImpact();
               await ref.read(billsProvider.notifier).resetAllPaidStatus();
@@ -58,12 +63,15 @@ class _BillsPageState extends ConsumerState<BillsPage> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
         onPressed: () => _showAddBillSheet(context, ref),
-        icon: const PhosphorIcon(PhosphorIconsBold.plus, color: Colors.white, size: 20),
-        label: const Text('Tambah Tagihan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        icon: const PhosphorIcon(PhosphorIconsBold.plus,
+            color: Colors.white, size: 20),
+        label: const Text('Tambah Tagihan',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
       ).animate().scale(curve: Curves.easeOutBack, delay: 300.ms),
       body: SafeArea(
         child: state.isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary))
             : state.bills.isEmpty
                 ? _buildEmptyState(context)
                 : ListView(
@@ -96,30 +104,41 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                     color: Colors.white.withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const PhosphorIcon(PhosphorIconsRegular.receipt, color: Colors.white, size: 20),
+                                  child: const PhosphorIcon(
+                                      PhosphorIconsRegular.receipt,
+                                      color: Colors.white,
+                                      size: 20),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
                                   'Sisa Tagihan Bulan Ini',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.9),
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
                             Text(
                               CurrencyService.formatRupiah(state.totalUnpaid),
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Dari total ${CurrencyService.formatRupiah(state.totalBills)} anggaran tetap',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 12),
                             ),
                           ],
                         ),
@@ -127,7 +146,10 @@ class _BillsPageState extends ConsumerState<BillsPage> {
 
                       Text(
                         'Daftar Tagihan',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ).animate().fade(delay: 100.ms),
                       const SizedBox(height: 16),
 
@@ -136,10 +158,16 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                            color: isDark
+                                ? AppColors.surfaceVariantDark
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: bill.isPaid ? AppColors.accent.withValues(alpha: 0.3) : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                              color: bill.isPaid
+                                  ? AppColors.accent.withValues(alpha: 0.3)
+                                  : (isDark
+                                      ? AppColors.borderDark
+                                      : AppColors.borderLight),
                             ),
                           ),
                           child: Column(
@@ -151,51 +179,88 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                     width: 44,
                                     height: 44,
                                     decoration: BoxDecoration(
-                                      color: bill.isPaid ? AppColors.accent.withValues(alpha: 0.1) : AppColors.alert.withValues(alpha: 0.1),
+                                      color: bill.isPaid
+                                          ? AppColors.accent
+                                              .withValues(alpha: 0.1)
+                                          : AppColors.alert
+                                              .withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: PhosphorIcon(
-                                      bill.isPaid ? PhosphorIconsRegular.checkCircle : PhosphorIconsRegular.warningCircle,
-                                      color: bill.isPaid ? AppColors.accent : AppColors.alert,
+                                      bill.isPaid
+                                          ? PhosphorIconsRegular.checkCircle
+                                          : PhosphorIconsRegular.warningCircle,
+                                      color: bill.isPaid
+                                          ? AppColors.accent
+                                          : AppColors.alert,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           bill.name,
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
-                                            decoration: bill.isPaid ? TextDecoration.lineThrough : null,
-                                            color: bill.isPaid ? Colors.grey : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                                            decoration: bill.isPaid
+                                                ? TextDecoration.lineThrough
+                                                : null,
+                                            color: bill.isPaid
+                                                ? Colors.grey
+                                                : (isDark
+                                                    ? AppColors.textPrimaryDark
+                                                    : AppColors
+                                                        .textPrimaryLight),
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
                                             Text(
-                                              CurrencyService.formatRupiah(bill.amount),
+                                              CurrencyService.formatRupiah(
+                                                  bill.amount),
                                               style: TextStyle(
-                                                color: bill.isPaid ? Colors.grey : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                                                color: bill.isPaid
+                                                    ? Colors.grey
+                                                    : (isDark
+                                                        ? AppColors
+                                                            .textSecondaryDark
+                                                        : AppColors
+                                                            .textSecondaryLight),
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                             if (bill.isAutoPay) ...[
                                               const SizedBox(width: 8),
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(6),
+                                                  color: AppColors.primary
+                                                      .withValues(alpha: 0.12),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
                                                 ),
                                                 child: const Row(
                                                   children: [
-                                                    Icon(Icons.bolt_rounded, size: 10, color: AppColors.primary),
+                                                    Icon(Icons.bolt_rounded,
+                                                        size: 10,
+                                                        color:
+                                                            AppColors.primary),
                                                     SizedBox(width: 2),
-                                                    Text('Auto', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                                    Text('Auto',
+                                                        style: TextStyle(
+                                                            fontSize: 9,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: AppColors
+                                                                .primary)),
                                                   ],
                                                 ),
                                               ),
@@ -206,7 +271,10 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                           const SizedBox(height: 2),
                                           Text(
                                             'Tenggat: Tanggal ${bill.dueDate}',
-                                            style: TextStyle(color: AppColors.primary.withValues(alpha: 0.8), fontSize: 11),
+                                            style: TextStyle(
+                                                color: AppColors.primary
+                                                    .withValues(alpha: 0.8),
+                                                fontSize: 11),
                                           ),
                                         ],
                                       ],
@@ -215,29 +283,38 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                   if (!bill.isPaid)
                                     FilledButton.tonal(
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                                        backgroundColor: AppColors.accent
+                                            .withValues(alpha: 0.15),
                                         foregroundColor: AppColors.accent,
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 8),
                                       ),
                                       onPressed: () async {
                                         HapticFeedback.mediumImpact();
-                                        await ref.read(billsProvider.notifier).markAsPaid(bill.id);
+                                        await ref
+                                            .read(billsProvider.notifier)
+                                            .markAsPaid(bill.id);
                                         if (context.mounted) {
                                           ScaffoldMessenger.of(context)
                                             ..hideCurrentSnackBar()
                                             ..showSnackBar(SnackBar(
-                                              content: Text('${bill.name} ditandai Lunas & otomatis dicatat di pengeluaran! 🎉'),
+                                              content: Text(
+                                                  '${bill.name} ditandai Lunas & otomatis dicatat di pengeluaran! 🎉'),
                                               backgroundColor: AppColors.accent,
                                             ));
                                         }
                                       },
-                                      child: const Text('Bayar', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      child: const Text('Bayar',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)),
                                     )
                                   else
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppColors.accent.withValues(alpha: 0.12),
+                                        color: AppColors.accent
+                                            .withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Text(
@@ -252,19 +329,29 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              Divider(height: 1, color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                              Divider(
+                                  height: 1,
+                                  color: isDark
+                                      ? AppColors.borderDark
+                                      : AppColors.borderLight),
                               const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   TextButton.icon(
-                                    onPressed: () => _showAddBillSheet(context, ref, bill),
-                                    icon: const Icon(Icons.edit_rounded, size: 16, color: Colors.grey),
-                                    label: const Text('Sunting', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                    onPressed: () =>
+                                        _showAddBillSheet(context, ref, bill),
+                                    icon: const Icon(Icons.edit_rounded,
+                                        size: 16, color: Colors.grey),
+                                    label: const Text('Sunting',
+                                        style: TextStyle(
+                                            color: Colors.grey, fontSize: 12)),
                                     style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
@@ -274,15 +361,20 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                         context: context,
                                         builder: (context) => AlertDialog(
                                           title: const Text('Hapus Tagihan?'),
-                                          content: Text('Apakah Anda yakin ingin menghapus tagihan bulanan "${bill.name}"?'),
+                                          content: Text(
+                                              'Apakah Anda yakin ingin menghapus tagihan bulanan "${bill.name}"?'),
                                           actions: [
                                             TextButton(
-                                              onPressed: () => Navigator.pop(context, false),
+                                              onPressed: () =>
+                                                  Navigator.pop(context, false),
                                               child: const Text('Batal'),
                                             ),
                                             TextButton(
-                                              onPressed: () => Navigator.pop(context, true),
-                                              style: TextButton.styleFrom(foregroundColor: AppColors.alert),
+                                              onPressed: () =>
+                                                  Navigator.pop(context, true),
+                                              style: TextButton.styleFrom(
+                                                  foregroundColor:
+                                                      AppColors.alert),
                                               child: const Text('Hapus'),
                                             ),
                                           ],
@@ -290,23 +382,35 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                       );
                                       if (confirm == true) {
                                         HapticFeedback.lightImpact();
-                                        await ref.read(billsProvider.notifier).removeBill(bill.id);
+                                        await ref
+                                            .read(billsProvider.notifier)
+                                            .removeBill(bill.id);
                                         if (context.mounted) {
                                           ScaffoldMessenger.of(context)
                                             ..hideCurrentSnackBar()
                                             ..showSnackBar(const SnackBar(
-                                              content: Text('Tagihan berhasil dihapus!'),
-                                              backgroundColor: AppColors.primary,
+                                              content: Text(
+                                                  'Tagihan berhasil dihapus!'),
+                                              backgroundColor:
+                                                  AppColors.primary,
                                             ));
                                         }
                                       }
                                     },
-                                    icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.alert),
-                                    label: const Text('Hapus', style: TextStyle(color: AppColors.alert, fontSize: 12)),
+                                    icon: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 16,
+                                        color: AppColors.alert),
+                                    label: const Text('Hapus',
+                                        style: TextStyle(
+                                            color: AppColors.alert,
+                                            fontSize: 12)),
                                     style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
                                 ],
@@ -332,12 +436,16 @@ class _BillsPageState extends ConsumerState<BillsPage> {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const PhosphorIcon(PhosphorIconsRegular.receipt, color: AppColors.primary, size: 64),
+            child: const PhosphorIcon(PhosphorIconsRegular.receipt,
+                color: AppColors.primary, size: 64),
           ).animate().scale(delay: 100.ms, curve: Curves.easeOutBack),
           const SizedBox(height: 24),
           Text(
             'Belum Ada Tagihan Tetap',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ).animate().fade(delay: 200.ms),
           const SizedBox(height: 8),
           const Padding(
@@ -353,7 +461,8 @@ class _BillsPageState extends ConsumerState<BillsPage> {
     );
   }
 
-  void _showAddBillSheet(BuildContext context, WidgetRef ref, [BillModel? existingBill]) {
+  void _showAddBillSheet(BuildContext context, WidgetRef ref,
+      [BillModel? existingBill]) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -381,12 +490,17 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.existingBill?.name ?? '');
+    _nameController =
+        TextEditingController(text: widget.existingBill?.name ?? '');
     _amountController = TextEditingController(
-      text: widget.existingBill == null ? '' : widget.existingBill!.amount.toStringAsFixed(0),
+      text: widget.existingBill == null
+          ? ''
+          : widget.existingBill!.amount.toStringAsFixed(0),
     );
     _dateController = TextEditingController(
-      text: widget.existingBill?.dueDate == null ? '' : widget.existingBill!.dueDate!.toString(),
+      text: widget.existingBill?.dueDate == null
+          ? ''
+          : widget.existingBill!.dueDate!.toString(),
     );
     _isAutoPay = widget.existingBill?.isAutoPay ?? false;
   }
@@ -407,9 +521,10 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.existingBill != null;
-    
+
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+          24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -432,28 +547,37 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
             const SizedBox(height: 24),
             Text(
               isEdit ? 'Sunting Tagihan Tetap' : 'Tambah Tagihan Tetap',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             // Error Message Banner
             if (_errorMessage != null) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.alert.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.alert.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: AppColors.alert.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline_rounded, color: AppColors.alert),
+                    const Icon(Icons.error_outline_rounded,
+                        color: AppColors.alert),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                            color: AppColors.alert,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13),
                       ),
                     ),
                   ],
@@ -467,26 +591,27 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Nama Tagihan (Contoh: Kos, Netflix)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16))),
               ),
             ),
             const SizedBox(height: 16),
-            TextField(
+            NataMoneyInput(
               controller: _amountController,
-              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Nominal Tagihan (Rp)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16))),
               ),
             ),
             const SizedBox(height: 16),
-            TextField(
+            NataNumberInput(
               controller: _dateController,
-              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Tanggal Jatuh Tempo (1 - 31)',
                 hintText: 'Opsional',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16))),
               ),
             ),
             const SizedBox(height: 20),
@@ -495,9 +620,13 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceVariantDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppColors.surfaceVariantDark
+                    : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                border: Border.all(
+                    color:
+                        isDark ? AppColors.borderDark : AppColors.borderLight),
               ),
               child: Row(
                 children: [
@@ -507,18 +636,25 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.bolt_rounded,
+                        color: AppColors.primary, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Bayar Otomatis (Auto-pay)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const Text('Bayar Otomatis (Auto-pay)',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 2),
                         Text(
                           'Bayar otomatis saat tanggal jatuh tempo tiba',
-                          style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600),
                         ),
                       ],
                     ),
@@ -539,26 +675,30 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
               child: FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: () async {
                   setState(() => _errorMessage = null);
                   final name = _nameController.text.trim();
                   final amount = _parseAmount(_amountController.text);
-                  
+
                   // Validation guards
                   if (name.isEmpty) {
-                    setState(() => _errorMessage = 'Nama tagihan tidak boleh kosong!');
+                    setState(() =>
+                        _errorMessage = 'Nama tagihan tidak boleh kosong!');
                     HapticFeedback.heavyImpact();
                     return;
                   }
                   if (amount <= 0) {
-                    setState(() => _errorMessage = 'Nominal tagihan harus lebih dari Rp 0!');
+                    setState(() => _errorMessage =
+                        'Nominal tagihan harus lebih dari Rp 0!');
                     HapticFeedback.heavyImpact();
                     return;
                   }
                   if (amount > 9999999999999) {
-                    setState(() => _errorMessage = 'Nominal tagihan terlalu besar!');
+                    setState(
+                        () => _errorMessage = 'Nominal tagihan terlalu besar!');
                     HapticFeedback.heavyImpact();
                     return;
                   }
@@ -567,17 +707,21 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
                   final dateText = _dateController.text.trim();
                   if (dateText.isNotEmpty) {
                     final parsedDate = int.tryParse(dateText);
-                    if (parsedDate == null || parsedDate < 1 || parsedDate > 31) {
-                      setState(() => _errorMessage = 'Tanggal jatuh tempo harus berupa angka 1 - 31!');
+                    if (parsedDate == null ||
+                        parsedDate < 1 ||
+                        parsedDate > 31) {
+                      setState(() => _errorMessage =
+                          'Tanggal jatuh tempo harus berupa angka 1 - 31!');
                       HapticFeedback.heavyImpact();
                       return;
                     }
                     date = parsedDate;
                   }
-                  
+
                   HapticFeedback.lightImpact();
                   final bill = BillModel(
-                    id: widget.existingBill?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+                    id: widget.existingBill?.id ??
+                        DateTime.now().microsecondsSinceEpoch.toString(),
                     name: name,
                     amount: amount,
                     dueDate: date,
@@ -589,7 +733,9 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
                   await ref.read(billsProvider.notifier).upsertBill(bill);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: Text(isEdit ? 'Simpan Perubahan' : 'Simpan Tagihan', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text(isEdit ? 'Simpan Perubahan' : 'Simpan Tagihan',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
           ],

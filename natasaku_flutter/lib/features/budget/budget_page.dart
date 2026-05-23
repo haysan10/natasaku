@@ -11,12 +11,12 @@ import 'package:intl/intl.dart';
 import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_shadows.dart';
-import '../../core/utils/rupiah_input_formatter.dart';
 import '../../core/services/currency_service.dart';
 import '../../data/models/budget_mode.dart';
 import '../../data/models/budget_status.dart';
 import '../../data/models/category_budget.dart';
 import '../../shared/widgets/main_shell.dart';
+import '../../shared/widgets/nata_money_input.dart';
 import '../../shared/widgets/transaction_entry_sheet.dart'; // contains nataCategories
 import '../budgeting/budgeting_engine.dart';
 import '../../core/utils/nominal_input_validator.dart';
@@ -32,7 +32,8 @@ class BudgetPage extends ConsumerStatefulWidget {
   ConsumerState<BudgetPage> createState() => _BudgetPageState();
 }
 
-class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProviderStateMixin {
+class _BudgetPageState extends ConsumerState<BudgetPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -53,11 +54,20 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
 
   void _onNavigate(int index) {
     switch (index) {
-      case 0: context.go(AppRouter.dashboard); break;
-      case 1: context.go(AppRouter.transactions); break;
-      case 2: break; // current
-      case 3: context.go(AppRouter.savings); break;
-      case 4: context.go(AppRouter.reports); break;
+      case 0:
+        context.go(AppRouter.dashboard);
+        break;
+      case 1:
+        context.go(AppRouter.transactions);
+        break;
+      case 2:
+        break; // current
+      case 3:
+        context.go(AppRouter.savings);
+        break;
+      case 4:
+        context.go(AppRouter.reports);
+        break;
     }
   }
 
@@ -68,7 +78,8 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
     final content = Scaffold(
       body: SafeArea(
         child: state.isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary))
             : state.period == null
                 ? const _EmptyBudgetView()
                 : NestedScrollView(
@@ -82,29 +93,39 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Struktur Keuangan',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                       Text(
                                         'Budget Planner',
-                                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
                                       ),
                                     ],
                                   ).animate().fade().slideX(begin: -0.1),
                                 ),
                                 IconButton(
-                                  onPressed: () => context.push(AppRouter.setup),
-                                  icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple),
+                                  onPressed: () =>
+                                      context.push(AppRouter.setup),
+                                  icon: const PhosphorIcon(
+                                      PhosphorIconsRegular.pencilSimple),
                                   style: IconButton.styleFrom(
-                                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                    backgroundColor: AppColors.primary
+                                        .withValues(alpha: 0.1),
                                     foregroundColor: AppColors.primary,
                                     padding: const EdgeInsets.all(12),
                                   ),
@@ -123,9 +144,12 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
                               indicatorColor: AppColors.primary,
                               labelColor: AppColors.primary,
                               unselectedLabelColor: Colors.grey,
-                              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                              labelStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14),
+                              unselectedLabelStyle: const TextStyle(
+                                  fontWeight: FontWeight.w500, fontSize: 14),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 8),
                               tabs: const [
                                 Tab(text: 'Ringkasan Harian'),
                                 Tab(text: 'Limit Kategori'),
@@ -170,7 +194,8 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 64.0;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -205,22 +230,22 @@ class _BudgetContent extends ConsumerWidget {
     final period = state.period!;
     final remainingFund = state.remainingFund;
     final remainingDays = state.remainingDays;
-    
+
     final baseDaily = BudgetingEngine.calculateDailySafeBudget(
       remainingFund: max(remainingFund, 0),
       remainingDays: remainingDays,
     );
-    
+
     final safeDaily = BudgetingEngine.applyBudgetMode(
       baseDailyBudget: baseDaily,
       mode: period.mode,
     );
-    
+
     final periodStatus = BudgetingEngine.getPeriodFundStatus(
       remainingFund: remainingFund,
       remainingDays: remainingDays,
     );
-    
+
     final tomorrowBudget = BudgetingEngine.calculateTomorrowSafeBudget(
       remainingFundAfterToday: remainingFund - state.todayExpense,
       remainingDaysAfterToday: max(remainingDays - 1, 0),
@@ -251,21 +276,30 @@ class _BudgetContent extends ConsumerWidget {
                     children: [
                       Text(
                         'Jatah Aman Harian',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.9)),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
                           children: [
-                            const PhosphorIcon(PhosphorIconsFill.checkCircle, color: Colors.white, size: 16),
+                            const PhosphorIcon(PhosphorIconsFill.checkCircle,
+                                color: Colors.white, size: 16),
                             const SizedBox(width: 4),
                             Text(
                               _periodStatusLabel(periodStatus),
-                              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.white),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(color: Colors.white),
                             ),
                           ],
                         ),
@@ -276,10 +310,10 @@ class _BudgetContent extends ConsumerWidget {
                   Text(
                     CurrencyService.formatRupiah(safeDaily),
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                    ),
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
                   const SizedBox(height: 24),
                   Container(
@@ -290,7 +324,8 @@ class _BudgetContent extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        const PhosphorIcon(PhosphorIconsRegular.calendar, color: Colors.white70, size: 20),
+                        const PhosphorIcon(PhosphorIconsRegular.calendar,
+                            color: Colors.white70, size: 20),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -298,11 +333,17 @@ class _BudgetContent extends ConsumerWidget {
                             children: [
                               Text(
                                 '${_fmtDate(period.startDate)} - ${_fmtDate(period.endDate)}',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.white),
                               ),
                               Text(
                                 'Sisa ${max(remainingDays, 0)} hari',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: Colors.white70),
                               ),
                             ],
                           ),
@@ -343,23 +384,25 @@ class _BudgetContent extends ConsumerWidget {
         ],
 
         const SizedBox(height: 20),
-        
+
         // Future Prediction Card
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? AppColors.surfaceVariantDark 
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceVariantDark
                 : AppColors.accent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppColors.borderDark 
-                  : AppColors.accent.withValues(alpha: 0.2)
-            ),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : AppColors.accent.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.03),
+                color: Colors.black.withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark
+                        ? 0.15
+                        : 0.03),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -373,18 +416,21 @@ class _BudgetContent extends ConsumerWidget {
                   color: AppColors.accent.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const PhosphorIcon(PhosphorIconsRegular.lightbulb, color: AppColors.accent),
+                child: const PhosphorIcon(PhosphorIconsRegular.lightbulb,
+                    color: AppColors.accent),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Prediksi Jatah Besok', style: Theme.of(context).textTheme.titleSmall),
+                    Text('Prediksi Jatah Besok',
+                        style: Theme.of(context).textTheme.titleSmall),
                     const SizedBox(height: 4),
                     Text(
                       CurrencyService.formatRupiah(tomorrowBudget),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.accent, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -403,7 +449,7 @@ class _BudgetContent extends ConsumerWidget {
         _BudgetBreakdownSection(period: period),
 
         const SizedBox(height: 20),
-        
+
         // Grid Metrics
         GridView.count(
           crossAxisCount: 2,
@@ -444,17 +490,25 @@ class _BudgetContent extends ConsumerWidget {
         ).animate().fade(delay: 300.ms).slideY(begin: 0.1),
 
         const SizedBox(height: 20),
-        
+
         // Mode Card
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceVariantDark : Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceVariantDark
+                : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppColors.borderDark : AppColors.borderLight),
+            border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : AppColors.borderLight),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.03),
+                color: Colors.black.withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark
+                        ? 0.15
+                        : 0.03),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -468,7 +522,8 @@ class _BudgetContent extends ConsumerWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const PhosphorIcon(PhosphorIconsRegular.sliders, color: AppColors.primary),
+                child: const PhosphorIcon(PhosphorIconsRegular.sliders,
+                    color: AppColors.primary),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -496,27 +551,38 @@ class _BudgetContent extends ConsumerWidget {
 
   String _modeLabel(BudgetMode mode) {
     switch (mode) {
-      case BudgetMode.normal: return 'Normal';
-      case BudgetMode.hemat: return 'Hemat';
-      case BudgetMode.krisis: return 'Krisis';
+      case BudgetMode.normal:
+        return 'Normal';
+      case BudgetMode.hemat:
+        return 'Hemat';
+      case BudgetMode.krisis:
+        return 'Krisis';
     }
   }
 
   String _modeDescription(BudgetMode mode) {
     switch (mode) {
-      case BudgetMode.normal: return 'Jatah harian santai mengikuti sisa uang dibagi sisa hari.';
-      case BudgetMode.hemat: return 'Disimpan sedikit untuk buffer cadangan.';
-      case BudgetMode.krisis: return 'Sangat ketat! Jatah harian dipotong drastis demi bertahan.';
+      case BudgetMode.normal:
+        return 'Jatah harian santai mengikuti sisa uang dibagi sisa hari.';
+      case BudgetMode.hemat:
+        return 'Disimpan sedikit untuk buffer cadangan.';
+      case BudgetMode.krisis:
+        return 'Sangat ketat! Jatah harian dipotong drastis demi bertahan.';
     }
   }
 
   String _periodStatusLabel(PeriodFundStatus status) {
     switch (status) {
-      case PeriodFundStatus.aman: return 'Aman';
-      case PeriodFundStatus.waspada: return 'Waspada';
-      case PeriodFundStatus.kritis: return 'Kritis';
-      case PeriodFundStatus.danaHabis: return 'Dana Habis';
-      case PeriodFundStatus.periodeSelesai: return 'Selesai';
+      case PeriodFundStatus.aman:
+        return 'Aman';
+      case PeriodFundStatus.waspada:
+        return 'Waspada';
+      case PeriodFundStatus.kritis:
+        return 'Kritis';
+      case PeriodFundStatus.danaHabis:
+        return 'Dana Habis';
+      case PeriodFundStatus.periodeSelesai:
+        return 'Selesai';
     }
   }
 
@@ -529,20 +595,24 @@ class _CategoryBudgetView extends ConsumerStatefulWidget {
   const _CategoryBudgetView();
 
   @override
-  ConsumerState<_CategoryBudgetView> createState() => _CategoryBudgetViewState();
+  ConsumerState<_CategoryBudgetView> createState() =>
+      _CategoryBudgetViewState();
 }
 
 class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
   void _editCategoryBudget([CategoryBudgetDetail? detail]) async {
     final isNew = detail == null;
-    
+
     // Available categories not yet budget-limited (or include current for editing)
-    final existingCategories = ref.read(categoryBudgetProvider).budgets
+    final existingCategories = ref
+        .read(categoryBudgetProvider)
+        .budgets
         .map((b) => b.category.toLowerCase())
         .toList();
-    
+
     final availableCategories = nataCategories
-        .where((c) => isNew ? !existingCategories.contains(c.toLowerCase()) : true)
+        .where(
+            (c) => isNew ? !existingCategories.contains(c.toLowerCase()) : true)
         .toList();
 
     if (isNew && availableCategories.isEmpty) {
@@ -557,7 +627,10 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
 
     String category = detail?.budget.category ?? availableCategories.first;
     final limitController = TextEditingController(
-      text: isNew ? '' : NumberFormat('#,###', 'id_ID').format(detail.budget.limitAmount.toInt()),
+      text: isNew
+          ? ''
+          : NumberFormat('#,###', 'id_ID')
+              .format(detail.budget.limitAmount.toInt()),
     );
     String emoji = detail?.budget.emoji ?? '📦';
 
@@ -582,7 +655,8 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                   color: isDark ? AppColors.surfaceDark : Colors.white,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    color:
+                        isDark ? AppColors.borderDark : AppColors.borderLight,
                   ),
                 ),
                 child: SingleChildScrollView(
@@ -605,39 +679,52 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                         children: [
                           Expanded(
                             child: Text(
-                              isNew ? 'Tambah Limit Kategori' : 'Edit Limit Kategori',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              isNew
+                                  ? 'Tambah Limit Kategori'
+                                  : 'Edit Limit Kategori',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(context, false),
                             icon: const Icon(Icons.close_rounded),
                             style: IconButton.styleFrom(
-                              backgroundColor: isDark ? Colors.white10 : Colors.black54.withValues(alpha: 0.05),
+                              backgroundColor: isDark
+                                  ? Colors.white10
+                                  : Colors.black54.withValues(alpha: 0.05),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Error Message Banner
                       if (modalErrorMessage != null) ...[
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             color: AppColors.alert.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.alert.withValues(alpha: 0.3)),
+                            border: Border.all(
+                                color: AppColors.alert.withValues(alpha: 0.3)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: AppColors.alert),
+                              const Icon(Icons.error_outline_rounded,
+                                  color: AppColors.alert),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   modalErrorMessage!,
-                                  style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: const TextStyle(
+                                      color: AppColors.alert,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
                                 ),
                               ),
                             ],
@@ -645,26 +732,35 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                         ),
                         const SizedBox(height: 16),
                       ],
-                      
+
                       // Category dropdown/selector
                       if (isNew) ...[
                         Text(
                           'Kategori Pengeluaran',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
+                            color: isDark
+                                ? AppColors.surfaceVariantDark
+                                : AppColors.surfaceVariantLight,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                            border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.borderLight),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: category,
                               isExpanded: true,
-                              dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
+                              dropdownColor:
+                                  isDark ? AppColors.surfaceDark : Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               items: availableCategories.map((cat) {
                                 return DropdownMenuItem<String>(
@@ -678,15 +774,32 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                                     category = val;
                                     // Set dynamic emojis for categories
                                     switch (val) {
-                                      case 'Makan': emoji = '🍔'; break;
-                                      case 'Minum': emoji = '☕'; break;
-                                      case 'Transport': emoji = '🚗'; break;
-                                      case 'Belanja': emoji = '🛒'; break;
-                                      case 'Tagihan': emoji = '💵'; break;
-                                      case 'Keluarga': emoji = '👨‍👩‍👧‍👦'; break;
-                                      case 'Hiburan': emoji = '🎮'; break;
-                                      case 'Kesehatan': emoji = '💊'; break;
-                                      default: emoji = '📦';
+                                      case 'Makan':
+                                        emoji = '🍔';
+                                        break;
+                                      case 'Minum':
+                                        emoji = '☕';
+                                        break;
+                                      case 'Transport':
+                                        emoji = '🚗';
+                                        break;
+                                      case 'Belanja':
+                                        emoji = '🛒';
+                                        break;
+                                      case 'Tagihan':
+                                        emoji = '💵';
+                                        break;
+                                      case 'Keluarga':
+                                        emoji = '👨‍👩‍👧‍👦';
+                                        break;
+                                      case 'Hiburan':
+                                        emoji = '🎮';
+                                        break;
+                                      case 'Kesehatan':
+                                        emoji = '💊';
+                                        break;
+                                      default:
+                                        emoji = '📦';
                                     }
                                   });
                                 }
@@ -700,11 +813,20 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                           children: [
                             Text(
                               'Kategori: ',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondaryLight),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                      color: AppColors.textSecondaryLight),
                             ),
                             Text(
                               category,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary),
                             ),
                           ],
                         ),
@@ -714,12 +836,26 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                       // Emoji Selection
                       Text(
                         'Pilih Emoji',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
-                        children: ['🍔', '☕', '🚗', '🛒', '🎮', '💊', '💵', '👨‍👩‍👧‍👦', '🏠', '📦'].map((e) {
+                        children: [
+                          '🍔',
+                          '☕',
+                          '🚗',
+                          '🛒',
+                          '🎮',
+                          '💊',
+                          '💵',
+                          '👨‍👩‍👧‍👦',
+                          '🏠',
+                          '📦'
+                        ].map((e) {
                           final isSelected = emoji == e;
                           return InkWell(
                             onTap: () => setModalState(() => emoji = e),
@@ -728,16 +864,23 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                               duration: 150.ms,
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: isSelected 
-                                    ? AppColors.primary.withValues(alpha: 0.15) 
-                                    : (isDark ? AppColors.surfaceVariantDark : Colors.white),
+                                color: isSelected
+                                    ? AppColors.primary.withValues(alpha: 0.15)
+                                    : (isDark
+                                        ? AppColors.surfaceVariantDark
+                                        : Colors.white),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isSelected ? AppColors.primary : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : (isDark
+                                          ? AppColors.borderDark
+                                          : AppColors.borderLight),
                                   width: isSelected ? 2 : 1,
                                 ),
                               ),
-                              child: Text(e, style: const TextStyle(fontSize: 20)),
+                              child:
+                                  Text(e, style: const TextStyle(fontSize: 20)),
                             ),
                           );
                         }).toList(),
@@ -747,20 +890,24 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                       // Limit amount input
                       Text(
                         'Limit Budget Periode Ini',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      TextField(
+                      NataMoneyInput(
                         controller: limitController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [RupiahInputFormatter()],
                         autofocus: isNew,
                         decoration: InputDecoration(
                           prefixText: 'Rp ',
                           hintText: '500000',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16)),
                           filled: true,
-                          fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                          fillColor: isDark
+                              ? AppColors.surfaceVariantDark
+                              : Colors.white,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -772,30 +919,43 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                             Expanded(
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: AppColors.alert),
+                                  side:
+                                      const BorderSide(color: AppColors.alert),
                                   foregroundColor: AppColors.alert,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                 ),
                                 onPressed: () async {
                                   final confirm = await showDialog<bool>(
                                     context: context,
                                     builder: (context) => AlertDialog(
                                       title: const Text('Hapus Limit'),
-                                      content: Text('Apakah kamu yakin ingin menghapus budget limit untuk kategori $category?'),
+                                      content: Text(
+                                          'Apakah kamu yakin ingin menghapus budget limit untuk kategori $category?'),
                                       actions: [
-                                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context, true),
-                                          style: TextButton.styleFrom(foregroundColor: AppColors.alert),
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('Batal')),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          style: TextButton.styleFrom(
+                                              foregroundColor: AppColors.alert),
                                           child: const Text('Hapus'),
                                         ),
                                       ],
                                     ),
                                   );
                                   if (confirm == true) {
-                                    await ref.read(categoryBudgetProvider.notifier).deleteBudget(detail.budget.id);
-                                    if (context.mounted) Navigator.pop(context, true);
+                                    await ref
+                                        .read(categoryBudgetProvider.notifier)
+                                        .deleteBudget(detail.budget.id);
+                                    if (context.mounted) {
+                                      Navigator.pop(context, true);
+                                    }
                                   }
                                 },
                                 child: const Text('Hapus Limit'),
@@ -806,39 +966,55 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                             child: FilledButton(
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                               ),
                               onPressed: () async {
                                 setModalState(() => modalErrorMessage = null);
                                 final amountStr = limitController.text.trim();
                                 if (amountStr.isEmpty) {
-                                  setModalState(() => modalErrorMessage = 'Nominal limit tidak boleh kosong!');
+                                  setModalState(() => modalErrorMessage =
+                                      'Nominal limit tidak boleh kosong!');
                                   HapticFeedback.heavyImpact();
                                   return;
                                 }
 
-                                final amount = int.tryParse(amountStr.replaceAll(RegExp(r'[^0-9]'), '').trim()) ?? 0;
+                                final amount = int.tryParse(amountStr
+                                        .replaceAll(RegExp(r'[^0-9]'), '')
+                                        .trim()) ??
+                                    0;
                                 if (amount <= 0) {
-                                  setModalState(() => modalErrorMessage = 'Nominal limit harus lebih dari Rp 0!');
+                                  setModalState(() => modalErrorMessage =
+                                      'Nominal limit harus lebih dari Rp 0!');
                                   HapticFeedback.heavyImpact();
                                   return;
                                 }
                                 if (amount > 999999999999) {
-                                  setModalState(() => modalErrorMessage = 'Nominal limit terlalu besar!');
+                                  setModalState(() => modalErrorMessage =
+                                      'Nominal limit terlalu besar!');
                                   HapticFeedback.heavyImpact();
                                   return;
                                 }
 
                                 final budget = CategoryBudget(
-                                  id: isNew ? DateTime.now().microsecondsSinceEpoch.toString() : detail.budget.id,
+                                  id: isNew
+                                      ? DateTime.now()
+                                          .microsecondsSinceEpoch
+                                          .toString()
+                                      : detail.budget.id,
                                   category: category,
                                   limitAmount: amount,
                                   emoji: emoji,
                                 );
 
-                                await ref.read(categoryBudgetProvider.notifier).saveBudget(budget);
-                                if (context.mounted) Navigator.pop(context, true);
+                                await ref
+                                    .read(categoryBudgetProvider.notifier)
+                                    .saveBudget(budget);
+                                if (context.mounted) {
+                                  Navigator.pop(context, true);
+                                }
                               },
                               child: const Text('Simpan Limit'),
                             ),
@@ -875,30 +1051,39 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const PhosphorIcon(PhosphorIconsRegular.tag, color: AppColors.primary, size: 64),
+              child: const PhosphorIcon(PhosphorIconsRegular.tag,
+                  color: AppColors.primary, size: 64),
             ).animate().scale(curve: Curves.easeOutBack, duration: 600.ms),
             const SizedBox(height: 24),
             Text(
               'Belum ada limit kategori',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Atur batas maksimum pengeluaran untuk kategori tertentu seperti Makan, Belanja, atau Transportasi agar keuangan tetap terkontrol.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-              ),
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               ),
               onPressed: () => _editCategoryBudget(),
-              icon: const PhosphorIcon(PhosphorIconsRegular.plusCircle, size: 20),
+              icon:
+                  const PhosphorIcon(PhosphorIconsRegular.plusCircle, size: 20),
               label: const Text('Atur Limit Kategori'),
             ),
           ],
@@ -914,23 +1099,30 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceVariantDark : AppColors.primarySoft.withValues(alpha: 0.4),
+            color: isDark
+                ? AppColors.surfaceVariantDark
+                : AppColors.primarySoft.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.primary.withValues(alpha: 0.2),
+              color: isDark
+                  ? AppColors.borderDark
+                  : AppColors.primary.withValues(alpha: 0.2),
             ),
           ),
           child: Row(
             children: [
-              const PhosphorIcon(PhosphorIconsRegular.info, color: AppColors.primary, size: 24),
+              const PhosphorIcon(PhosphorIconsRegular.info,
+                  color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Kami memantau transaksi pengeluaranmu dalam periode budget aktif dan memberitahu jika sudah melebihi 80% limit.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.primaryContainer,
-                    fontSize: 13,
-                  ),
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.primaryContainer,
+                        fontSize: 13,
+                      ),
                 ),
               ),
             ],
@@ -943,7 +1135,10 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
           children: [
             Text(
               'Daftar Limit',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             TextButton.icon(
               onPressed: () => _editCategoryBudget(),
@@ -994,10 +1189,13 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
+                            color: isDark
+                                ? AppColors.surfaceVariantDark
+                                : AppColors.surfaceVariantLight,
                             shape: BoxShape.circle,
                           ),
-                          child: Text(detail.budget.emoji, style: const TextStyle(fontSize: 22)),
+                          child: Text(detail.budget.emoji,
+                              style: const TextStyle(fontSize: 22)),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -1006,42 +1204,58 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                             children: [
                               Text(
                                 detail.budget.category,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${CurrencyService.formatRupiah(detail.spent)} dari ${CurrencyService.formatRupiah(detail.budget.limitAmount)}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
+                                    ),
                               ),
                             ],
                           ),
                         ),
-                        
+
                         // Status Badge
                         if (isExceeded)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.alert.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Text(
                               'OVER',
-                              style: TextStyle(color: AppColors.alert, fontSize: 11, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: AppColors.alert,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold),
                             ),
                           )
                         else if (isWarning)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.amber.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Text(
                               '80%+',
-                              style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
                       ],
@@ -1052,7 +1266,9 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                       child: LinearProgressIndicator(
                         value: detail.progress,
                         minHeight: 10,
-                        backgroundColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
+                        backgroundColor: isDark
+                            ? AppColors.surfaceVariantDark
+                            : AppColors.surfaceVariantLight,
                         color: progressColor,
                       ),
                     ),
@@ -1062,16 +1278,22 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                       children: [
                         Text(
                           'Tersisa: ${CurrencyService.formatRupiah(detail.remaining)}',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isExceeded 
-                                ? AppColors.alert 
-                                : isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: isExceeded
+                                        ? AppColors.alert
+                                        : isDark
+                                            ? AppColors.textSecondaryDark
+                                            : AppColors.textSecondaryLight,
+                                  ),
                         ),
                         Text(
                           '${(detail.progress * 100).toInt()}%',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -1107,7 +1329,7 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeColor = color ?? AppColors.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     Widget cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1124,16 +1346,18 @@ class _MetricCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-          ),
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
         ),
         const SizedBox(height: 4),
         Text(
           '${prefix ?? ''}${CurrencyService.formatRupiah(value).replaceAll('Rp', '')}',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: activeColor,
-            fontWeight: FontWeight.w700,
-          ),
+                color: activeColor,
+                fontWeight: FontWeight.w700,
+              ),
         ),
       ],
     );
@@ -1152,7 +1376,8 @@ class _MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceVariantDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight),
         boxShadow: AppShadows.card(isDark: isDark),
       ),
       child: cardContent,
@@ -1177,10 +1402,12 @@ class _EmptyBudgetView extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const PhosphorIcon(PhosphorIconsRegular.wallet, color: AppColors.primary, size: 64),
+              child: const PhosphorIcon(PhosphorIconsRegular.wallet,
+                  color: AppColors.primary, size: 64),
             ).animate().scale(curve: Curves.easeOutBack, duration: 600.ms),
             const SizedBox(height: 24),
-            Text('Budget belum diatur', style: Theme.of(context).textTheme.titleLarge),
+            Text('Budget belum diatur',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               'Atur periode gajian dan dana fleksibelmu agar kami bisa menghitung jatah harian yang aman.',
@@ -1205,14 +1432,17 @@ class _BudgetBreakdownSection extends ConsumerStatefulWidget {
   const _BudgetBreakdownSection({required this.period});
 
   @override
-  ConsumerState<_BudgetBreakdownSection> createState() => _BudgetBreakdownSectionState();
+  ConsumerState<_BudgetBreakdownSection> createState() =>
+      _BudgetBreakdownSectionState();
 }
 
-class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection> {
+class _BudgetBreakdownSectionState
+    extends ConsumerState<_BudgetBreakdownSection> {
   void _editComponent(String type, int currentValue) async {
-    final controller = TextEditingController(text: currentValue.toInt().toString());
+    final controller =
+        TextEditingController(text: currentValue.toInt().toString());
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     String title = '';
     if (type == 'income') title = 'Pemasukan Utama';
     if (type == 'fixed') title = 'Pengeluaran Tetap';
@@ -1239,7 +1469,8 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                   color: isDark ? AppColors.surfaceDark : Colors.white,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    color:
+                        isDark ? AppColors.borderDark : AppColors.borderLight,
                   ),
                 ),
                 child: Column(
@@ -1262,37 +1493,47 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                         Expanded(
                           child: Text(
                             'Edit $title',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(context, false),
                           icon: const Icon(Icons.close_rounded),
                           style: IconButton.styleFrom(
-                            backgroundColor: isDark ? Colors.white10 : Colors.black54.withValues(alpha: 0.05),
+                            backgroundColor: isDark
+                                ? Colors.white10
+                                : Colors.black54.withValues(alpha: 0.05),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
-                    
                     if (errorMessage != null) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: AppColors.alert.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.alert.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: AppColors.alert.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline_rounded, color: AppColors.alert),
+                            const Icon(Icons.error_outline_rounded,
+                                color: AppColors.alert),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 errorMessage!,
-                                style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: const TextStyle(
+                                    color: AppColors.alert,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13),
                               ),
                             ),
                           ],
@@ -1300,24 +1541,29 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     if (warningMessage != null) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: Colors.amber.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                            const Icon(Icons.warning_amber_rounded,
+                                color: Colors.amber),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 warningMessage!,
-                                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: const TextStyle(
+                                    color: Colors.amber,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13),
                               ),
                             ),
                           ],
@@ -1325,33 +1571,37 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     Text(
                       'Nominal Baru',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    TextField(
+                    NataMoneyInput(
                       controller: controller,
-                      keyboardType: TextInputType.number,
                       autofocus: true,
                       decoration: InputDecoration(
                         prefixText: 'Rp ',
                         hintText: '500000',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                        fillColor: isDark
+                            ? AppColors.surfaceVariantDark
+                            : Colors.white,
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
                         ),
                         onPressed: () async {
                           setModalState(() {
@@ -1360,22 +1610,28 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
 
                           final amountStr = controller.text.trim();
                           if (amountStr.isEmpty) {
-                            setModalState(() => errorMessage = 'Nominal tidak boleh kosong!');
+                            setModalState(() =>
+                                errorMessage = 'Nominal tidak boleh kosong!');
                             HapticFeedback.heavyImpact();
                             return;
                           }
 
-                          final amount = int.tryParse(amountStr.replaceAll(RegExp(r'[^0-9]'), '').trim()) ?? 0;
-                          
+                          final amount = int.tryParse(amountStr
+                                  .replaceAll(RegExp(r'[^0-9]'), '')
+                                  .trim()) ??
+                              0;
+
                           var targetIncome = widget.period.flexibleFund;
                           var targetFixed = widget.period.fixedExpenses;
-                          var targetSavings = widget.period.monthlySavingAllocation;
+                          var targetSavings =
+                              widget.period.monthlySavingAllocation;
 
                           if (type == 'income') targetIncome = amount;
                           if (type == 'fixed') targetFixed = amount;
                           if (type == 'savings') targetSavings = amount;
 
-                          final validation = NominalInputValidator.validateSetup(
+                          final validation =
+                              NominalInputValidator.validateSetup(
                             totalIncome: targetIncome.round(),
                             totalFixedExpense: targetFixed.round(),
                             savingAllocation: targetSavings.round(),
@@ -1384,13 +1640,16 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                           );
 
                           if (validation['status'] == 'error') {
-                            setModalState(() => errorMessage = validation['message'] as String);
+                            setModalState(() =>
+                                errorMessage = validation['message'] as String);
                             HapticFeedback.heavyImpact();
                             return;
                           }
 
-                          if (validation['status'] == 'warning' && warningMessage == null) {
-                            setModalState(() => warningMessage = '${validation['message']}\n\nKetuk Simpan lagi untuk menyetujui.');
+                          if (validation['status'] == 'warning' &&
+                              warningMessage == null) {
+                            setModalState(() => warningMessage =
+                                '${validation['message']}\n\nKetuk Simpan lagi untuk menyetujui.');
                             HapticFeedback.warningNotification();
                             return;
                           }
@@ -1411,7 +1670,9 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                           await ref.read(dashboardProvider.notifier).loadData();
                           if (context.mounted) Navigator.pop(context, true);
                         },
-                        child: const Text('Simpan Perubahan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Text('Simpan Perubahan',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -1430,9 +1691,9 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
   Widget build(BuildContext context) {
     final period = widget.period;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final isWarning = period.fixedExpenses > period.flexibleFund * 0.8;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1441,7 +1702,10 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
           children: [
             Text(
               'Rencana Pembagian Keuangan',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (isWarning)
               Container(
@@ -1449,15 +1713,20 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                 decoration: BoxDecoration(
                   color: AppColors.alert.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.alert.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: AppColors.alert.withValues(alpha: 0.2)),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: AppColors.alert, size: 14),
+                    Icon(Icons.warning_amber_rounded,
+                        color: AppColors.alert, size: 14),
                     SizedBox(width: 4),
                     Text(
                       'Tetap > 80%!',
-                      style: TextStyle(color: AppColors.alert, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: AppColors.alert,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -1465,7 +1734,6 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
           ],
         ),
         const SizedBox(height: 12),
-        
         Card(
           elevation: 3,
           shadowColor: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
@@ -1473,8 +1741,8 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
-              color: isWarning 
-                  ? AppColors.alert.withValues(alpha: 0.4) 
+              color: isWarning
+                  ? AppColors.alert.withValues(alpha: 0.4)
                   : (isDark ? AppColors.borderDark : AppColors.borderLight),
               width: isWarning ? 1.5 : 1,
             ),
@@ -1504,7 +1772,8 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                   title: 'Alokasi Tabungan',
                   value: period.monthlySavingAllocation,
                   color: Colors.amber,
-                  onEdit: () => _editComponent('savings', period.monthlySavingAllocation),
+                  onEdit: () =>
+                      _editComponent('savings', period.monthlySavingAllocation),
                 ),
                 const Divider(height: 24, thickness: 0.5),
                 Row(
@@ -1515,7 +1784,8 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                         color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const PhosphorIcon(PhosphorIconsRegular.scales, color: AppColors.primary, size: 20),
+                      child: const PhosphorIcon(PhosphorIconsRegular.scales,
+                          color: AppColors.primary, size: 20),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -1524,18 +1794,28 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                         children: [
                           Text(
                             'Dana Fleksibel Bersih',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
                             'Dana aman untuk jatah harian',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(fontSize: 11),
                           ),
                         ],
                       ),
                     ),
                     Text(
-                      CurrencyService.formatRupiah(period.flexibleFund - period.fixedExpenses - period.monthlySavingAllocation),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
+                      CurrencyService.formatRupiah(period.flexibleFund -
+                          period.fixedExpenses -
+                          period.monthlySavingAllocation),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary),
                     ),
                   ],
                 ),
@@ -1555,7 +1835,7 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
     required VoidCallback onEdit,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Row(
       children: [
         Container(
@@ -1573,12 +1853,18 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
             children: [
               Text(
                 title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 2),
               Text(
                 CurrencyService.formatRupiah(value),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -1587,7 +1873,9 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
           onPressed: onEdit,
           icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple, size: 16),
           style: IconButton.styleFrom(
-            backgroundColor: isDark ? Colors.white10 : Colors.black54.withValues(alpha: 0.03),
+            backgroundColor: isDark
+                ? Colors.white10
+                : Colors.black54.withValues(alpha: 0.03),
             foregroundColor: AppColors.primary,
             padding: const EdgeInsets.all(8),
           ),
