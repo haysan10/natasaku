@@ -642,9 +642,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     final totalProgress = totalTarget <= 0 ? 0.0 : (grandTotalCollected / totalTarget).clamp(0.0, 1.0);
     final totalRemaining = (totalTarget - grandTotalCollected).clamp(0.0, double.infinity);
 
-    return MainShell(
-      index: 3,
-      onNavigate: _onNavigate,
+    return Scaffold(
       body: SafeArea(
         child: _loading
             ? _buildSavingsShimmer()

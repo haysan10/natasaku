@@ -30,6 +30,14 @@ class DashboardPage extends ConsumerStatefulWidget {
   ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
+class _DashboardContent extends ConsumerStatefulWidget {
+  final DashboardState state;
+  const _DashboardContent({super.key, required this.state});
+
+  @override
+  ConsumerState<_DashboardContent> createState() => _DashboardContentState();
+}
+
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
@@ -88,12 +96,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
 
-    return FeatureTourManager(
+    final content = FeatureTourManager(
       hasBudget: state.period != null,
-      child: MainShell(
-        index: 0,
-        onNavigate: _onNavigate,
-        onFabPressed: state.period == null ? null : _addTransaction,
+      child: Scaffold(
         body: SafeArea(
           child: state.isLoading
               ? _buildShimmerLoading()
@@ -103,6 +108,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ),
       ),
     );
+
+    final hasShell = context.findAncestorWidgetOfExactType<MainShell>() != null;
+    if (hasShell) {
+      return content;
+    } else {
+      return MainShell(
+        index: 0,
+        onNavigate: _onNavigate,
+        child: content,
+      );
+    }
   }
 
   Widget _buildShimmerLoading() {
@@ -130,14 +146,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
     );
   }
-}
-
-class _DashboardContent extends ConsumerStatefulWidget {
-  final DashboardState state;
-  const _DashboardContent({super.key, required this.state});
-
-  @override
-  ConsumerState<_DashboardContent> createState() => _DashboardContentState();
 }
 
 class _DashboardContentState extends ConsumerState<_DashboardContent> {
@@ -695,7 +703,6 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                       .animate().fade(delay: 250.ms),
                   const SizedBox(height: 12),
                   Container(
-                    height: 200,
                     padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.surfaceVariantDark : Colors.white,
@@ -709,22 +716,28 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                         ),
                       ],
                     ),
-                    child: BarChart(
-                      BarChartData(
-                        barGroups: _buildChartGroups(state.transactions, state.dailySafeBudget),
-                        borderData: FlBorderData(show: false),
-                        gridData: const FlGridData(show: false),
-                        alignment: BarChartAlignment.spaceAround,
-                        maxY: state.dailySafeBudget * 1.5 < 100000 ? 150000 : state.dailySafeBudget * 1.5,
-                        titlesData: FlTitlesData(
-                          show: true,
-                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: _getBottomTitles,
+                    child: SizedBox(
+                      height: 160,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: BarChart(
+                          BarChartData(
+                            barGroups: _buildChartGroups(state.transactions, state.dailySafeBudget),
+                            borderData: FlBorderData(show: false),
+                            gridData: const FlGridData(show: false),
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: state.dailySafeBudget * 1.5 < 100000 ? 150000 : state.dailySafeBudget * 1.5,
+                            titlesData: FlTitlesData(
+                              show: true,
+                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: _getBottomTitles,
+                                ),
+                              ),
                             ),
                           ),
                         ),

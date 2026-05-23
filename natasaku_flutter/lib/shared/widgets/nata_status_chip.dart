@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../core/animations/nata_animations.dart';
 
 enum NataBudgetStatus { safe, warning, overBudget }
 
-/// Status chip dengan crossfade animation 200ms saat status berubah.
+/// Status chip dengan crossfade / smooth animation saat status berubah.
 ///
 /// Warna status:
 /// - SAFE:        primaryContainer teal/mint — "Aman ✅"
@@ -46,34 +47,25 @@ class NataStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = _config;
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: Tween<double>(begin: 0.88, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
-          ),
-          child: child,
-        ),
+    return AnimatedContainer(
+      duration: NataDuration.normal,
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: config.containerColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: config.borderColor),
       ),
-      child: Container(
-        key: ValueKey(status),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: config.containerColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: config.borderColor),
+      child: AnimatedDefaultTextStyle(
+        duration: NataDuration.normal,
+        curve: Curves.easeInOut,
+        style: TextStyle(
+          color: config.textColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
         ),
-        child: Text(
-          config.label,
-          style: TextStyle(
-            color: config.textColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0,
-          ),
-        ),
+        child: Text(config.label),
       ),
     );
   }
@@ -105,24 +97,24 @@ class NataStatusChipOnDark extends StatelessWidget {
         break;
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        key: ValueKey(status),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+    return AnimatedContainer(
+      duration: NataDuration.normal,
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+      ),
+      child: AnimatedDefaultTextStyle(
+        duration: NataDuration.normal,
+        curve: Curves.easeInOut,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        child: Text(label),
       ),
     );
   }

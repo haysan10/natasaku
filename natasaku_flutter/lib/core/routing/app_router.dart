@@ -13,6 +13,7 @@ import '../../features/savings/savings_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/setup/setup_page.dart';
 import '../../features/transactions/transactions_page.dart';
+import '../../shared/widgets/main_shell.dart';
 
 // Tour page — import only if the file exists
 import '../../features/tour/tour_page.dart';
@@ -48,50 +49,79 @@ class AppRouter {
         path: setup,
         builder: (context, state) => const SetupPage(),
       ),
-      GoRoute(
-        path: dashboard,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const DashboardPage(),
-          transitionsBuilder: (context, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
-      ),
-      GoRoute(
-        path: transactions,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const TransactionsPage(),
-          transitionsBuilder: (context, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
-      ),
-      GoRoute(
-        path: budget,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const BudgetPage(),
-          transitionsBuilder: (context, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
-      ),
-      GoRoute(
-        path: savings,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const SavingsPage(),
-          transitionsBuilder: (context, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
-      ),
-      GoRoute(
-        path: reports,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const ReportsPage(),
-          transitionsBuilder: (context, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainShell(
+            navigationShell: navigationShell,
+          );
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: dashboard,
+                pageBuilder: (context, state) => CustomTransitionPage(
+                  key: state.pageKey,
+                  child: const DashboardPage(),
+                  transitionsBuilder: (context, animation, _, child) =>
+                      FadeTransition(opacity: animation, child: child),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: transactions,
+                pageBuilder: (context, state) => CustomTransitionPage(
+                  key: state.pageKey,
+                  child: const TransactionsPage(),
+                  transitionsBuilder: (context, animation, _, child) =>
+                      FadeTransition(opacity: animation, child: child),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: budget,
+                pageBuilder: (context, state) => CustomTransitionPage(
+                  key: state.pageKey,
+                  child: const BudgetPage(),
+                  transitionsBuilder: (context, animation, _, child) =>
+                      FadeTransition(opacity: animation, child: child),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: savings,
+                pageBuilder: (context, state) => CustomTransitionPage(
+                  key: state.pageKey,
+                  child: const SavingsPage(),
+                  transitionsBuilder: (context, animation, _, child) =>
+                      FadeTransition(opacity: animation, child: child),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: reports,
+                pageBuilder: (context, state) => CustomTransitionPage(
+                  key: state.pageKey,
+                  child: const ReportsPage(),
+                  transitionsBuilder: (context, animation, _, child) =>
+                      FadeTransition(opacity: animation, child: child),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: dailyClosing,

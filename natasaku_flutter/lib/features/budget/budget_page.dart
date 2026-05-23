@@ -63,9 +63,7 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
 
-    return MainShell(
-      index: 2,
-      onNavigate: _onNavigate,
+    final content = Scaffold(
       body: SafeArea(
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -118,16 +116,11 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
                           delegate: _SliverTabBarDelegate(
                             TabBar(
                               controller: _tabController,
-                              indicatorSize: TabBarIndicatorSize.tab,
+                              isScrollable: false,
                               dividerColor: Colors.transparent,
-                              indicator: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: AppColors.primary,
-                              ),
-                              labelColor: Colors.white,
-                              unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
+                              indicatorColor: AppColors.primary,
+                              labelColor: AppColors.primary,
+                              unselectedLabelColor: Colors.grey,
                               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                               unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -150,6 +143,17 @@ class _BudgetPageState extends ConsumerState<BudgetPage> with SingleTickerProvid
                   ),
       ),
     );
+
+    final hasShell = context.findAncestorWidgetOfExactType<MainShell>() != null;
+    if (hasShell) {
+      return content;
+    } else {
+      return MainShell(
+        index: 2,
+        onNavigate: _onNavigate,
+        child: content,
+      );
+    }
   }
 }
 

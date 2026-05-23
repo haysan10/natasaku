@@ -308,9 +308,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
       period: customPeriod,
     );
 
-    return MainShell(
-      index: 4,
-      onNavigate: _onNavigate,
+    return Scaffold(
       body: SafeArea(
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))

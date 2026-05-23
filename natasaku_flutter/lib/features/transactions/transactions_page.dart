@@ -207,238 +207,249 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     final filtered = _filteredItems;
     final paginated = filtered.take(_visibleCount).toList();
     final grouped = _groupByDate(paginated);
+    final totalExpense = filtered.where((tx) => tx.isExpense).fold(0.0, (sum, tx) => sum + tx.amount);
+    final totalIncome = filtered.where((tx) => !tx.isExpense).fold(0.0, (sum, tx) => sum + tx.amount);
 
-    final totalExpense = filtered.where((item) => item.isExpense).fold<double>(0, (sum, item) => sum + item.amount);
-    final totalIncome = filtered.where((item) => !item.isExpense).fold<double>(0, (sum, item) => sum + item.amount);
-
-    return MainShell(
-      index: 1,
-      onNavigate: _onNavigate,
-      onFabPressed: _addTransaction,
+    final content = Scaffold(
       body: SafeArea(
         child: state.isLoading
             ? _buildTransactionShimmer()
-            : CustomScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Riwayat',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: AppColors.primary,
+            : RefreshIndicator(
+                onRefresh: () => ref.read(dashboardProvider.notifier).loadData(),
+                color: AppColors.primary,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Riwayat',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        color: AppColors.primary,
+                                      ),
                                     ),
+                                    Text(
+                                      'Transaksi',
+                                      style: Theme.of(context).textTheme.headlineLarge,
+                                    ),
+                                  ],
+                                ).animate().fade().slideX(begin: -0.1),
+                                
+                                IconButton(
+                                  onPressed: () {
+                                    // context.push(AppRouter.settings);
+                                  },
+                                  icon: const PhosphorIcon(PhosphorIconsRegular.faders),
+                                ).animate().fade(delay: 200.ms),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Custom Search Bar
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppColors.borderDark : AppColors.borderLight),
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Cari jajan apa ya...',
+                                  hintStyle: Theme.of(context).textTheme.bodyMedium,
+                                  prefixIcon: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 16),
+                                    child: PhosphorIcon(PhosphorIconsRegular.magnifyingGlass, color: AppColors.textSecondaryLight),
                                   ),
-                                  Text(
-                                    'Transaksi',
-                                    style: Theme.of(context).textTheme.headlineLarge,
+                                  prefixIconConstraints: const BoxConstraints(minWidth: 50),
+                                  suffixIcon: _searchController.text.isEmpty
+                                      ? null
+                                      : IconButton(
+                                          onPressed: _searchController.clear,
+                                          icon: const PhosphorIcon(PhosphorIconsRegular.xCircle),
+                                        ),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  fillColor: Colors.transparent,
+                                  filled: false,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
+                            ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Custom Choice Chips
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              child: Row(
+                                children: [
+                                  _CustomChip(
+                                    label: 'Semua',
+                                    icon: PhosphorIconsRegular.circlesFour,
+                                    isSelected: _filter == _TransactionFilter.all,
+                                    onTap: () => setState(() => _filter = _TransactionFilter.all),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _CustomChip(
+                                    label: 'Pengeluaran',
+                                    icon: PhosphorIconsRegular.trendDown,
+                                    color: AppColors.alert,
+                                    isSelected: _filter == _TransactionFilter.expense,
+                                    onTap: () => setState(() => _filter = _TransactionFilter.expense),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _CustomChip(
+                                    label: 'Pemasukan',
+                                    icon: PhosphorIconsRegular.trendUp,
+                                    color: AppColors.accent,
+                                    isSelected: _filter == _TransactionFilter.income,
+                                    onTap: () => setState(() => _filter = _TransactionFilter.income),
                                   ),
                                 ],
-                              ).animate().fade().slideX(begin: -0.1),
-                              
-                              IconButton(
-                                onPressed: () {
-                                  // context.push(AppRouter.settings);
-                                },
-                                icon: const PhosphorIcon(PhosphorIconsRegular.faders),
-                              ).animate().fade(delay: 200.ms),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Custom Search Bar
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppColors.borderDark : AppColors.borderLight),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              decoration: InputDecoration(
-                                hintText: 'Cari jajan apa ya...',
-                                hintStyle: Theme.of(context).textTheme.bodyMedium,
-                                prefixIcon: const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: PhosphorIcon(PhosphorIconsRegular.magnifyingGlass, color: AppColors.textSecondaryLight),
-                                ),
-                                prefixIconConstraints: const BoxConstraints(minWidth: 50),
-                                suffixIcon: _searchController.text.isEmpty
-                                    ? null
-                                    : IconButton(
-                                        onPressed: _searchController.clear,
-                                        icon: const PhosphorIcon(PhosphorIconsRegular.xCircle),
-                                      ),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                fillColor: Colors.transparent,
-                                filled: false,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 16),
                               ),
-                            ),
-                          ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
-                          
-                          const SizedBox(height: 20),
-                          
-                          // Custom Choice Chips
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
+                            ).animate().fade(delay: 200.ms).slideX(begin: 0.1),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Summary metrics
+                            Row(
                               children: [
-                                _CustomChip(
-                                  label: 'Semua',
-                                  icon: PhosphorIconsRegular.circlesFour,
-                                  isSelected: _filter == _TransactionFilter.all,
-                                  onTap: () => setState(() => _filter = _TransactionFilter.all),
-                                ),
-                                const SizedBox(width: 12),
-                                _CustomChip(
-                                  label: 'Pengeluaran',
-                                  icon: PhosphorIconsRegular.trendDown,
-                                  color: AppColors.alert,
-                                  isSelected: _filter == _TransactionFilter.expense,
-                                  onTap: () => setState(() => _filter = _TransactionFilter.expense),
-                                ),
-                                const SizedBox(width: 12),
-                                _CustomChip(
-                                  label: 'Pemasukan',
-                                  icon: PhosphorIconsRegular.trendUp,
-                                  color: AppColors.accent,
-                                  isSelected: _filter == _TransactionFilter.income,
-                                  onTap: () => setState(() => _filter = _TransactionFilter.income),
-                                ),
-                              ],
-                            ),
-                          ).animate().fade(delay: 200.ms).slideX(begin: 0.1),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Summary metrics
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SummaryCard(
-                                  title: 'Keluar',
-                                  amount: totalExpense,
-                                  isExpense: true,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _SummaryCard(
-                                  title: 'Masuk',
-                                  amount: totalIncome,
-                                  isExpense: false,
-                                ),
-                              ),
-                            ],
-                          ).animate().fade(delay: 300.ms).slideY(begin: 0.1),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  if (state.transactions.isEmpty)
-                            SliverFillRemaining(
-                              hasScrollBody: false,
-                              child: NataEmptyState(
-                                icon: PhosphorIconsRegular.receipt,
-                                title: 'Yuk Mulai Catat! 📝',
-                                subtitle: 'Belum ada transaksi nih.\nTekan tombol + di bawah untuk mencatat jajan pertamamu hari ini!',
-                                buttonLabel: 'Catat Sekarang',
-                                onButtonTap: _addTransaction,
-                                accentColor: AppColors.primary,
-                              ),
-                            )
-                  else if (filtered.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: NataEmptyState(
-                        icon: PhosphorIconsRegular.magnifyingGlass,
-                        title: 'Tidak Ditemukan',
-                        subtitle: 'Tidak ada transaksi yang cocok dengan filter atau pencarianmu.',
-                        accentColor: AppColors.textSecondaryLight,
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final entry = grouped.entries.elementAt(index);
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16, bottom: 12),
-                                  child: Text(
-                                    entry.key,
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      color: Theme.of(context).brightness == Brightness.dark 
-                                          ? AppColors.textSecondaryDark 
-                                          : AppColors.textSecondaryLight,
-                                      letterSpacing: 1,
-                                    ),
+                                Expanded(
+                                  child: _SummaryCard(
+                                    title: 'Keluar',
+                                    amount: totalExpense,
+                                    isExpense: true,
                                   ),
-                                ).animate().fade(),
-                                 ...entry.value.map((tx) {
-                                    return NataSwipeableRow(
-                                      onEdit: () => _editTransaction(tx),
-                                      onDeleteConfirmed: () => ref.read(dashboardProvider.notifier).deleteTransaction(tx.id).then((_) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                            ..hideCurrentSnackBar()
-                                            ..showSnackBar(
-                                              SnackBar(
-                                                content: const Text('Transaksi dihapus.'),
-                                                duration: const Duration(seconds: 5),
-                                                action: SnackBarAction(
-                                                  label: 'Pulihkan',
-                                                  textColor: AppColors.primarySoft,
-                                                  onPressed: () {
-                                                    HapticFeedback.lightImpact();
-                                                    ref.read(dashboardProvider.notifier).addTransaction(tx);
-                                                  },
-                                                ),
-                                              ),
-                                            );
-                                        }
-                                      }),
-                                      deleteConfirmTitle: 'Hapus catatan ini?',
-                                      deleteConfirmSubtitle: 'Catatan ${CurrencyService.formatRupiah(tx.amount)} akan dihapus dari riwayatmu.',
-                                      child: _TransactionRow(
-                                        transaction: tx,
-                                        onEdit: () => _editTransaction(tx),
-                                        onDelete: () => _deleteTransaction(tx),
-                                      ),
-                                    );
-                                  }).toList(),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _SummaryCard(
+                                    title: 'Masuk',
+                                    amount: totalIncome,
+                                    isExpense: false,
+                                  ),
+                                ),
                               ],
-                            );
-                          },
-                          childCount: grouped.length,
+                            ).animate().fade(delay: 300.ms).slideY(begin: 0.1),
+                          ],
                         ),
                       ),
                     ),
-                ],
+                    
+                    if (state.transactions.isEmpty)
+                              SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: NataEmptyState(
+                                  icon: PhosphorIconsRegular.receipt,
+                                  title: 'Yuk Mulai Catat! 📝',
+                                  subtitle: 'Belum ada transaksi nih.\nTekan tombol + di bawah untuk mencatat jajan pertamamu hari ini!',
+                                  buttonLabel: 'Catat Sekarang',
+                                  onButtonTap: _addTransaction,
+                                  accentColor: AppColors.primary,
+                                ),
+                              )
+                    else if (filtered.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: NataEmptyState(
+                          icon: PhosphorIconsRegular.magnifyingGlass,
+                          title: 'Tidak Ditemukan',
+                          subtitle: 'Tidak ada transaksi yang cocok dengan filter atau pencarianmu.',
+                          accentColor: AppColors.textSecondaryLight,
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final entry = grouped.entries.elementAt(index);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16, bottom: 12),
+                                    child: Text(
+                                      entry.key,
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        color: Theme.of(context).brightness == Brightness.dark 
+                                            ? AppColors.textSecondaryDark 
+                                            : AppColors.textSecondaryLight,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ).animate().fade(),
+                                   ...entry.value.map((tx) {
+                                      return NataSwipeableRow(
+                                        onEdit: () => _editTransaction(tx),
+                                        onDeleteConfirmed: () => ref.read(dashboardProvider.notifier).deleteTransaction(tx.id).then((_) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context)
+                                              ..hideCurrentSnackBar()
+                                              ..showSnackBar(
+                                                SnackBar(
+                                                  content: const Text('Transaksi dihapus.'),
+                                                  duration: const Duration(seconds: 5),
+                                                  action: SnackBarAction(
+                                                    label: 'Pulihkan',
+                                                    textColor: AppColors.primarySoft,
+                                                    onPressed: () {
+                                                      HapticFeedback.lightImpact();
+                                                      ref.read(dashboardProvider.notifier).addTransaction(tx);
+                                                    },
+                                                  ),
+                                                ),
+                                              );
+                                          }
+                                        }),
+                                        deleteConfirmTitle: 'Hapus catatan ini?',
+                                        deleteConfirmSubtitle: 'Catatan ${CurrencyService.formatRupiah(tx.amount)} akan dihapus dari riwayatmu.',
+                                        child: _TransactionRow(
+                                          transaction: tx,
+                                          onEdit: () => _editTransaction(tx),
+                                          onDelete: () => _deleteTransaction(tx),
+                                        ),
+                                      );
+                                    }).toList(),
+                                ],
+                              );
+                            },
+                            childCount: grouped.length,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-      ),
-    );
+        ),
+      );
+
+    final hasShell = context.findAncestorWidgetOfExactType<MainShell>() != null;
+    if (hasShell) {
+      return content;
+    } else {
+      return MainShell(
+        index: 1,
+        onNavigate: _onNavigate,
+        child: content,
+      );
+    }
   }
 
   Widget _buildTransactionShimmer() {

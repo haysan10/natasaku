@@ -1,46 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/theme/app_theme.dart';
 import '../../features/dashboard/feature_tour_manager.dart';
+import '../../features/dashboard/providers/dashboard_provider.dart';
+import '../../data/models/transaction_model.dart';
+import './transaction_entry_sheet.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({
     super.key,
-    required this.index,
-    required this.body,
-    required this.onNavigate,
-    this.onFabPressed,
-    this.fabKey,
+    this.navigationShell,
+    this.index,
+    this.onNavigate,
+    this.child,
   });
 
-  final int index;
-  final Widget body;
-  final ValueChanged<int> onNavigate;
-  final VoidCallback? onFabPressed;
-  final GlobalKey? fabKey;
+  final StatefulNavigationShell? navigationShell;
+  final int? index;
+  final ValueChanged<int>? onNavigate;
+  final Widget? child;
+
+  Future<void> _addTransaction(BuildContext context, WidgetRef ref) async {
+    final draft = await showTransactionEntrySheet(context);
+    if (draft == null) return;
+
+    final transaction = TransactionModel(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      date: draft.date,
+      amount: draft.amount,
+      isExpense: draft.isExpense,
+      note: draft.note,
+      category: draft.category,
+    );
+    
+    await ref.read(dashboardProvider.notifier).addTransaction(transaction);
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentIndex = navigationShell?.currentIndex ?? index ?? 0;
+
+    final showFab = currentIndex == 0 || currentIndex == 1;
 
     return Scaffold(
-      body: body,
-      floatingActionButton: onFabPressed != null
+      body: navigationShell ?? child ?? const SizedBox.shrink(),
+      floatingActionButton: showFab
           ? Container(
-              key: fabKey ?? TourKeys.fabButton,
+              key: TourKeys.fabButton,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.35),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: FloatingActionButton(
-                onPressed: onFabPressed,
-                backgroundColor: AppTheme.primary,
+                onPressed: () => _addTransaction(context, ref),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: const CircleBorder(),
@@ -54,40 +75,47 @@ class MainShell extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: isDark ? AppTheme.borderDark : AppTheme.border,
+              color: isDark ? Theme.of(context).colorScheme.outlineVariant : Colors.grey.shade300,
               width: 0.5,
             ),
           ),
         ),
         child: NavigationBar(
-          selectedIndex: index,
-          onDestinationSelected: onNavigate,
-          destinations: [
-            const NavigationDestination(
+          selectedIndex: currentIndex,
+          onDestinationSelected: (idx) {
+            if (navigationShell != null) {
+              navigationShell!.goBranch(
+                idx,
+                initialLocation: idx == currentIndex,
+              );
+            } else {
+              onNavigate?.call(idx);
+            }
+          },
+          destinations: const [
+            NavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home_rounded),
               label: 'Beranda',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.receipt_long_outlined),
               selectedIcon: Icon(Icons.receipt_long_rounded),
               label: 'Transaksi',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.account_balance_wallet_outlined),
               selectedIcon: Icon(Icons.account_balance_wallet_rounded),
               label: 'Budget',
             ),
             NavigationDestination(
-              key: TourKeys.navSavings,
-              icon: const Icon(Icons.savings_outlined),
-              selectedIcon: const Icon(Icons.savings_rounded),
+              icon: Icon(Icons.savings_outlined),
+              selectedIcon: Icon(Icons.savings_rounded),
               label: 'Tabungan',
             ),
             NavigationDestination(
-              key: TourKeys.navReports,
-              icon: const Icon(Icons.bar_chart_outlined),
-              selectedIcon: const Icon(Icons.bar_chart_rounded),
+              icon: Icon(Icons.analytics_outlined),
+              selectedIcon: Icon(Icons.analytics_rounded),
               label: 'Laporan',
             ),
           ],
