@@ -3,3 +3,9 @@
 /keystore.properties
 /keystore/
 .DS_Store
+
+# Build/IDE artifacts (all modules)
+**/.gradle/
+**/build/
+**/.idea/
+**/*.iml

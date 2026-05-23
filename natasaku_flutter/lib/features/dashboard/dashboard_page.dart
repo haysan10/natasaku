@@ -15,7 +15,6 @@ import '../../shared/widgets/main_shell.dart';
 import '../../data/models/transaction_model.dart';
 import '../../shared/widgets/transaction_entry_sheet.dart';
 import '../../core/dev/mock_data_seeder.dart';
-import '../bills/providers/bills_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'feature_tour_manager.dart';
 import '../../shared/widgets/nata_shimmer.dart';
@@ -32,7 +31,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardContent extends ConsumerStatefulWidget {
   final DashboardState state;
-  const _DashboardContent({super.key, required this.state});
+  const _DashboardContent({required this.state});
 
   @override
   ConsumerState<_DashboardContent> createState() => _DashboardContentState();
@@ -55,41 +54,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       case 3: context.go(AppRouter.savings); break;
       case 4: context.go(AppRouter.reports); break;
     }
-  }
-
-  Future<void> _addTransaction() async {
-    final draft = await showTransactionEntrySheet(context);
-    if (draft == null) return;
-
-    final transaction = TransactionModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      date: draft.date,
-      amount: draft.amount,
-      isExpense: draft.isExpense,
-      note: draft.note,
-      category: draft.category,
-    );
-    
-    await ref.read(dashboardProvider.notifier).addTransaction(transaction);
-    
-    if (!mounted) return;
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('Sip! Transaksi berhasil dicatat.'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          action: SnackBarAction(
-            label: 'Batal',
-            textColor: AppColors.primarySoft,
-            onPressed: () {
-              ref.read(dashboardProvider.notifier).deleteTransaction(transaction.id);
-            },
-          ),
-        ),
-      );
   }
 
   @override
@@ -2348,4 +2312,3 @@ class DonutPainter extends CustomPainter {
         oldDelegate.colors != colors;
   }
 }
-

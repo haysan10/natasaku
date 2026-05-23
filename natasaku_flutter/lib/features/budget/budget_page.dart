@@ -529,7 +529,7 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
     );
     String emoji = detail?.budget.emoji ?? '📦';
 
-    final saved = await showModalBottomSheet<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1171,7 +1171,7 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
     if (type == 'fixed') title = 'Pengeluaran Tetap';
     if (type == 'savings') title = 'Alokasi Tabungan';
 
-    final saved = await showModalBottomSheet<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

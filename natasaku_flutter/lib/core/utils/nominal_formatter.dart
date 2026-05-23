@@ -38,13 +38,11 @@ class NominalFormatter extends TextInputFormatter {
       final textBeforeCursor = newValue.text.substring(0, selectionOffset.clamp(0, newValue.text.length));
       final digitsBeforeCursor = textBeforeCursor.replaceAll('.', '');
       
-      var dotsCount = 0;
       var digitsFound = 0;
       var newOffset = 0;
       
       for (var i = 0; i < formatted.length; i++) {
         if (formatted[i] == '.') {
-          dotsCount++;
         } else {
           digitsFound++;
         }
