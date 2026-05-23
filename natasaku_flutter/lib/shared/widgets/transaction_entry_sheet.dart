@@ -73,11 +73,12 @@ class _TransactionEntryContent extends StatefulWidget {
 
 class _TransactionEntryContentState extends State<_TransactionEntryContent> {
   late bool _isExpense;
-  String _amountStr = '';
+  late final TextEditingController _amountController;
   DateTime _date = DateTime.now();
   String? _category;
   String? _note;
   String? _errorMessage;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -87,34 +88,24 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
     _category = widget.initialCategory;
     _note = widget.initialNote;
 
+    String initialText = '';
     if (widget.initialAmount != null && widget.initialAmount! > 0) {
-      _amountStr = widget.initialAmount!.toInt().toString();
+      final formatter = NumberFormat.decimalPattern('id');
+      initialText = 'Rp ${formatter.format(widget.initialAmount!.toInt())}';
     }
+    _amountController = TextEditingController(text: initialText);
   }
 
-  void _onNumpadTap(String value) {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _errorMessage = null; // Clear error when typing
-      if (value == 'backspace') {
-        if (_amountStr.isNotEmpty) {
-          _amountStr = _amountStr.substring(0, _amountStr.length - 1);
-        }
-      } else if (value == '000') {
-        if (_amountStr.isNotEmpty && _amountStr.length < 10) {
-          _amountStr += '000';
-        }
-      } else {
-        if (_amountStr.length < 12) {
-          _amountStr += value;
-        }
-      }
-    });
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
   }
 
   double get _parsedAmount {
-    if (_amountStr.isEmpty) return 0;
-    return double.tryParse(_amountStr) ?? 0;
+    final digits = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return 0;
+    return double.tryParse(digits) ?? 0;
   }
 
   Future<void> _pickDate() async {
@@ -216,26 +207,38 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
   }
 
   void _submit() {
-    if (_parsedAmount <= 0) {
+    if (_isSaving) return;
+    final amount = _parsedAmount;
+    if (amount <= 0) {
       HapticFeedback.heavyImpact();
       setState(() => _errorMessage = 'Nominal harus lebih dari Rp 0!');
       return;
     }
-    if (_parsedAmount > 999999999999) {
+    if (amount > 999999999999) {
       HapticFeedback.heavyImpact();
       setState(() => _errorMessage = 'Nominal terlalu besar!');
       return;
     }
-    Navigator.pop(
-      context,
-      TransactionDraft(
-        amount: _parsedAmount,
-        isExpense: _isExpense,
-        date: _date,
-        category: _category ?? 'Lainnya', // Robust fallback category!
-        note: _note,
-      ),
-    );
+
+    HapticFeedback.lightImpact();
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      Navigator.pop(
+        context,
+        TransactionDraft(
+          amount: amount,
+          isExpense: _isExpense,
+          date: _date,
+          category: _category ?? 'Lainnya',
+          note: _note,
+        ),
+      );
+    });
   }
 
   @override
@@ -309,30 +312,46 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
               const SizedBox(height: 12),
             ],
 
-            // Display Amount
+            // Display Amount TextField
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: activeColor.withValues(alpha: 0.3), width: 2),
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      _amountStr.isEmpty ? 'Rp 0' : CurrencyService.formatRupiah(_parsedAmount),
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontSize: _amountStr.length > 8 ? 32 : 48,
-                        color: _amountStr.isEmpty ? AppColors.textSecondaryLight : activeColor,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                    ).animate(target: _amountStr.isNotEmpty ? 1 : 0).scale(duration: 100.ms, begin: const Offset(0.9, 0.9)),
+                child: TextField(
+                  controller: _amountController,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    RupiahInputFormatter(),
                   ],
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontSize: 32,
+                    color: activeColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Rp 0',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white24 : Colors.black26,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      _errorMessage = null;
+                    });
+                  },
                 ),
               ),
             ),
@@ -372,7 +391,7 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
 
             const SizedBox(height: 16),
             
-            // Numpad
+            // Save Button Panel (replacing custom numpad)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
@@ -386,65 +405,33 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                   )
                 ]
               ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _NumpadBtn('1', onTap: () => _onNumpadTap('1')),
-                      _NumpadBtn('2', onTap: () => _onNumpadTap('2')),
-                      _NumpadBtn('3', onTap: () => _onNumpadTap('3')),
-                    ],
+              child: SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: activeColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _NumpadBtn('4', onTap: () => _onNumpadTap('4')),
-                      _NumpadBtn('5', onTap: () => _onNumpadTap('5')),
-                      _NumpadBtn('6', onTap: () => _onNumpadTap('6')),
-                    ],
+                  onPressed: _isSaving ? null : _submit,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Simpan Transaksi',
+                            key: ValueKey('save_text'),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _NumpadBtn('7', onTap: () => _onNumpadTap('7')),
-                      _NumpadBtn('8', onTap: () => _onNumpadTap('8')),
-                      _NumpadBtn('9', onTap: () => _onNumpadTap('9')),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _NumpadBtn('000', onTap: () => _onNumpadTap('000'), isSpecial: true),
-                      _NumpadBtn('0', onTap: () => _onNumpadTap('0')),
-                      _NumpadBtn(
-                        '<', 
-                        onTap: () => _onNumpadTap('backspace'), 
-                        isSpecial: true, 
-                        icon: PhosphorIconsRegular.backspace,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: activeColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      onPressed: _parsedAmount <= 0 ? null : _submit,
-                      child: const Text(
-                        'Simpan Transaksi',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -546,43 +533,27 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-class _NumpadBtn extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final bool isSpecial;
-  final IconData? icon;
-
-  const _NumpadBtn(this.label, {required this.onTap, this.isSpecial = false, this.icon});
-
+class RupiahInputFormatter extends TextInputFormatter {
   @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return newValue.copyWith(
+        text: '',
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
     
-    return Material(
-      color: isSpecial ? (isDark ? AppColors.surfaceVariantDark : AppColors.backgroundLight) : Colors.transparent,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          width: MediaQuery.of(context).size.width / 3 - 32,
-          height: 64,
-          alignment: Alignment.center,
-          decoration: isSpecial ? null : BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: icon != null
-              ? PhosphorIcon(icon!, size: 28, color: isDark ? Colors.white : Colors.black87)
-              : Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: isSpecial ? 24 : 32,
-                    fontWeight: isSpecial ? FontWeight.w600 : FontWeight.w500,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-        ),
-      ),
+    final value = int.tryParse(digits) ?? 0;
+    final formatter = NumberFormat.decimalPattern('id');
+    final formatted = 'Rp ${formatter.format(value)}';
+    
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
