@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/animations/nata_animations.dart';
 
 /// Progress bar dengan animated fill (500ms ease-in-out) + gradient.
 /// Digunakan di hero card, savings progress, category breakdown.

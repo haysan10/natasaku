@@ -14,7 +14,6 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/services/currency_service.dart';
 import '../../data/models/saving_goal.dart';
 import '../../data/models/user_settings.dart';
-import '../../shared/widgets/main_shell.dart';
 import '../../shared/widgets/nata_shimmer.dart';
 import '../../shared/widgets/nata_progress_bar.dart';
 import '../../shared/widgets/nata_press_scale.dart';
@@ -744,15 +743,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     }
   }
 
-  void _onNavigate(int index) {
-    switch (index) {
-      case 0: context.go(AppRouter.dashboard); break;
-      case 1: context.go(AppRouter.transactions); break;
-      case 2: context.go(AppRouter.budget); break;
-      case 3: break; // current
-      case 4: context.go(AppRouter.reports); break;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {

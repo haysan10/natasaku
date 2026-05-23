@@ -21,7 +21,6 @@ import '../../data/models/budget_period.dart';
 import '../../data/models/budget_mode.dart';
 import '../budgeting/budgeting_engine.dart';
 import '../dashboard/providers/dashboard_provider.dart';
-import '../../shared/widgets/main_shell.dart';
 import '../../shared/widgets/empty_state.dart';
 
 enum ReportInterval { activePeriod, today, thisWeek, thisMonth, thisYear, custom }
@@ -60,15 +59,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
     super.dispose();
   }
 
-  void _onNavigate(int index) {
-    switch (index) {
-      case 0: context.go(AppRouter.dashboard); break;
-      case 1: context.go(AppRouter.transactions); break;
-      case 2: context.go(AppRouter.budget); break;
-      case 3: context.go(AppRouter.savings); break;
-      case 4: break; // current
-    }
-  }
+
 
   DateTimeRange _calculateDateRange(ReportInterval interval, BudgetPeriod? activePeriod) {
     switch (interval) {

@@ -182,6 +182,93 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     return CurrencyService.formatRupiah(value);
   }
 
+  Widget _buildSmartInsights(DashboardState state, bool isDark, BuildContext context) {
+    final now = DateTime.now();
+    final last7DaysTotal = state.transactions
+        .where((t) => t.isExpense && t.date.isAfter(now.subtract(const Duration(days: 7))))
+        .fold<double>(0.0, (sum, t) => sum + t.amount);
+    final prev7DaysTotal = state.transactions
+        .where((t) => t.isExpense && t.date.isAfter(now.subtract(const Duration(days: 14))) && t.date.isBefore(now.subtract(const Duration(days: 7))))
+        .fold<double>(0.0, (sum, t) => sum + t.amount);
+
+    String weeklyInsight;
+    if (prev7DaysTotal > 0) {
+      final diff = (((last7DaysTotal - prev7DaysTotal) / prev7DaysTotal) * 100).round();
+      if (diff < 0) {
+        weeklyInsight = 'Pengeluaran minggu ini ${diff.abs()}% lebih rendah dari minggu lalu 📉';
+      } else {
+        weeklyInsight = 'Pengeluaran minggu ini ${diff}% lebih tinggi dari minggu lalu 📈';
+      }
+    } else {
+      weeklyInsight = 'Bagus! Catat terus transaksi harian agar insight lebih lengkap 📊';
+    }
+
+    final todayTxs = state.transactions
+        .where((t) => t.isExpense && t.date.year == now.year && t.date.month == now.month && t.date.day == now.day)
+        .toList();
+    final categoryMap = <String, double>{};
+    for (final tx in todayTxs) {
+      final cat = tx.category ?? 'Lainnya';
+      categoryMap[cat] = (categoryMap[cat] ?? 0.0) + tx.amount;
+    }
+    String categoryInsight = 'Kategori terboros hari ini belum terdeteksi. Yuk catat belanjamu! 🍔';
+    if (categoryMap.isNotEmpty) {
+      final sorted = categoryMap.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      final topCat = sorted.first;
+      categoryInsight = 'Kategori terboros: ${topCat.key} (${CurrencyService.formatRupiah(topCat.value)} hari ini) 🍔';
+    }
+
+    final remainingDays = state.remainingDays;
+    final flexRemaining = state.remainingFund;
+    String safetyInsight = 'Mari atur budget harian pertamamu agar finansial terkontrol 💎';
+    if (remainingDays > 0) {
+      safetyInsight = 'Sisa $remainingDays hari lagi, masih ada ${CurrencyService.formatRupiah(flexRemaining)} jatah fleksibel ✅';
+    }
+
+    final insights = [weeklyInsight, categoryInsight, safetyInsight];
+
+    return SizedBox(
+      height: 72,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: insights.length,
+        itemBuilder: (context, index) {
+          return Container(
+            width: 280,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceVariantDark : Colors.teal.shade50.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: isDark ? AppColors.borderDark : Colors.teal.shade100.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.insights_rounded, color: AppColors.primary, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    insights[index],
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
       case 'makan':
@@ -319,6 +406,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     final state = widget.state;
     final remainingBudgetToday = max(state.dailySafeBudget - state.todayExpense, 0.0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final allowanceSpentPercent = state.dailySafeBudget == 0 ? 0.0 : state.todayExpense / state.dailySafeBudget;
 
@@ -627,16 +715,27 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                   const SizedBox(height: 20),
 
                   // ── Detektor Kesehatan Finansial Premium Card ──────────────
-                  _HealthDiagnosisCard(
-                    state: state,
-                    showDetails: _showDiagnosisDetails,
-                    onToggleDetails: () {
+                  NataPressScale(
+                    onTap: () {
                       HapticFeedback.lightImpact();
-                      setState(() {
-                        _showDiagnosisDetails = !_showDiagnosisDetails;
-                      });
+                      _showHealthDetailBottomSheet(context, state);
                     },
+                    child: _HealthDiagnosisCard(
+                      state: state,
+                      showDetails: _showDiagnosisDetails,
+                      onToggleDetails: () {
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          _showDiagnosisDetails = !_showDiagnosisDetails;
+                        });
+                      },
+                    ),
                   ).animate().fade(delay: 200.ms).slideY(begin: 0.05),
+
+                  const SizedBox(height: 16),
+
+                  _buildSmartInsights(state, isDark, context)
+                      .animate().fade(delay: 210.ms).slideY(begin: 0.05),
 
                   const SizedBox(height: 24),
 
@@ -762,9 +861,82 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                         borderRadius: BorderRadius.circular(16),
                         child: BarChart(
                           BarChartData(
+                            barTouchData: BarTouchData(
+                              touchTooltipData: BarTouchTooltipData(
+                                getTooltipColor: (group) => isDark ? const Color(0xFF162826) : Colors.teal.shade50.withOpacity(0.9),
+                                tooltipRoundedRadius: 12,
+                                tooltipBorder: BorderSide(
+                                  color: isDark ? AppColors.borderDark : Colors.teal.shade100,
+                                  width: 1,
+                                ),
+                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                  final day = DateTime.now().subtract(Duration(days: 6 - group.x.toInt()));
+                                  final dayLabel = DateFormat('EEEE', 'id_ID').format(day);
+                                  
+                                  final startOfDay = DateTime(day.year, day.month, day.day);
+                                  final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
+                                  final rawExpense = state.transactions
+                                      .where((t) => t.isExpense && t.date.isAfter(startOfDay) && t.date.isBefore(endOfDay))
+                                      .fold(0.0, (sum, t) => sum + t.amount);
+
+                                  final status = rawExpense > state.dailySafeBudget ? 'Waspada 🚨' : 'Aman ✅';
+                                  
+                                  return BarTooltipItem(
+                                    '$dayLabel\n',
+                                    TextStyle(
+                                      color: isDark ? Colors.white : Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: CurrencyService.formatRupiah(rawExpense),
+                                        style: TextStyle(
+                                          color: rawExpense > state.dailySafeBudget
+                                              ? colorScheme.error
+                                              : colorScheme.primary,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: '\n($status)',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black54,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            gridData: FlGridData(
+                              show: true,
+                              drawVerticalLine: false,
+                              drawHorizontalLine: true,
+                              horizontalInterval: state.dailySafeBudget > 0 ? state.dailySafeBudget * 0.25 : 25000,
+                              checkToShowHorizontalLine: (value) {
+                                if (state.dailySafeBudget == 0) return false;
+                                final quarter = state.dailySafeBudget * 0.25;
+                                final half = state.dailySafeBudget * 0.5;
+                                final threeQuarters = state.dailySafeBudget * 0.75;
+                                return (value - quarter).abs() < 1.0 ||
+                                    (value - half).abs() < 1.0 ||
+                                    (value - threeQuarters).abs() < 1.0;
+                              },
+                              getDrawingHorizontalLine: (value) {
+                                return FlLine(
+                                  color: isDark 
+                                      ? Colors.white.withOpacity(0.08) 
+                                      : Colors.black.withOpacity(0.05),
+                                  strokeWidth: 1,
+                                  dashArray: [4, 4],
+                                );
+                              },
+                            ),
                             barGroups: _buildChartGroups(state.transactions, state.dailySafeBudget),
                             borderData: FlBorderData(show: false),
-                            gridData: const FlGridData(show: false),
                             alignment: BarChartAlignment.spaceAround,
                             maxY: state.dailySafeBudget * 1.5 < 100000 ? 150000 : state.dailySafeBudget * 1.5,
                             titlesData: FlTitlesData(
@@ -813,7 +985,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Column(
                                 children: [
-                                  Icon(Icons.emoji_emotions_outlined, color: Colors.grey.withValues(alpha: 0.5), size: 36),
+                                  Icon(Icons.emoji_emotions_outlined, color: Colors.grey.withOpacity(0.5), size: 36),
                                   const SizedBox(height: 8),
                                   const Text(
                                     'Belum ada pengeluaran hari ini.\nDompetmu tersenyum! 🪙',
@@ -825,49 +997,71 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                             ),
                           )
                         ] else ...[
-                          ...categoryTotals.entries.map((entry) {
-                            final cat = entry.key;
-                            final amount = entry.value;
-                            final percent = todayTotalExpense == 0 ? 0.0 : amount / todayTotalExpense;
-                            final color = _getCategoryColor(cat);
-                            final icon = _getCategoryIcon(cat);
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(icon, color: color, size: 18),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(cat, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                      ),
-                                      Text(
-                                        '${(percent * 100).toInt()}%',
-                                        style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _formatMoney(amount),
-                                        style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: LinearProgressIndicator(
-                                      value: percent,
-                                      minHeight: 6,
-                                      backgroundColor: color.withValues(alpha: 0.1),
-                                      valueColor: AlwaysStoppedAnimation(color),
-                                    ),
-                                  ),
-                                ],
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                height: 120,
+                                child: NataDonutChart(
+                                  categoryTotals: categoryTotals,
+                                  totalAmount: todayTotalExpense,
+                                  getCategoryColor: _getCategoryColor,
+                                ),
                               ),
-                            );
-                          }).toList(),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: categoryTotals.entries.map((entry) {
+                                    final cat = entry.key;
+                                    final amount = entry.value;
+                                    final percent = todayTotalExpense == 0 ? 0.0 : amount / todayTotalExpense;
+                                    final color = _getCategoryColor(cat);
+                                    final icon = _getCategoryIcon(cat);
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(icon, color: color, size: 12),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  cat,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${(percent * 100).toInt()}%',
+                                                style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 11),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: percent,
+                                              minHeight: 4,
+                                              backgroundColor: color.withOpacity(0.1),
+                                              valueColor: AlwaysStoppedAnimation(color),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ],
                     ),
@@ -1045,6 +1239,237 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
           ),
         ],
       ),
+    );
+  }
+
+  void _showHealthDetailBottomSheet(BuildContext context, DashboardState state) {
+    final score = state.healthScore;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color statusColor;
+    String statusTitle;
+    String statusSubtitle;
+    if (score >= 80) {
+      statusColor = AppColors.accent;
+      statusTitle = 'SEHAT KEUANGAN';
+      statusSubtitle = 'Keuanganmu dalam kondisi sangat bugar! Pertahankan, ya! 🚀';
+    } else if (score >= 55) {
+      statusColor = Colors.orange;
+      statusTitle = 'WASPADA FINANSIAL';
+      statusSubtitle = 'Ada beberapa indikator yang butuh perhatian kecilmu. ⚠️';
+    } else {
+      statusColor = AppColors.alert;
+      statusTitle = 'KRITIS FINANSIAL';
+      statusSubtitle = 'Keuanganmu butuh pertolongan darurat. Ayo batasi pengeluaran! 🚨';
+    }
+
+    // Indicators calculations
+    final isBudgetCompliant = state.todayExpense <= state.dailySafeBudget;
+    final dailyScore = isBudgetCompliant ? 100 : 50;
+
+    final isBalanceHealthy = state.remainingFund >= 0;
+    final balanceScore = isBalanceHealthy ? 100 : 30;
+
+    final periodUsage = state.period == null || state.period!.flexibleFund <= 0 
+        ? 0.0 : (state.totalExpense / state.period!.flexibleFund);
+    final usageScore = periodUsage <= 0.55 ? 100 : (periodUsage <= 0.85 ? 70 : 40);
+
+    final savingProgress = state.savingGoal == null ? 0.0 : state.savingGoal!.currentAmount / state.savingGoal!.targetAmount;
+    final savingScore = state.savingGoal == null ? 50 : (savingProgress >= 0.5 ? 100 : 70);
+
+    final autoSaveScore = (state.userSettings?.autoSavingEnabled ?? true) ? 100 : 50;
+
+    final breakdownItems = [
+      {'name': 'Kepatuhan Budget Harian', 'score': dailyScore, 'icon': Icons.today_rounded},
+      {'name': 'Sisa Dana Fleksibel', 'score': balanceScore, 'icon': Icons.account_balance_wallet_rounded},
+      {'name': 'Rasio Pemakaian Bulanan', 'score': usageScore, 'icon': Icons.pie_chart_outline_rounded},
+      {'name': 'Progres Target Tabungan', 'score': savingScore, 'icon': Icons.savings_rounded},
+      {'name': 'Otomatisasi Tabungan', 'score': autoSaveScore, 'icon': Icons.bolt_rounded},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Diagnosis Medis Finansial',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: score / 100.0),
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeOutCubic,
+                builder: (context, animValue, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 140,
+                        height: 140,
+                        child: CustomPaint(
+                          painter: HealthScorePainter(
+                            scorePercent: animValue,
+                            scoreColor: statusColor,
+                          ),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${(animValue * 100).toInt()}',
+                            style: TextStyle(
+                              fontSize: 38,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            statusTitle,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Text(
+                statusSubtitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+              Text(
+                'Rincian Indikator',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ...breakdownItems.map((item) {
+                final itemScore = item['score'] as int;
+                final itemName = item['name'] as String;
+                final itemIcon = item['icon'] as IconData;
+                final Color itemColor = itemScore >= 80 
+                    ? AppColors.accent 
+                    : (itemScore >= 55 ? Colors.orange : AppColors.alert);
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Icon(itemIcon, color: itemColor, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              itemName,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: itemScore / 100.0,
+                                minHeight: 6,
+                                backgroundColor: itemColor.withOpacity(0.1),
+                                valueColor: AlwaysStoppedAnimation(itemColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        '$itemScore/100',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: itemColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  if (!isBudgetCompliant)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.go(AppRouter.transactions);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.alert,
+                            side: const BorderSide(color: AppColors.alert),
+                          ),
+                          child: const Text('Kurangi Jajan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  if (savingScore < 100)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: FilledButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.go(AppRouter.savings);
+                          },
+                          child: const Text('Tabung Sekarang', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  if (isBudgetCompliant && savingScore == 100)
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Hebat! Pertahankan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1636,6 +2061,291 @@ class _AnimatedCountTextState extends State<_AnimatedCountText> with SingleTicke
         );
       },
     );
+  }
+}
+
+class HealthScorePainter extends CustomPainter {
+  final double scorePercent;
+  final Color scoreColor;
+
+  HealthScorePainter({required this.scorePercent, required this.scoreColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = min(size.width, size.height) / 2 - 8;
+    
+    final bgPaint = Paint()
+      ..color = scoreColor.withOpacity(0.15)
+      ..strokeWidth = 10
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final progressPaint = Paint()
+      ..color = scoreColor
+      ..strokeWidth = 10
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Draw background track (3/4 circle)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2 - pi * 3/4,
+      pi * 1.5,
+      false,
+      bgPaint,
+    );
+
+    // Draw progress arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2 - pi * 3/4,
+      pi * 1.5 * scorePercent,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant HealthScorePainter oldDelegate) {
+    return oldDelegate.scorePercent != scorePercent || oldDelegate.scoreColor != scoreColor;
+  }
+}
+
+class NataDonutChart extends StatefulWidget {
+  final Map<String, double> categoryTotals;
+  final double totalAmount;
+  final Color Function(String) getCategoryColor;
+
+  const NataDonutChart({
+    super.key,
+    required this.categoryTotals,
+    required this.totalAmount,
+    required this.getCategoryColor,
+  });
+
+  @override
+  State<NataDonutChart> createState() => _NataDonutChartState();
+}
+
+class _NataDonutChartState extends State<NataDonutChart> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  int? _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details, BoxConstraints constraints) {
+    final center = Offset(constraints.maxWidth / 2, constraints.maxHeight / 2);
+    final localPosition = details.localPosition;
+    final dx = localPosition.dx - center.dx;
+    final dy = localPosition.dy - center.dy;
+
+    final distance = sqrt(dx * dx + dy * dy);
+    final outerRadius = min(constraints.maxWidth, constraints.maxHeight) / 2;
+    final innerRadius = outerRadius * 0.65;
+
+    if (distance >= innerRadius - 10 && distance <= outerRadius + 10) {
+      double angle = atan2(dy, dx);
+      if (angle < -pi / 2) {
+        angle += 2 * pi;
+      }
+      double normalizedAngle = angle + pi / 2;
+      if (normalizedAngle >= 2 * pi) {
+        normalizedAngle -= 2 * pi;
+      }
+
+      final entries = widget.categoryTotals.entries.toList();
+      double currentAngle = 0;
+      int? tappedIndex;
+
+      for (int i = 0; i < entries.length; i++) {
+        final percent = entries[i].value / widget.totalAmount;
+        final sweep = percent * 2 * pi;
+        if (normalizedAngle >= currentAngle && normalizedAngle <= currentAngle + sweep) {
+          tappedIndex = i;
+          break;
+        }
+        currentAngle += sweep;
+      }
+
+      setState(() {
+        if (_selectedIndex == tappedIndex) {
+          _selectedIndex = null;
+        } else {
+          _selectedIndex = tappedIndex;
+        }
+      });
+      HapticFeedback.lightImpact();
+    } else {
+      setState(() {
+        _selectedIndex = null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = widget.categoryTotals.entries.toList();
+    final values = entries.map((e) => e.value).toList();
+    final colors = entries.map((e) => widget.getCategoryColor(e.key)).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final outerRadius = min(constraints.maxWidth, constraints.maxHeight) / 2;
+        final innerRadius = outerRadius * 0.65;
+
+        String centerTitle = 'Total';
+        String centerValue = CurrencyService.formatRupiah(widget.totalAmount);
+        Color centerColor = isDark ? Colors.white70 : Colors.black54;
+
+        if (_selectedIndex != null && _selectedIndex! < entries.length) {
+          final entry = entries[_selectedIndex!];
+          centerTitle = entry.key;
+          final percent = (entry.value / widget.totalAmount * 100).toInt();
+          centerValue = '$percent%\n${CurrencyService.formatRupiah(entry.value)}';
+          centerColor = widget.getCategoryColor(entry.key);
+        }
+
+        return GestureDetector(
+          onTapDown: (details) => _handleTapDown(details, constraints),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return CustomPaint(
+                    size: Size(constraints.maxWidth, constraints.maxHeight),
+                    painter: DonutPainter(
+                      values: values,
+                      colors: colors,
+                      sweepAnimation: _controller.value,
+                      selectedIndex: _selectedIndex,
+                    ),
+                  );
+                },
+              ),
+              Container(
+                width: innerRadius * 2 - 8,
+                height: innerRadius * 2 - 8,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                    )
+                  ]
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      centerTitle,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: centerColor,
+                        letterSpacing: 0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      centerValue,
+                      style: TextStyle(
+                        fontSize: _selectedIndex != null ? 11 : 13,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : Colors.black87,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class DonutPainter extends CustomPainter {
+  final List<double> values;
+  final List<Color> colors;
+  final double sweepAnimation;
+  final int? selectedIndex;
+
+  DonutPainter({
+    required this.values,
+    required this.colors,
+    required this.sweepAnimation,
+    this.selectedIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = min(size.width, size.height) / 2;
+    final innerRadius = outerRadius * 0.65;
+
+    double startAngle = -pi / 2;
+    final total = values.fold(0.0, (a, b) => a + b);
+
+    if (total == 0) {
+      final paint = Paint()
+        ..color = Colors.grey.withOpacity(0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = outerRadius - innerRadius;
+      canvas.drawCircle(center, (outerRadius + innerRadius) / 2, paint);
+      return;
+    }
+
+    for (int i = 0; i < values.length; i++) {
+      final sweepAngle = (values[i] / total) * 2 * pi * sweepAnimation;
+      final isSelected = selectedIndex == i;
+
+      final paint = Paint()
+        ..color = colors[i]
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isSelected ? (outerRadius - innerRadius + 6) : (outerRadius - innerRadius);
+
+      final rect = Rect.fromCircle(
+        center: center,
+        radius: (outerRadius + innerRadius) / 2 + (isSelected ? 3 : 0),
+      );
+
+      canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+      startAngle += (values[i] / total) * 2 * pi;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DonutPainter oldDelegate) {
+    return oldDelegate.sweepAnimation != sweepAnimation ||
+        oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.values != values ||
+        oldDelegate.colors != colors;
   }
 }
 
