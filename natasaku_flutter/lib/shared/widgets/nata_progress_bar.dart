@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/animations/nata_animations.dart';
 
 /// Progress bar dengan animated fill (500ms ease-in-out) + gradient.
 /// Digunakan di hero card, savings progress, category breakdown.
@@ -68,21 +69,32 @@ class _NataProgressBarState extends State<NataProgressBar>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultBg = isDark
-        ? const Color(0xFF0D9488).withValues(alpha: 0.15)
-        : const Color(0xFF0D9488).withValues(alpha: 0.10);
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final defaultGradient = const LinearGradient(
-      colors: [Color(0xFF0D9488), Color(0xFF10B981)],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-    );
+    final defaultBg = isDark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
 
     final radius = widget.borderRadius ?? BorderRadius.circular(widget.height / 2);
 
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, _) {
+        final currentVal = _animation.value;
+        
+        // Color transition: green (teal) -> amber (secondary) -> rose (error)
+        final Color currentProgressColor = currentVal >= 1.0
+            ? colorScheme.error
+            : currentVal > 0.7
+                ? colorScheme.secondary
+                : colorScheme.primary;
+
+        final currentGradient = widget.gradient ?? LinearGradient(
+          colors: [currentProgressColor.withValues(alpha: 0.8), currentProgressColor],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        );
+
         return ClipRRect(
           borderRadius: radius,
           child: Container(
@@ -93,14 +105,14 @@ class _NataProgressBarState extends State<NataProgressBar>
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: _animation.value,
+              widthFactor: currentVal.clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: widget.gradient ?? defaultGradient,
+                  gradient: currentGradient,
                   borderRadius: radius,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0D9488).withValues(alpha: 0.30),
+                      color: currentProgressColor.withValues(alpha: 0.30),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -128,15 +140,16 @@ class NataOverBudgetProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return NataProgressBar(
       value: value.clamp(0.0, 1.0),
       height: height,
-      gradient: const LinearGradient(
-        colors: [Color(0xFFFCA5A5), Color(0xFFF87171)],
+      gradient: LinearGradient(
+        colors: [colorScheme.error.withValues(alpha: 0.8), colorScheme.error],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
       ),
-      backgroundColor: const Color(0xFFFEE2E2),
+      backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.4),
     );
   }
 }

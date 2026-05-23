@@ -104,7 +104,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ? _buildShimmerLoading()
               : state.period == null
                   ? const _EmptySetupView()
-                  : _DashboardContent(state: state),
+                  : _DashboardContent(state: state)
+                  .animate()
+                  .fade(duration: 350.ms)
+                  .slideY(
+                    begin: 0.04,
+                    end: 0.0,
+                    duration: 350.ms,
+                    curve: Curves.fastOutSlowIn, // NataCurve.smooth
+                  ),
         ),
       ),
     );
@@ -148,9 +156,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 }
 
-class _DashboardContentState extends ConsumerState<_DashboardContent> {
+class _DashboardContentState extends ConsumerState<_DashboardContent> with SingleTickerProviderStateMixin {
   bool _hideBalance = false;
   bool _showDiagnosisDetails = false;
+  late AnimationController _chartController;
+
+  @override
+  void initState() {
+    super.initState();
+    _chartController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _chartController.forward();
+  }
+
+  @override
+  void dispose() {
+    _chartController.dispose();
+    super.dispose();
+  }
 
   String _formatMoney(double value) {
     if (_hideBalance) return '••••••';
@@ -226,6 +251,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
     final list = <BarChartGroupData>[];
     
     for (int i = 6; i >= 0; i--) {
+      final index = 6 - i;
       final day = now.subtract(Duration(days: i));
       final startOfDay = DateTime(day.year, day.month, day.day);
       final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
@@ -235,22 +261,36 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
           .fold(0.0, (sum, t) => sum + t.amount);
           
       final isToday = i == 0;
+
+      // Staggered animation using Interval
+      final start = (index * 60) / 1000.0;
+      final end = (start + 0.4).clamp(0.0, 1.0);
+      final animationValue = CurvedAnimation(
+        parent: _chartController,
+        curve: Interval(start, end, curve: Curves.easeOutBack),
+      ).value;
       
+      // Theme colors
+      final colorScheme = Theme.of(context).colorScheme;
+      final Color barColor = dayExpense > dailySafeBudget
+          ? colorScheme.error
+          : (isToday 
+              ? colorScheme.primary 
+              : colorScheme.primary.withValues(alpha: 0.3)); // Muted to 30% opacity if not today
+
       list.add(
         BarChartGroupData(
-          x: 6 - i,
+          x: index,
           barRods: [
             BarChartRodData(
-              toY: dayExpense,
-              color: dayExpense > dailySafeBudget
-                  ? AppColors.alert
-                  : (isToday ? AppColors.primary : AppColors.primary.withValues(alpha: 0.6)),
+              toY: dayExpense * animationValue,
+              color: barColor,
               width: 14,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)), // RRect corners
               backDrawRodData: BackgroundBarChartRodData(
                 show: true,
                 toY: dailySafeBudget == 0 ? 100000 : dailySafeBudget,
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: colorScheme.primary.withValues(alpha: 0.08),
               ),
             ),
           ],
