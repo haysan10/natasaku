@@ -827,44 +827,63 @@ class _ExecutiveSummaryTab extends StatelessWidget {
         const SizedBox(height: 12),
 
         // 2x2 Grid of Financial Metric Cards
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.25,
+        Column(
           children: [
-            _SummaryItemCard(
-              title: 'Pemasukan',
-              amount: state.totalIncome,
-              icon: PhosphorIconsRegular.trendUp,
-              color: AppColors.accent,
-              isDark: isDark,
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _SummaryItemCard(
+                      title: 'Pemasukan',
+                      amount: state.totalIncome,
+                      icon: PhosphorIconsRegular.trendUp,
+                      color: AppColors.accent,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SummaryItemCard(
+                      title: 'Pengeluaran',
+                      amount: state.totalExpense,
+                      icon: PhosphorIconsRegular.trendDown,
+                      color: AppColors.alert,
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            _SummaryItemCard(
-              title: 'Pengeluaran',
-              amount: state.totalExpense,
-              icon: PhosphorIconsRegular.trendDown,
-              color: AppColors.alert,
-              isDark: isDark,
-            ),
-            _SummaryItemCard(
-              title: 'Arus Kas Bersih',
-              amount: state.totalIncome - state.totalExpense,
-              icon: PhosphorIconsRegular.arrowsLeftRight,
-              color: (state.totalIncome - state.totalExpense) >= 0 
-                  ? AppColors.accent 
-                  : AppColors.alert,
-              isDark: isDark,
-              extraLabel: (state.totalIncome - state.totalExpense) >= 0 ? '🟢 SURPLUS' : '🔴 DEFISIT',
-            ),
-            _SummaryItemCard(
-              title: 'Dana Simpanan',
-              amount: state.savingGoal?.currentAmount ?? 0.0,
-              icon: PhosphorIconsRegular.piggyBank,
-              color: const Color(0xFF3B82F6),
-              isDark: isDark,
+            const SizedBox(height: 16),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _SummaryItemCard(
+                      title: 'Arus Kas Bersih',
+                      amount: state.totalIncome - state.totalExpense,
+                      icon: PhosphorIconsRegular.arrowsLeftRight,
+                      color: (state.totalIncome - state.totalExpense) >= 0 
+                          ? AppColors.accent 
+                          : AppColors.alert,
+                      isDark: isDark,
+                      extraLabel: (state.totalIncome - state.totalExpense) >= 0 ? '🟢 SURPLUS' : '🔴 DEFISIT',
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SummaryItemCard(
+                      title: 'Dana Simpanan',
+                      amount: state.savingGoal?.currentAmount ?? 0.0,
+                      icon: PhosphorIconsRegular.piggyBank,
+                      color: const Color(0xFF3B82F6),
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ).animate().fade(delay: 300.ms).slideY(begin: 0.1),
@@ -899,12 +918,22 @@ class _ExecutiveSummaryTab extends StatelessWidget {
                 const SizedBox(height: 24),
                 SizedBox(
                   height: 200,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 60,
-                      sections: _buildPieSections(sortedCategories, state.totalExpense),
-                    ),
+                  child: Stack(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      PieChart(
+                        PieChartData(
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 60,
+                          sections: _buildPieSections(sortedCategories, state.totalExpense),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -979,27 +1008,30 @@ class _ExecutiveSummaryTab extends StatelessWidget {
                   const SizedBox(height: 16),
                   ...sortedCategories.take(3).map((e) {
                     final pct = state.totalExpense > 0 ? (e.value / state.totalExpense) * 100 : 0.0;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                e.key,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                CurrencyService.formatRupiah(e.value),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          // Linear progress bar matching the slice color
-                          ClipRRect(
+                    final categoryTxs = state.transactions
+                        .where((tx) => tx.isExpense && (tx.category ?? 'Lainnya') == e.key)
+                        .toList();
+
+                    return Theme(
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(vertical: 4),
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              e.key,
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
+                            Text(
+                              CurrencyService.formatRupiah(e.value),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                          child: ClipRRect(
                             borderRadius: BorderRadius.circular(3),
                             child: Container(
                               height: 6,
@@ -1019,7 +1051,52 @@ class _ExecutiveSummaryTab extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
+                        ),
+                        children: categoryTxs.isEmpty
+                            ? [
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Text('Belum ada transaksi di kategori ini.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                )
+                              ]
+                            : categoryTxs.map((tx) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1C3432) : Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              tx.note ?? 'Jajanan',
+                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              DateFormat('dd MMM yyyy', 'id_ID').format(tx.date),
+                                              style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        '-${CurrencyService.formatRupiah(tx.amount)}',
+                                        style: const TextStyle(
+                                          color: AppColors.alert,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                       ),
                     );
                   }),
