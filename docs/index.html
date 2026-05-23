@@ -1,0 +1,2681 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>NataSaku — Hari ini aman belanja berapa?</title>
+  <meta name="description" content="NataSaku menghitung jatah harianmu secara otomatis dari sisa budget bulanan. Aplikasi budgeting Android offline-first, tanpa akun, tanpa cloud, tanpa ribet.">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="NataSaku — Hari ini aman belanja berapa?">
+  <meta property="og:description" content="Hitung jatah belanja harianmu dengan tenang. Tanpa akun, tanpa cloud, tanpa ribet.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://haysan10.github.io/natasaku/">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+  
+  <!-- Theme Color initialization to prevent flash of dark mode on light theme -->
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const isLight = saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches);
+      if (isLight) {
+        document.documentElement.classList.add('light-mode');
+      }
+    })();
+  </script>
+
+  <style>
+    /* CSS Design System & Custom Tokens */
+    @layer reset, base, theme, components, layout, utilities;
+
+    @layer reset {
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      html {
+        scroll-behavior: smooth;
+        text-size-adjust: 100%;
+      }
+      
+      body {
+        background-color: var(--color-bg);
+        color: var(--color-text-primary);
+        font-family: var(--font-body);
+        line-height: 1.5;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      img, svg {
+        display: block;
+        max-width: 100%;
+      }
+      
+      button, input {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+      }
+      
+      button {
+        cursor: pointer;
+      }
+      
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+    }
+
+    @layer theme {
+      :root {
+        /* NataSaku Brand Palette */
+        --primary: #0d9488;
+        --primary-dark: #0f766e;
+        --primary-soft: #ccfbf1;
+        --accent: #10b981;
+        --alert: #f43f5e;
+
+        /* Default Dark Mode Colors */
+        --color-bg: #0b0f19;          /* deep blue-black */
+        --color-surface: #131b2b;     /* card background */
+        --color-border: #1e293b;      /* subtle borders */
+        --color-accent: #0d9488;      /* Nata Teal */
+        --color-accent-soft: rgba(13, 148, 136, 0.15);
+        --color-text-primary: #f8fafc;
+        --color-text-muted: #94a3b8;
+        --color-warning: #fbbf24;     /* Warning amber */
+        --color-danger: #f43f5e;      /* Alert rose */
+        --color-phone-bg: #0b0f19;
+
+        /* Phone frame elements */
+        --phone-frame: #1e293b;
+        --phone-screen: #0b0f19;
+        --phone-notch: #131b2b;
+
+        /* Fonts */
+        --font-heading: 'Plus Jakarta Sans', sans-serif;
+        --font-body: 'Inter', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+
+        /* Spacing Scale (4px base) */
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-6: 24px;
+        --space-8: 32px;
+        --space-12: 48px;
+        --space-16: 64px;
+        --space-24: 96px;
+
+        /* Radius (Matched to app's card radius) */
+        --radius-sm: 12px;
+        --radius-md: 24px;
+        --radius-lg: 32px;
+        --radius-full: 9999px;
+      }
+
+      /* Light Theme Overrides */
+      :root.light-mode {
+        --color-bg: #f8fafc;
+        --color-surface: #ffffff;
+        --color-border: #e2e8f0;
+        --color-accent: #0d9488;
+        --color-accent-soft: #ccfbf1;
+        --color-text-primary: #0f172a;
+        --color-text-muted: #64748b;
+        --color-warning: #fbbf24;
+        --color-danger: #f43f5e;
+        --color-phone-bg: #f8fafc;
+
+        /* Phone frame elements */
+        --phone-frame: #e2e8f0;
+        --phone-screen: #ffffff;
+        --phone-notch: #f1f5f9;
+      }
+    }
+
+    @layer base {
+      body {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-border) var(--color-bg);
+      }
+      
+      body::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      body::-webkit-scrollbar-track {
+        background: var(--color-bg);
+      }
+      
+      body::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: var(--radius-full);
+      }
+
+      h1, h2, h3, h4 {
+        font-family: var(--font-heading);
+        font-weight: 800;
+        color: var(--color-text-primary);
+        line-height: 1.25;
+      }
+
+      h1 {
+        font-size: clamp(2.5rem, 2rem + 3vw, 4.5rem);
+      }
+
+      h2 {
+        font-size: clamp(1.8rem, 1.5rem + 1.5vw, 3rem);
+        margin-bottom: var(--space-4);
+      }
+
+      p {
+        font-family: var(--font-body);
+        color: var(--color-text-muted);
+        font-size: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
+      }
+    }
+
+    @layer components {
+      /* Navbar */
+      .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background-color: transparent;
+        border-bottom: 1px solid transparent;
+        transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+      }
+
+      .navbar.scrolled {
+        background-color: rgba(13, 17, 23, 0.75);
+        border-bottom: 1px solid var(--color-border);
+        backdrop-filter: blur(12px) saturate(180%);
+        -webkit-backdrop-filter: blur(12px) saturate(180%);
+      }
+
+      .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--space-4) var(--space-6);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo-link {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        font-family: var(--font-heading);
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: var(--color-text-primary);
+      }
+
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        color: var(--color-accent);
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+      }
+
+      .nav-item {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        transition: color 0.2s ease;
+      }
+
+      .nav-item:hover, .nav-item:focus-visible {
+        color: var(--color-text-primary);
+      }
+
+      .nav-github {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        padding: 6px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+      }
+
+      .nav-github:hover, .nav-github:focus-visible {
+        background-color: var(--color-border);
+        border-color: var(--color-text-muted);
+      }
+
+      .nav-github svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* Theme Toggle Button */
+      .theme-toggle-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+        background-color: var(--color-surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-primary);
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        padding: 0;
+      }
+
+      .theme-toggle-btn:hover {
+        background-color: var(--color-border);
+        border-color: var(--color-text-muted);
+        transform: scale(1.05);
+      }
+
+      .theme-toggle-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      :root.light-mode .theme-icon-sun {
+        display: none;
+      }
+      :root:not(.light-mode) .theme-icon-moon {
+        display: none;
+      }
+
+      /* Mobile Nav Menu Drawer */
+      .menu-toggle {
+        display: none;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-primary);
+      }
+
+      .menu-toggle svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .menu-toggle .close-icon {
+        display: none;
+      }
+
+      .menu-toggle.active .menu-icon {
+        display: none;
+      }
+
+      .menu-toggle.active .close-icon {
+        display: block;
+      }
+
+      .mobile-drawer {
+        position: fixed;
+        top: 73px;
+        left: 0;
+        right: 0;
+        background-color: var(--color-bg);
+        border-bottom: 1px solid var(--color-border);
+        padding: var(--space-6);
+        display: none;
+        flex-direction: column;
+        gap: var(--space-4);
+        z-index: 99;
+        transform: translateY(-20px);
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+
+      .mobile-drawer.active {
+        display: flex;
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-3);
+        padding: var(--space-4) var(--space-8);
+        border-radius: var(--radius-full);
+        font-size: 1.05rem;
+        font-weight: 600;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+        will-change: transform;
+      }
+
+      .btn-primary {
+        background-color: var(--color-accent);
+        color: #ffffff;
+        box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
+        animation: pulseShadow 2.5s infinite;
+      }
+
+      .btn-primary:hover, .btn-primary:focus-visible {
+        transform: translateY(-2px);
+        background-color: var(--primary-dark);
+      }
+
+      .btn-secondary {
+        border: 1px solid var(--color-border);
+        color: var(--color-text-primary);
+        background-color: rgba(22, 27, 34, 0.5);
+      }
+
+      .btn-secondary:hover, .btn-secondary:focus-visible {
+        transform: translateY(-2px);
+        background-color: var(--color-border);
+        border-color: var(--color-text-muted);
+      }
+
+      /* CSS Phone Frame */
+      .phone-chassis {
+        width: 280px;
+        height: 560px;
+        background-color: var(--phone-frame);
+        border-radius: 40px;
+        padding: 10px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        border: 2px solid var(--color-border);
+        position: relative;
+        flex-shrink: 0;
+        will-change: transform;
+      }
+
+      .phone-screen {
+        width: 100%;
+        height: 100%;
+        background-color: var(--phone-screen);
+        border-radius: 32px;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .phone-notch {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 110px;
+        height: 24px;
+        background-color: var(--phone-notch);
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .phone-camera {
+        width: 8px;
+        height: 8px;
+        background-color: #0d1117;
+        border-radius: var(--radius-full);
+      }
+
+      .phone-statusBar {
+        height: 36px;
+        padding: 12px 20px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        z-index: 4;
+      }
+
+      .phone-statusBar-icons {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .phone-statusBar-icons svg {
+        width: 12px;
+        height: 12px;
+        fill: currentColor;
+      }
+
+      .phone-homeBar {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90px;
+        height: 4px;
+        background-color: var(--color-text-muted);
+        border-radius: var(--radius-full);
+        z-index: 5;
+      }
+
+      .phone-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: var(--space-4);
+        padding-top: var(--space-3);
+        color: var(--color-text-primary);
+        font-size: 0.85rem;
+        background-color: var(--color-phone-bg);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Animated Letter Reveal styling */
+      .word {
+        margin-right: 0.25em;
+      }
+      .letter {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: revealLetter 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+
+      /* Scroll Animation Classes */
+      .fade-slide-up {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        will-change: transform, opacity;
+      }
+
+      .fade-slide-up.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @layer layout {
+      /* Sections Setup */
+      section {
+        position: relative;
+        padding: var(--space-24) var(--space-6);
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .section-label {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--color-accent);
+        background-color: var(--color-accent-soft);
+        padding: var(--space-1) var(--space-3);
+        border-radius: var(--radius-full);
+        margin-bottom: var(--space-4);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* HERO SECTION */
+      .hero-section {
+        min-height: 100dvh;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: var(--space-12);
+        padding-top: calc(80px + var(--space-12));
+        padding-bottom: var(--space-16);
+      }
+
+      .hero-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: -1;
+        background: radial-gradient(circle, rgba(13, 148, 136, 0.12) 1.5px, transparent 1.5px);
+        background-size: 32px 32px;
+        animation: gridMove 20s linear infinite;
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      .hero-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .hero-title {
+        margin-bottom: var(--space-6);
+        letter-spacing: -0.03em;
+      }
+
+      .hero-subtitle {
+        margin-bottom: var(--space-8);
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fadeInDelayed 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.8s forwards;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: var(--space-4);
+        margin-bottom: var(--space-12);
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fadeInDelayed 0.8s cubic-bezier(0.25, 1, 0.5, 1) 1s forwards;
+      }
+
+      .hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-6);
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fadeInDelayed 0.8s cubic-bezier(0.25, 1, 0.5, 1) 1.2s forwards;
+      }
+
+      .hero-badge {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+      }
+
+      .hero-badge::before {
+        content: '';
+        display: block;
+        width: 6px;
+        height: 6px;
+        border-radius: var(--radius-full);
+        background-color: var(--color-accent);
+      }
+
+      .hero-visual {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+
+      .hero-phone-floating {
+        animation: floatPhone 3.5s ease-in-out infinite alternate;
+      }
+
+      /* Glow background behind phone */
+      .hero-glow {
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        background-color: rgba(13, 148, 136, 0.2);
+        filter: blur(80px);
+        border-radius: var(--radius-full);
+        z-index: -1;
+      }
+
+      /* STORYTELLING SECTION */
+      .story-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-24);
+      }
+
+      .story-block {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-16);
+        align-items: center;
+      }
+
+      .story-block.reversed .story-text-container {
+        grid-column: 2;
+      }
+
+      .story-block.reversed .story-visual-container {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .story-text-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .story-headline {
+        margin-bottom: var(--space-4);
+        letter-spacing: -0.01em;
+      }
+
+      .story-visual-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Story A Visual - Banking Balance Sheet Card */
+      .story-visual-card {
+        width: 340px;
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-6);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        transition: border-color 0.5s ease;
+      }
+
+      .story-visual-card.danger-border {
+        border-color: var(--color-danger);
+      }
+
+      .card-header-bank {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-6);
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: var(--space-3);
+      }
+
+      .card-header-bank .bank-title {
+        font-family: var(--font-heading);
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+        color: var(--color-text-muted);
+      }
+
+      .card-header-bank .bank-logo {
+        width: 14px;
+        height: 14px;
+        border-radius: var(--radius-full);
+        background-color: var(--color-text-muted);
+      }
+
+      .card-balance-label {
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: var(--space-1);
+      }
+
+      .counter-val {
+        font-family: var(--font-mono);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        display: block;
+        transition: color 0.5s ease;
+      }
+
+      .counter-val.danger-text {
+        color: var(--color-danger);
+      }
+
+      .story-warning-lbl {
+        margin-top: var(--space-4);
+        padding: var(--space-2) var(--space-3);
+        background-color: rgba(248, 81, 73, 0.1);
+        border: 1px solid rgba(248, 81, 73, 0.2);
+        border-radius: var(--radius-sm);
+        color: var(--color-danger);
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+
+      .story-tx-list {
+        margin-top: var(--space-6);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+
+      .story-tx-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+
+      .story-tx-name {
+        color: var(--color-text-muted);
+      }
+
+      .story-tx-val {
+        font-family: var(--font-mono);
+        color: var(--color-danger);
+      }
+
+      /* PHONE SHOWCASE CAROUSEL */
+      .showcase-section {
+        background-color: #0b0e14;
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
+        padding-top: var(--space-16);
+        padding-bottom: var(--space-24);
+        max-width: 100vw;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      .showcase-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 var(--space-6);
+        position: relative;
+      }
+
+      .showcase-title-area {
+        text-align: center;
+        margin-bottom: var(--space-12);
+      }
+
+      .carousel-wrapper {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-8);
+      }
+
+      /* Horizontal Scrollable Track */
+      .carousel-track {
+        display: flex;
+        gap: 32px;
+        width: 100%;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none; /* Firefox */
+        scroll-behavior: smooth;
+        padding: 20px 0;
+        padding-inline: calc(50% - 140px); /* Centers active snaps */
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .carousel-track::-webkit-scrollbar {
+        display: none; /* Safari & Chrome */
+      }
+
+      .carousel-item {
+        scroll-snap-align: center;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-4);
+        width: 280px;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        opacity: 0.5;
+        transform: scale(0.92);
+      }
+
+      .carousel-item.active {
+        opacity: 1;
+        transform: scale(1.02);
+      }
+
+      .carousel-item:hover:not(.active) {
+        opacity: 0.75;
+      }
+
+      .carousel-item .phone-chassis {
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+      }
+
+      .carousel-item.active .phone-chassis:hover {
+        transform: scale(1.01);
+        box-shadow: 0 30px 60px -10px rgba(13, 148, 136, 0.25);
+      }
+
+      .carousel-description {
+        text-align: center;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        max-width: 240px;
+        transition: color 0.3s ease;
+      }
+
+      .carousel-item.active .carousel-description {
+        color: var(--color-text-primary);
+      }
+
+      /* Carousel Controls */
+      .carousel-controls {
+        display: flex;
+        align-items: center;
+        gap: var(--space-6);
+      }
+
+      .carousel-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-full);
+        border: 1px solid var(--color-border);
+        background-color: var(--color-surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-primary);
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+      }
+
+      .carousel-btn:hover, .carousel-btn:focus-visible {
+        background-color: var(--color-border);
+        border-color: var(--color-text-muted);
+        transform: scale(1.05);
+      }
+
+      .carousel-btn svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .carousel-dots {
+        display: flex;
+        gap: 10px;
+      }
+
+      .carousel-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: var(--radius-full);
+        background-color: var(--color-border);
+        transition: background-color 0.3s ease, transform 0.3s ease;
+      }
+
+      .carousel-dot.active {
+        background-color: var(--color-accent);
+        transform: scale(1.2);
+      }
+
+      /* FITUR UNGGULAN */
+      .features-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .features-title-area {
+        text-align: center;
+        margin-bottom: var(--space-12);
+        max-width: 600px;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-6);
+        width: 100%;
+      }
+
+      .feature-card {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-6);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        will-change: transform;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature-card:hover {
+        transform: scale(1.02);
+        border-color: rgba(13, 148, 136, 0.4);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px -2px rgba(13, 148, 136, 0.1);
+      }
+
+      .feature-icon-container {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-sm);
+        background-color: var(--color-accent-soft);
+        color: var(--color-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .feature-icon-container svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .feature-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .feature-desc {
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+
+      /* DOWNLOAD CTA SECTION */
+      .cta-section {
+        margin: var(--space-16) auto var(--space-24);
+        width: 100%;
+        max-width: 1100px;
+        background: linear-gradient(135deg, var(--color-surface), var(--color-bg));
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-16) var(--space-6);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Subtle shifting gradient behind CTA */
+      .cta-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 60%);
+        animation: rotateGlow 15s linear infinite;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .cta-content {
+        position: relative;
+        z-index: 1;
+        max-width: 600px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-4);
+      }
+
+      .cta-title {
+        font-size: clamp(2rem, 1.8rem + 1vw, 2.75rem);
+        letter-spacing: -0.02em;
+      }
+
+      .cta-subtitle {
+        font-family: var(--font-mono);
+        color: var(--color-accent);
+        margin-bottom: var(--space-4);
+        font-size: 1rem;
+      }
+
+      .cta-btn {
+        margin-bottom: var(--space-4);
+      }
+
+      .cta-link {
+        font-size: 0.9rem;
+        color: var(--color-text-muted);
+        transition: color 0.2s ease;
+      }
+
+      .cta-link:hover, .cta-link:focus-visible {
+        color: var(--color-text-primary);
+        text-decoration: underline;
+      }
+
+      /* FOOTER */
+      footer {
+        border-top: 1px solid var(--color-border);
+        padding: var(--space-12) var(--space-6) var(--space-16);
+      }
+
+      .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: center;
+      }
+
+      .footer-left {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+
+      .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+
+      .footer-logo svg {
+        width: 24px;
+        height: 24px;
+        color: var(--color-accent);
+      }
+
+      .footer-copy {
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+      }
+
+      .footer-center {
+        display: flex;
+        justify-content: center;
+        gap: var(--space-6);
+        flex-wrap: wrap;
+      }
+
+      .footer-link {
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        transition: color 0.2s ease;
+      }
+
+      .footer-link:hover, .footer-link:focus-visible {
+        color: var(--color-text-primary);
+      }
+
+      .footer-right {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: var(--space-4);
+      }
+
+      .footer-github {
+        color: var(--color-text-muted);
+        transition: color 0.2s ease;
+      }
+
+      .footer-github:hover {
+        color: var(--color-text-primary);
+      }
+
+      .footer-github svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .footer-badge {
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+        background-color: var(--color-surface);
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+      }
+    }
+
+    @layer utilities {
+      /* Animation Keyframes */
+      @keyframes gridMove {
+        from {
+          background-position: 0 0;
+        }
+        to {
+          background-position: 32px 64px;
+        }
+      }
+
+      @keyframes floatPhone {
+        0% {
+          transform: translateY(0);
+        }
+        100% {
+          transform: translateY(-16px);
+        }
+      }
+
+      @keyframes pulseShadow {
+        0% {
+          box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 12px rgba(13, 148, 136, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(13, 148, 136, 0);
+        }
+      }
+
+      @keyframes rotateGlow {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes cursorBlink {
+        0%, 100% {
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes revealLetter {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInDelayed {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Helpers */
+      .accent-text {
+        color: var(--color-accent);
+      }
+
+      .danger-text {
+        color: var(--color-danger) !important;
+      }
+
+      .font-mono {
+        font-family: var(--font-mono) !important;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+    }
+
+    /* CSS Phone Content Rendering Custom Styles */
+    .p-header {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+    }
+
+    .p-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-4);
+    }
+
+    .p-card {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .p-card-accent {
+      background-color: rgba(13, 148, 136, 0.05);
+      border-color: rgba(13, 148, 136, 0.25);
+    }
+
+    .p-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .p-number {
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+
+    .p-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.65rem;
+      font-weight: 600;
+      width: fit-content;
+    }
+
+    .p-badge-success {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .p-badge-warning {
+      background-color: rgba(240, 136, 62, 0.15);
+      color: var(--color-warning);
+      border: 1px solid rgba(240, 136, 62, 0.3);
+    }
+
+    .p-progress {
+      height: 6px;
+      width: 100%;
+      background-color: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .p-progress-bar {
+      height: 100%;
+      background-color: var(--color-accent);
+      border-radius: var(--radius-full);
+    }
+
+    .p-grid-cats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: var(--space-4);
+    }
+
+    .p-cat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.6rem;
+      color: var(--color-text-muted);
+      text-align: center;
+    }
+
+    .p-cat-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--color-text-primary);
+    }
+
+    /* Screen 1 Setup specifics */
+    .p-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .p-input-box {
+      border: 1px solid var(--color-border);
+      background-color: var(--color-surface);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-3);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .p-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 14px;
+      background-color: var(--color-accent);
+      animation: cursorBlink 1s step-end infinite;
+    }
+
+    .p-btn-mock {
+      background-color: var(--color-accent);
+      color: white;
+      border-radius: var(--radius-sm);
+      padding: var(--space-3);
+      font-weight: 600;
+      text-align: center;
+      font-size: 0.75rem;
+      margin-top: var(--space-2);
+    }
+
+    /* Screen 3 Keyboard specifics */
+    .p-keyboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: auto;
+      background-color: rgba(13, 17, 23, 0.4);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+    }
+
+    .p-key {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 6px 0;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .p-chips-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-bottom: 10px;
+    }
+
+    .p-chip {
+      flex-shrink: 0;
+      padding: 4px 10px;
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      font-size: 0.65rem;
+    }
+
+    .p-chip.active {
+      background-color: var(--color-accent-soft);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* Screen 4 Closing specifics */
+    .p-option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .p-option {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 8px var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: 0.75rem;
+    }
+
+    .p-option.selected {
+      border-color: var(--color-accent);
+      background-color: rgba(13, 148, 136, 0.05);
+    }
+
+    .p-radio {
+      width: 14px;
+      height: 14px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .p-option.selected .p-radio::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-accent);
+    }
+
+    /* Screen 5 Report specifics */
+    .p-mini-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .p-cal-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-accent);
+      opacity: 0.75;
+    }
+
+    .p-cal-dot.warning {
+      background-color: var(--color-warning);
+    }
+
+    .p-cal-dot.danger {
+      background-color: var(--color-danger);
+    }
+
+    .p-charts-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      height: 64px;
+      margin-top: 10px;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 4px;
+    }
+
+    .p-chart-bar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .p-chart-bar {
+      width: 18px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      background-color: var(--color-accent);
+    }
+
+    .p-chart-bar.grey {
+      background-color: var(--color-border);
+    }
+
+    .p-chart-bar-lbl {
+      font-size: 0.55rem;
+      color: var(--color-text-muted);
+    }
+
+    /* MEDIA QUERIES (RESPONSIVENESS) */
+    @media (max-width: 1024px) {
+      .hero-section {
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: var(--space-6);
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: flex;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero-section {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding-top: calc(80px + var(--space-4));
+        gap: var(--space-12);
+      }
+
+      .hero-content {
+        align-items: center;
+      }
+
+      .hero-actions {
+        justify-content: center;
+      }
+
+      .hero-badges {
+        justify-content: center;
+      }
+
+      .hero-visual {
+        order: -1;
+      }
+
+      .story-block {
+        grid-template-columns: 1fr;
+        gap: var(--space-8);
+      }
+
+      .story-block.reversed .story-text-container {
+        grid-column: 1;
+      }
+
+      .story-block.reversed .story-visual-container {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-container {
+        grid-template-columns: 1fr;
+        gap: var(--space-8);
+        text-align: center;
+      }
+
+      .footer-left {
+        align-items: center;
+      }
+
+      .footer-center {
+        justify-content: center;
+      }
+
+      .footer-right {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+
+    /* Accessibility: Respect Reduced Motion Preferences */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-delay: 0s !important;
+        animation-duration: 0s !important;
+        transition-duration: 0s !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+      .hero-phone-floating {
+        transform: none !important;
+        animation: none !important;
+      }
+      .hero-particles {
+        animation: none !important;
+      }
+      .letter {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+      }
+      .fade-slide-up {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SECTION 1: NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="logo-link" aria-label="NataSaku Beranda">
+        <!-- Inline Logo Icon (Wallet Shape) -->
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9"/>
+          <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+        </svg>
+        <span>NataSaku</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#fitur" class="nav-item">Fitur</a>
+        <a href="#cerita" class="nav-item">Cerita</a>
+        <a href="#download" class="nav-item">Download</a>
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Ubah tema warna">
+          <!-- Moon Icon (for switching to light mode) -->
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <!-- Sun Icon (for switching to dark mode) -->
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+        <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="nav-github">
+          <!-- Inline GitHub Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+
+      <button class="menu-toggle" id="menu-toggle" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobile-drawer">
+        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobile-drawer">
+    <a href="#fitur" class="nav-item">Fitur</a>
+    <a href="#cerita" class="nav-item">Cerita</a>
+    <a href="#download" class="nav-item">Download</a>
+    <button id="mobile-theme-toggle" class="theme-toggle-btn" style="align-self: center;" aria-label="Ubah tema warna">
+      <!-- Moon Icon -->
+      <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <!-- Sun Icon -->
+      <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+    <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="nav-github" style="justify-content: center; width: 100%;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+      </svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+
+  <!-- SECTION 2: HERO -->
+  <section class="hero-section">
+    <div class="hero-particles"></div>
+    <div class="hero-content">
+      <h1 class="hero-title" id="hero-title">
+        Hari ini aman belanja berapa?
+      </h1>
+      <p class="hero-subtitle">
+        NataSaku menghitung jatah harianmu — tanpa akun, tanpa cloud, tanpa ribet.
+      </p>
+      
+      <div class="hero-actions">
+        <a href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v0.1.1-release.apk" class="btn btn-primary">
+          <!-- Inline Download Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download APK</span>
+        </a>
+        <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          <span>Lihat di GitHub</span>
+        </a>
+      </div>
+
+      <div class="hero-badges">
+        <div class="hero-badge">Android 7.0+</div>
+        <div class="hero-badge">Offline 100%</div>
+        <div class="hero-badge">Open Source MIT</div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-glow"></div>
+      <div class="phone-chassis hero-phone-floating">
+        <div class="phone-screen">
+          <div class="phone-notch"><div class="phone-camera"></div></div>
+          <div class="phone-statusBar">
+            <span>09:41</span>
+            <div class="phone-statusBar-icons">
+              <!-- Network Icon -->
+              <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+              <!-- Battery Icon -->
+              <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+            </div>
+          </div>
+          
+          <!-- Screen Content (Dashboard Preview) -->
+          <div class="phone-content">
+            <div class="p-header">Selamat pagi, Ihsan 👋</div>
+            <div class="p-title">NataSaku</div>
+            
+            <div class="p-card p-card-accent">
+              <span class="p-label">Jatah kamu hari ini</span>
+              <span class="p-number">Rp 87.500</span>
+              <div class="p-badge p-badge-success">
+                <span>Aman Belanja</span>
+              </div>
+              <div class="p-progress">
+                <div class="p-progress-bar" style="width: 25%;"></div>
+              </div>
+            </div>
+
+            <div class="p-card" style="margin-top: auto; margin-bottom: var(--space-6);">
+              <span class="p-label" style="margin-bottom: 4px;">Kategori Pengeluaran</span>
+              <div class="p-grid-cats">
+                <div class="p-cat">
+                  <div class="p-cat-circle">🍔</div>
+                  <span>Makan</span>
+                </div>
+                <div class="p-cat">
+                  <div class="p-cat-circle">🚗</div>
+                  <span>Transport</span>
+                </div>
+                <div class="p-cat">
+                  <div class="p-cat-circle">☕</div>
+                  <span>Kopi</span>
+                </div>
+                <div class="p-cat">
+                  <div class="p-cat-circle">📦</div>
+                  <span>Belanja</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="phone-homeBar"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: STORYTELLING -->
+  <section class="story-section" id="cerita">
+    <div class="text-center">
+      <span class="section-label">Kenapa NataSaku Ada?</span>
+    </div>
+
+    <!-- Block A -->
+    <div class="story-block fade-slide-up">
+      <div class="story-text-container">
+        <h2 class="story-headline">Gajian, senang.<br>Seminggu kemudian, bingung.</h2>
+        <p>
+          Saya pernah ada di titik itu — pemasukan cukup, tapi selalu habis sebelum akhir bulan. Bukan karena boros. Tapi karena tidak pernah tahu berapa nominal yang sebenarnya aman dipakai hari ini.
+        </p>
+      </div>
+      <div class="story-visual-container">
+        <div class="story-visual-card" id="story-visual-card">
+          <div class="card-header-bank">
+            <span class="bank-title">SALDO REKENING UTAMA</span>
+            <div class="bank-logo"></div>
+          </div>
+          <span class="card-balance-label">Total Saldo Aktif</span>
+          <span class="counter-val" id="story-counter">Rp 3.000.000</span>
+          
+          <div class="story-warning-lbl" id="story-warning-label">
+            <span>🚨 Sisa saldo menipis! Tagihan belum terbayar.</span>
+          </div>
+
+          <div class="story-tx-list">
+            <div class="story-tx-item">
+              <span class="story-tx-name">Bayar Langganan Bulanan</span>
+              <span class="story-tx-val">-Rp 150.000</span>
+            </div>
+            <div class="story-tx-item">
+              <span class="story-tx-name">Makan Siang & Ojol Hangout</span>
+              <span class="story-tx-val">-Rp 350.000</span>
+            </div>
+            <div class="story-tx-item">
+              <span class="story-tx-name">Jajan Sore Kopi</span>
+              <span class="story-tx-val">-Rp 45.000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block B -->
+    <div class="story-block reversed fade-slide-up">
+      <div class="story-text-container">
+        <h2 class="story-headline">Semua aplikasi terlalu rumit untuk pertanyaan sesederhana itu.</h2>
+        <p>
+          Grafik, puluhan kategori, budget per merchant — semuanya bagus, tapi bukan itu yang saya butuhkan jam 11 siang di depan warung makan. Saya butuh satu angka final yang ringkas. Hari ini aman belanja berapa?
+        </p>
+      </div>
+      <div class="story-visual-container">
+        <div class="phone-chassis" style="box-shadow: 0 15px 35px rgba(0,0,0,0.5);">
+          <div class="phone-screen">
+            <div class="phone-notch"><div class="phone-camera"></div></div>
+            <div class="phone-statusBar">
+              <span>11:30</span>
+              <div class="phone-statusBar-icons">
+                <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+                <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+              </div>
+            </div>
+            
+            <div class="phone-content" style="justify-content: center; align-items: center; text-align: center;">
+              <span class="p-label" style="font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 8px;">Jatah kamu hari ini</span>
+              <h3 style="font-family: var(--font-mono); font-size: 2rem; color: var(--color-accent); margin-bottom: var(--space-3);">Rp 87.500</h3>
+              <div class="p-badge p-badge-success" style="margin-bottom: var(--space-6);">
+                <span>Aman Belanja</span>
+              </div>
+              <p style="font-size: 0.75rem; max-width: 180px; margin-bottom: var(--space-6);">
+                Satu angka harian yang melindungimu dari overbudget tanpa ribet.
+              </p>
+              <div class="p-btn-mock" style="width: 80%; pointer-events: none;">Catat Pengeluaran</div>
+            </div>
+            <div class="phone-homeBar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: PHONE MOCKUP SHOWCASE (CAROUSEL) -->
+  <section class="showcase-section">
+    <div class="showcase-container">
+      <div class="showcase-title-area">
+        <span class="section-label">Alur Layar Utama</span>
+        <h2 style="margin-top: 10px;">Setiap layar dibuat untuk satu keputusan</h2>
+      </div>
+
+      <div class="carousel-wrapper">
+        <div class="carousel-track" id="carousel-track">
+          
+          <!-- Phone 1: SETUP -->
+          <div class="carousel-item active" data-index="0">
+            <div class="phone-chassis">
+              <div class="phone-screen">
+                <div class="phone-notch"><div class="phone-camera"></div></div>
+                <div class="phone-statusBar">
+                  <span>09:00</span>
+                  <div class="phone-statusBar-icons">
+                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content">
+                  <div class="p-header">Langkah Awal</div>
+                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-3);">Atur Budget Bulanan</div>
+                  
+                  <div class="p-form-group">
+                    <span class="p-label">Pemasukan Bersih Sebulan</span>
+                    <div class="p-input-box">
+                      <span>Rp 3.500.000</span>
+                      <span class="p-cursor"></span>
+                    </div>
+                  </div>
+
+                  <div class="p-form-group">
+                    <span class="p-label">Total Pengeluaran Tetap</span>
+                    <div class="p-input-box">
+                      <span>Rp 1.200.000</span>
+                    </div>
+                  </div>
+
+                  <div class="p-form-group" style="margin-bottom: 20px;">
+                    <span class="p-label">Target Tabungan Bulan Ini</span>
+                    <div class="p-input-box">
+                      <span>Rp 500.000</span>
+                    </div>
+                  </div>
+
+                  <div class="p-btn-mock" style="margin-top: auto; background-color: var(--color-accent);">Simpan & Hitung Jatah</div>
+                </div>
+                <div class="phone-homeBar"></div>
+              </div>
+            </div>
+            <span class="carousel-description">1. Masukkan Pemasukan & Alokasikan Tabungan</span>
+          </div>
+
+          <!-- Phone 2: DASHBOARD -->
+          <div class="carousel-item" data-index="1">
+            <div class="phone-chassis">
+              <div class="phone-screen">
+                <div class="phone-notch"><div class="phone-camera"></div></div>
+                <div class="phone-statusBar">
+                  <span>09:41</span>
+                  <div class="phone-statusBar-icons">
+                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content">
+                  <div class="p-header">Dashboard Utama</div>
+                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-3);">Pantau Angka Amanmu</div>
+                  
+                  <div class="p-card p-card-accent" style="margin-bottom: 12px;">
+                    <span class="p-label">Jatah Kamu Hari Ini</span>
+                    <span class="p-number">Rp 87.500</span>
+                    <div class="p-badge p-badge-success">Aman Belanja</div>
+                    <div class="p-progress">
+                      <div class="p-progress-bar" style="width: 0%;"></div>
+                    </div>
+                  </div>
+
+                  <div class="p-card" style="margin-bottom: 12px; padding: 10px 14px;">
+                    <span class="p-label">Tabungan Berjalan</span>
+                    <div style="display:flex; justify-content:space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-top:2px;">
+                      <span>Rp 500.000</span>
+                      <span class="accent-text">100%</span>
+                    </div>
+                  </div>
+
+                  <div class="p-card" style="margin-bottom: 12px; padding: 10px 14px;">
+                    <span class="p-label">Dana Fleksibel Bulan Ini</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; display:block; margin-top:2px;">Rp 1.800.000</span>
+                  </div>
+
+                  <div class="p-btn-mock" style="margin-top: auto; background-color: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary);">Catat Transaksi</div>
+                </div>
+                <div class="phone-homeBar"></div>
+              </div>
+            </div>
+            <span class="carousel-description">2. Dashboard Menampilkan Satu Angka Utama</span>
+          </div>
+
+          <!-- Phone 3: CATAT TRANSAKSI -->
+          <div class="carousel-item" data-index="2">
+            <div class="phone-chassis">
+              <div class="phone-screen">
+                <div class="phone-notch"><div class="phone-camera"></div></div>
+                <div class="phone-statusBar">
+                  <span>12:15</span>
+                  <div class="phone-statusBar-icons">
+                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content" style="padding: 10px 12px;">
+                  <div class="p-header">Catat Pengeluaran</div>
+                  <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Rp 15.000</span>
+                    <span class="p-cursor"></span>
+                  </div>
+
+                  <div class="p-chips-row">
+                    <span class="p-chip active">🍔 Makan</span>
+                    <span class="p-chip">☕ Jajan</span>
+                    <span class="p-chip">🚗 Transport</span>
+                    <span class="p-chip">🛍️ Belanja</span>
+                  </div>
+
+                  <div class="p-input-box" style="padding: 6px 10px; font-size: 0.75rem; margin-bottom: 8px;">
+                    <span style="color:var(--color-text-muted);">Catatan: Kopi Siang</span>
+                  </div>
+
+                  <!-- Mini Numeric Keypad -->
+                  <div class="p-keyboard">
+                    <div class="p-key">1</div><div class="p-key">2</div><div class="p-key">3</div>
+                    <div class="p-key">4</div><div class="p-key">5</div><div class="p-key">6</div>
+                    <div class="p-key">7</div><div class="p-key">8</div><div class="p-key">9</div>
+                    <div class="p-key">000</div><div class="p-key">0</div><div class="p-key">⌫</div>
+                  </div>
+
+                  <div class="p-btn-mock" style="margin-top: 6px; padding: 10px;">Simpan Pengeluaran</div>
+                </div>
+                <div class="phone-homeBar"></div>
+              </div>
+            </div>
+            <span class="carousel-description">3. Catat Cepat Dengan Keypad Khusus</span>
+          </div>
+
+          <!-- Phone 4: DAILY CLOSING -->
+          <div class="carousel-item" data-index="3">
+            <div class="phone-chassis">
+              <div class="phone-screen">
+                <div class="phone-notch"><div class="phone-camera"></div></div>
+                <div class="phone-statusBar">
+                  <span>21:00</span>
+                  <div class="phone-statusBar-icons">
+                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content">
+                  <div class="p-header">Review Malam Hari</div>
+                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-2);">Ada Sisa Jatah Hari Ini</div>
+                  
+                  <div class="p-card p-card-accent" style="margin-bottom: 12px; padding: 10px var(--space-4); text-align:center;">
+                    <span class="p-label">Sisa Jatah Kamu</span>
+                    <span class="p-number" style="font-size:1.4rem; color:var(--color-accent); display:block;">Rp 25.000</span>
+                  </div>
+
+                  <span class="p-label" style="display:block; margin-bottom: 6px;">Mau dialokasikan ke mana?</span>
+                  
+                  <div class="p-option-list">
+                    <div class="p-option selected">
+                      <div class="p-radio"></div>
+                      <span>Masukkan ke tabungan</span>
+                    </div>
+                    <div class="p-option">
+                      <div class="p-radio"></div>
+                      <span>Tambah ke jatah besok</span>
+                    </div>
+                    <div class="p-option">
+                      <div class="p-radio"></div>
+                      <span>Simpan sebagai dana bebas</span>
+                    </div>
+                  </div>
+
+                  <div class="p-btn-mock" style="margin-top: auto;">Simpan Alokasi</div>
+                </div>
+                <div class="phone-homeBar"></div>
+              </div>
+            </div>
+            <span class="carousel-description">4. Sisa Jatah Harian Dialokasikan</span>
+          </div>
+
+          <!-- Phone 5: LAPORAN -->
+          <div class="carousel-item" data-index="4">
+            <div class="phone-chassis">
+              <div class="phone-screen">
+                <div class="phone-notch"><div class="phone-camera"></div></div>
+                <div class="phone-statusBar">
+                  <span>22:00</span>
+                  <div class="phone-statusBar-icons">
+                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content" style="padding: 12px;">
+                  <div class="p-header">Ringkasan Bulan Ini</div>
+                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-2);">Laporan Bulanan</div>
+                  
+                  <div class="p-card" style="margin-bottom: 8px; padding: 10px;">
+                    <span class="p-label">Total Penghematan Tambahan</span>
+                    <span class="p-number" style="font-size: 1.25rem; color:var(--color-accent); display:block;">Rp 420.000</span>
+                  </div>
+
+                  <!-- Mini Calendar Dot Chart -->
+                  <span class="p-label" style="display:block; margin-bottom: 4px;">Kalender Penggunaan Uang</span>
+                  <div class="p-mini-calendar">
+                    <div class="p-cal-dot"></div><div class="p-cal-dot"></div><div class="p-cal-dot warning"></div><div class="p-cal-dot"></div>
+                    <div class="p-cal-dot"></div><div class="p-cal-dot danger"></div><div class="p-cal-dot"></div><div class="p-cal-dot"></div>
+                    <div class="p-cal-dot"></div><div class="p-cal-dot"></div><div class="p-cal-dot"></div><div class="p-cal-dot warning"></div>
+                    <div class="p-cal-dot"></div><div class="p-cal-dot"></div>
+                  </div>
+
+                  <!-- Vertical Bar Charts -->
+                  <div class="p-charts-row">
+                    <div class="p-chart-bar-container">
+                      <div class="p-chart-bar" style="height: 48px;"></div>
+                      <span class="p-chart-bar-lbl">Tabung</span>
+                    </div>
+                    <div class="p-chart-bar-container">
+                      <div class="p-chart-bar grey" style="height: 38px;"></div>
+                      <span class="p-chart-bar-lbl">Tetap</span>
+                    </div>
+                    <div class="p-chart-bar-container">
+                      <div class="p-chart-bar" style="height: 28px;"></div>
+                      <span class="p-chart-bar-lbl">Harian</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="phone-homeBar"></div>
+              </div>
+            </div>
+            <span class="carousel-description">5. Visualisasi Kalender Sederhana</span>
+          </div>
+
+        </div>
+
+        <!-- Dots & Arrow Controls -->
+        <div class="carousel-controls">
+          <button class="carousel-btn" id="carousel-prev" aria-label="Layar sebelumnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          
+          <div class="carousel-dots" id="carousel-dots">
+            <div class="carousel-dot active"></div>
+            <div class="carousel-dot"></div>
+            <div class="carousel-dot"></div>
+            <div class="carousel-dot"></div>
+            <div class="carousel-dot"></div>
+          </div>
+
+          <button class="carousel-btn" id="carousel-next" aria-label="Layar berikutnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: FITUR UNGGULAN -->
+  <section class="features-section" id="fitur">
+    <div class="features-title-area">
+      <span class="section-label">Fitur Utama</span>
+      <h2 style="margin-top: 10px;">Satu tujuan. Banyak cara bantu.</h2>
+      <p>NataSaku dirancang agar pengelolaan keuangan harianmu terasa tenang dan mudah dipahami, tanpa overhead administrasi.</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Card 1 -->
+      <div class="feature-card fade-slide-up">
+        <div class="feature-icon-container">
+          <!-- Inline Budgeting Engine Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <h3 class="feature-name">Budgeting Engine</h3>
+        <p class="feature-desc">Hitung jatah belanja harian secara otomatis dari pemasukan bulanan dan pengeluaran tetapmu.</p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="feature-card fade-slide-up">
+        <div class="feature-icon-container">
+          <!-- Inline Dashboard Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="17" x2="9" y2="9"/>
+            <line x1="13" y1="17" x2="13" y2="13"/>
+            <line x1="17" y1="17" x2="17" y2="7"/>
+          </svg>
+        </div>
+        <h3 class="feature-name">Dashboard Harian</h3>
+        <p class="feature-desc">Fokus pada satu angka utama hari ini: Apakah belanja kamu aman atau perlu waspada.</p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="feature-card fade-slide-up">
+        <div class="feature-icon-container">
+          <!-- Inline Edit/Transac Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <h3 class="feature-name">Catat Transaksi Cepat</h3>
+        <p class="feature-desc">Input pengeluaran kilat dengan numpad kustom terintegrasi. Tanpa form panjang yang melelahkan.</p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="feature-card fade-slide-up">
+        <div class="feature-icon-container">
+          <!-- Inline Savings Tracker Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <h3 class="feature-name">Savings Tracker</h3>
+        <p class="feature-desc">Tentukan nominal target tabungan bulanan. Amankan uang tabunganmu di awal secara otomatis.</p>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="feature-card fade-slide-up">
+        <div class="feature-icon-container">
+          <!-- Inline Calendar/Laporan Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <h3 class="feature-name">Laporan Bulanan</h3>
+        <p class="feature-desc">Visualisasi ringkasan pengeluaran menggunakan kalender berkode warna untuk melacak pola belanja.</p>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="feature-card fade-slide-up">
+        <div class="feature-icon-container">
+          <!-- Inline Offline Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+          </svg>
+        </div>
+        <h3 class="feature-name">Offline Total</h3>
+        <p class="feature-desc">Tanpa internet, tanpa sync cloud. Seluruh data keuanganmu aman disimpan di memori lokal perangkat.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: DOWNLOAD CTA -->
+  <section class="cta-section" id="download">
+    <div class="cta-content fade-slide-up">
+      <h2 class="cta-title">Sudah siap tahu angka amanmu hari ini?</h2>
+      <p class="cta-subtitle">GRATIS • OFFLINE • ANDROID 7.0+</p>
+      
+      <a href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v0.1.1-release.apk" class="btn btn-primary cta-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Download APK NataSaku</span>
+      </a>
+
+      <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="cta-link">
+        atau build sendiri langsung dari source code →
+      </a>
+    </div>
+  </section>
+
+  <!-- SECTION 7: FOOTER -->
+  <footer>
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="footer-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9"/>
+            <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+          </svg>
+          <span>NataSaku</span>
+        </div>
+        <span class="footer-copy">© 2025 NataSaku — MIT License</span>
+      </div>
+
+      <div class="footer-center">
+        <a href="https://github.com/haysan10/natasaku#readme" target="_blank" rel="noopener noreferrer" class="footer-link">Dokumentasi</a>
+        <a href="https://github.com/haysan10/natasaku/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" class="footer-link">Contributing</a>
+        <a href="https://github.com/haysan10/natasaku/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer" class="footer-link">Security</a>
+        <a href="https://github.com/haysan10/natasaku/releases" target="_blank" rel="noopener noreferrer" class="footer-link">Changelog</a>
+      </div>
+
+      <div class="footer-right">
+        <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="footer-github" aria-label="GitHub Repository">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+        </a>
+        <span class="footer-badge">Made with Flutter 💙</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // ==========================================
+      // THEME SWITCHER TOGGLE ACTION
+      // ==========================================
+      const themeToggle = document.getElementById('theme-toggle');
+      const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+
+      const toggleHandler = () => {
+        const isLight = document.documentElement.classList.contains('light-mode');
+        if (isLight) {
+          document.documentElement.classList.remove('light-mode');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          document.documentElement.classList.add('light-mode');
+          localStorage.setItem('theme', 'light');
+        }
+      };
+
+      if (themeToggle) themeToggle.addEventListener('click', toggleHandler);
+      if (mobileThemeToggle) mobileThemeToggle.addEventListener('click', toggleHandler);
+
+      // ==========================================
+      // SECTION 1: HEADER & MOBILE DRAWER
+      // ==========================================
+      const navbar = document.getElementById('navbar');
+      const menuToggle = document.getElementById('menu-toggle');
+      const mobileDrawer = document.getElementById('mobile-drawer');
+
+      // Scroll event for sticky glass navbar
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 80) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+      }, { passive: true });
+
+      // Hamburger menu trigger
+      menuToggle.addEventListener('click', () => {
+        const isActive = menuToggle.classList.toggle('active');
+        mobileDrawer.classList.toggle('active');
+        menuToggle.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+      });
+
+      // Close mobile drawer on navigation link click
+      const mobileLinks = mobileDrawer.querySelectorAll('a');
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          menuToggle.classList.remove('active');
+          mobileDrawer.classList.remove('active');
+          menuToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+
+      // ==========================================
+      // SECTION 2: HERO TITLE LETTER SPLIT
+      // ==========================================
+      const titleEl = document.getElementById('hero-title');
+      if (titleEl) {
+        const originalText = titleEl.textContent.trim();
+        titleEl.innerHTML = '';
+        
+        // Prevent layout reflow during split transition
+        titleEl.style.minHeight = titleEl.offsetHeight + 'px';
+        
+        const words = originalText.split(' ');
+        words.forEach((word, wordIdx) => {
+          const wordSpan = document.createElement('span');
+          wordSpan.className = 'word';
+          wordSpan.style.display = 'inline-block';
+          wordSpan.style.whiteSpace = 'nowrap';
+          
+          const letters = word.split('');
+          letters.forEach((char, charIdx) => {
+            const charSpan = document.createElement('span');
+            charSpan.className = 'letter';
+            charSpan.textContent = char;
+            charSpan.style.display = 'inline-block';
+            charSpan.style.willChange = 'transform, opacity';
+            
+            // Stagger animations based on approximate character indices
+            const globalIndex = (wordIdx * 4) + charIdx;
+            charSpan.style.animationDelay = `${globalIndex * 0.04}s`;
+            wordSpan.appendChild(charSpan);
+          });
+          
+          titleEl.appendChild(wordSpan);
+          if (wordIdx < words.length - 1) {
+            titleEl.appendChild(document.createTextNode(' '));
+          }
+        });
+        
+        // Remove minHeight constraint after animation completes
+        setTimeout(() => {
+          titleEl.style.minHeight = '';
+        }, 1500);
+      }
+
+
+      // ==========================================
+      // SECTION 3: STORYTELLING COUNTER
+      // ==========================================
+      const counterEl = document.getElementById('story-counter');
+      const warningLabel = document.getElementById('story-warning-label');
+      const visualCard = document.getElementById('story-visual-card');
+      let counterAnimated = false;
+
+      function formatRupiah(number) {
+        return 'Rp ' + number.toLocaleString('id-ID');
+      }
+
+      function startCounterAnimation() {
+        if (counterAnimated) return;
+        counterAnimated = true;
+
+        const duration = 2200; // 2.2 seconds animation
+        const startVal = 3000000;
+        const endVal = 0;
+        let startTimestamp = null;
+
+        function step(timestamp) {
+          if (!startTimestamp) startTimestamp = timestamp;
+          const elapsed = timestamp - startTimestamp;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Cubic ease-out transition
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
+          const currentVal = Math.floor(startVal - (startVal - endVal) * easeProgress);
+          
+          counterEl.textContent = formatRupiah(currentVal);
+
+          if (progress < 1) {
+            window.requestAnimationFrame(step);
+          } else {
+            // Apply danger states once it hits Rp 0
+            counterEl.classList.add('danger-text');
+            visualCard.classList.add('danger-border');
+            warningLabel.style.opacity = '1';
+          }
+        }
+        window.requestAnimationFrame(step);
+      }
+
+
+      // ==========================================
+      // INTERSECTION OBSERVER FOR SCROLL TRIGGERS
+      // ==========================================
+      const scrollItems = document.querySelectorAll('.fade-slide-up');
+      
+      const scrollObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            
+            // If the intersecting element is the story section block containing the counter, trigger it
+            if (entry.target.querySelector('#story-counter')) {
+              startCounterAnimation();
+            }
+            
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+      });
+
+      scrollItems.forEach(item => {
+        scrollObserver.observe(item);
+      });
+
+
+      // ==========================================
+      // SECTION 4: SHOWCASE CAROUSEL
+      // ==========================================
+      const carouselTrack = document.getElementById('carousel-track');
+      const carouselItems = Array.from(carouselTrack.querySelectorAll('.carousel-item'));
+      const dotsContainer = document.getElementById('carousel-dots');
+      const dots = Array.from(dotsContainer.querySelectorAll('.carousel-dot'));
+      const prevBtn = document.getElementById('carousel-prev');
+      const nextBtn = document.getElementById('carousel-next');
+      
+      let currentIndex = 0;
+      let autoplayTimer = null;
+      let isTransitioning = false;
+
+      // Update Carousel visual states based on active index
+      function updateCarousel(targetIndex) {
+        if (isTransitioning) return;
+        isTransitioning = true;
+
+        // Constraint check
+        if (targetIndex < 0) {
+          targetIndex = carouselItems.length - 1;
+        } else if (targetIndex >= carouselItems.length) {
+          targetIndex = 0;
+        }
+
+        currentIndex = targetIndex;
+
+        // Highlight active layout elements
+        carouselItems.forEach((item, idx) => {
+          if (idx === currentIndex) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        });
+
+        dots.forEach((dot, idx) => {
+          if (idx === currentIndex) {
+            dot.classList.add('active');
+          } else {
+            dot.classList.remove('active');
+          }
+        });
+
+        // Dynamic horizontal scroll centering calculations
+        const activeItem = carouselItems[currentIndex];
+        const trackWidth = carouselTrack.offsetWidth;
+        const itemWidth = activeItem.offsetWidth;
+        
+        // Compute offset required to center the item inside the container
+        const targetScrollLeft = activeItem.offsetLeft - (trackWidth - itemWidth) / 2;
+        
+        carouselTrack.scrollTo({
+          left: targetScrollLeft,
+          behavior: 'smooth'
+        });
+
+        // Release transition block after animation completion
+        setTimeout(() => {
+          isTransitioning = false;
+        }, 500);
+      }
+
+      // Autoplay rotations
+      function startAutoplay() {
+        stopAutoplay();
+        autoplayTimer = setInterval(() => {
+          updateCarousel(currentIndex + 1);
+        }, 4000);
+      }
+
+      function stopAutoplay() {
+        if (autoplayTimer) {
+          clearInterval(autoplayTimer);
+          autoplayTimer = null;
+        }
+      }
+
+      // Event listeners for controls
+      nextBtn.addEventListener('click', () => {
+        stopAutoplay();
+        updateCarousel(currentIndex + 1);
+        startAutoplay();
+      });
+
+      prevBtn.addEventListener('click', () => {
+        stopAutoplay();
+        updateCarousel(currentIndex - 1);
+        startAutoplay();
+      });
+
+      dots.forEach((dot, idx) => {
+        dot.addEventListener('click', () => {
+          stopAutoplay();
+          updateCarousel(idx);
+          startAutoplay();
+        });
+      });
+
+      // Hover controls to pause autoplay on desktop
+      carouselTrack.addEventListener('mouseenter', stopAutoplay);
+      carouselTrack.addEventListener('mouseleave', startAutoplay);
+      
+      // Update dot active state on manual touch swipes (mobile viewports)
+      let scrollTimeout = null;
+      carouselTrack.addEventListener('scroll', () => {
+        if (isTransitioning) return;
+        
+        // Debounce scroll listener
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          const trackWidth = carouselTrack.offsetWidth;
+          const scrollLeft = carouselTrack.scrollLeft;
+          
+          // Find which item is closest to the horizontal center of the scroll view
+          let closestIndex = 0;
+          let minDistance = Infinity;
+
+          carouselItems.forEach((item, idx) => {
+            const itemCenter = item.offsetLeft + item.offsetWidth / 2;
+            const scrollCenter = scrollLeft + trackWidth / 2;
+            const distance = Math.abs(itemCenter - scrollCenter);
+
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestIndex = idx;
+            }
+          });
+
+          if (closestIndex !== currentIndex) {
+            currentIndex = closestIndex;
+            
+            // Adjust highlighting classes
+            carouselItems.forEach((item, idx) => {
+              if (idx === currentIndex) {
+                item.classList.add('active');
+              } else {
+                item.classList.remove('active');
+              }
+            });
+
+            dots.forEach((dot, idx) => {
+              if (idx === currentIndex) {
+                dot.classList.add('active');
+              } else {
+                dot.classList.remove('active');
+              }
+            });
+          }
+        }, 100);
+      }, { passive: true });
+
+      // Initialize auto rotation
+      startAutoplay();
+      
+      // Handle page resizing adjustments
+      window.addEventListener('resize', () => {
+        // Recenter current active slide on screen resize
+        updateCarousel(currentIndex);
+      }, { passive: true });
+    });
+  </script>
+
+</body>
+</html>
+
+<!--
+GITHUB PAGES DEPLOYMENT:
+1. Save this file as: docs/index.html in the natasaku repo
+2. Go to: GitHub repo → Settings → Pages
+3. Source: Deploy from branch
+4. Branch: main | Folder: /docs
+5. Save → wait 2-3 minutes
+6. Live at: https://haysan10.github.io/natasaku/
+
+To update: edit docs/index.html → commit → push → auto-deploys
+No build step required.
+-->

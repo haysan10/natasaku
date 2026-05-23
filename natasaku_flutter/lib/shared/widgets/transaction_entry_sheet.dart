@@ -120,6 +120,53 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
     return int.tryParse(digits) ?? 0;
   }
 
+  void _onNumpadPressed(String value) {
+    if (_isSaving) return;
+    
+    setState(() {
+      _errorMessage = null;
+    });
+
+    final currentDigits = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    String newDigits = currentDigits;
+
+    if (value == '⌫') {
+      if (currentDigits.isNotEmpty) {
+        newDigits = currentDigits.substring(0, currentDigits.length - 1);
+      }
+    } else if (value == 'C') {
+      newDigits = '';
+    } else if (value == '000') {
+      if (currentDigits.isNotEmpty) {
+        newDigits = '${currentDigits}000';
+      }
+    } else {
+      if (currentDigits == '0') {
+        newDigits = value;
+      } else {
+        newDigits = '$currentDigits$value';
+      }
+    }
+
+    if (newDigits.length > 12) {
+      newDigits = newDigits.substring(0, 12);
+    }
+
+    if (newDigits.isEmpty) {
+      _amountController.text = '';
+      return;
+    }
+
+    final val = int.tryParse(newDigits) ?? 0;
+    final formatter = NumberFormat.decimalPattern('id');
+    final formatted = 'Rp ${formatter.format(val)}';
+    
+    _amountController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
   bool get _canSubmit => !_isSaving && _parsedAmount > 0 && _category != null;
 
   Future<void> _pickDate() async {
@@ -358,12 +405,9 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                 ),
                 child: TextField(
                   controller: _amountController,
-                  autofocus: true,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    _RupiahInputFormatter(),
-                  ],
+                  autofocus: false,
+                  readOnly: true,
+                  showCursor: true,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontSize: 32,
@@ -379,12 +423,18 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
+                    suffixIcon: _parsedAmount > 0
+                        ? IconButton(
+                            icon: Icon(Icons.cancel, color: activeColor.withValues(alpha: 0.5)),
+                            onPressed: () {
+                              setState(() {
+                                _amountController.clear();
+                                _errorMessage = null;
+                              });
+                            },
+                          )
+                        : null,
                   ),
-                  onChanged: (val) {
-                    setState(() {
-                      _errorMessage = null;
-                    });
-                  },
                 ),
               ),
             ),
@@ -423,6 +473,52 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
             ),
 
             const SizedBox(height: 16),
+
+            // Custom Numpad Grid
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      _NumpadKey(label: '1', onTap: () => _onNumpadPressed('1'), activeColor: activeColor),
+                      _NumpadKey(label: '2', onTap: () => _onNumpadPressed('2'), activeColor: activeColor),
+                      _NumpadKey(label: '3', onTap: () => _onNumpadPressed('3'), activeColor: activeColor),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _NumpadKey(label: '4', onTap: () => _onNumpadPressed('4'), activeColor: activeColor),
+                      _NumpadKey(label: '5', onTap: () => _onNumpadPressed('5'), activeColor: activeColor),
+                      _NumpadKey(label: '6', onTap: () => _onNumpadPressed('6'), activeColor: activeColor),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _NumpadKey(label: '7', onTap: () => _onNumpadPressed('7'), activeColor: activeColor),
+                      _NumpadKey(label: '8', onTap: () => _onNumpadPressed('8'), activeColor: activeColor),
+                      _NumpadKey(label: '9', onTap: () => _onNumpadPressed('9'), activeColor: activeColor),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _NumpadKey(label: '000', onTap: () => _onNumpadPressed('000'), activeColor: activeColor),
+                      _NumpadKey(label: '0', onTap: () => _onNumpadPressed('0'), activeColor: activeColor),
+                      _NumpadKey(
+                        label: '',
+                        icon: Icon(
+                          Icons.backspace_outlined,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          size: 20,
+                        ),
+                        onTap: () => _onNumpadPressed('⌫'),
+                        activeColor: activeColor,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             
             // Save Button Panel (replacing custom numpad)
             Container(
@@ -567,27 +663,48 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-class _RupiahInputFormatter extends TextInputFormatter {
+
+class _NumpadKey extends StatelessWidget {
+  final String label;
+  final Widget? icon;
+  final VoidCallback onTap;
+  final Color activeColor;
+
+  const _NumpadKey({
+    required this.label,
+    this.icon,
+    required this.onTap,
+    required this.activeColor,
+  });
+
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) {
-      return newValue.copyWith(
-        text: '',
-        selection: const TextSelection.collapsed(offset: 0),
-      );
-    }
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    final value = int.tryParse(digits) ?? 0;
-    final formatter = NumberFormat.decimalPattern('id');
-    final formatted = 'Rp ${formatter.format(value)}';
-    
-    return newValue.copyWith(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Material(
+          color: isDark ? AppColors.surfaceVariantDark : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 48,
+              alignment: Alignment.center,
+              child: icon ?? Text(
+                label,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
