@@ -7,7 +7,7 @@ class DailyClosing {
   });
 
   final DateTime date;
-  final double finalExpense;
-  final double carryOver;
+  final int finalExpense;
+  final int carryOver;
   final String? note;
 }

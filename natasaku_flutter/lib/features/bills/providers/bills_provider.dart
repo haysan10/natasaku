@@ -23,8 +23,8 @@ class BillsState {
     );
   }
 
-  double get totalUnpaid => bills.where((b) => !b.isPaid).fold(0, (sum, b) => sum + b.amount);
-  double get totalBills => bills.fold(0, (sum, b) => sum + b.amount);
+  int get totalUnpaid => bills.where((b) => !b.isPaid).fold(0, (sum, b) => sum + b.amount);
+  int get totalBills => bills.fold(0, (sum, b) => sum + b.amount);
 }
 
 class BillsNotifier extends StateNotifier<BillsState> {

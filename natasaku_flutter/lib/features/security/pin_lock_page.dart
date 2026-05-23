@@ -140,7 +140,7 @@ class _PinLockPageState extends ConsumerState<PinLockPage> with SingleTickerProv
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: PhosphorIcon(
@@ -290,11 +290,11 @@ class _PinNumpadBtn extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDark ? AppColors.surfaceVariantDark.withOpacity(0.5) : Colors.white,
+            color: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.5) : Colors.white,
             border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

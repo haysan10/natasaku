@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:natasaku_flutter/features/reports/reports_page.dart';
+import 'package:natasaku/features/reports/reports_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -73,7 +73,7 @@ void main() {
     expect(find.text('Executive Report'), findsOneWidget);
     expect(find.text('Laporan Keuangan'), findsWidgets);
     expect(find.text('Skor Kesehatan Finansial'), findsOneWidget);
-    expect(find.text('AI Rekomendasi Manager'), findsOneWidget);
+    expect(find.text('Catatan untuk Kamu'), findsOneWidget);
 
     // Tap Book Kas & Ekspor tab
     await tester.tap(find.text('Buku Kas & Ekspor'));

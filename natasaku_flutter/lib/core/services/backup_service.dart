@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import '../../data/datasources/local/local_storage.dart';
 import '../../data/repositories/budget_repository.dart';
 
+import '../../core/utils/nominal_input_validator.dart';
+
 class BackupService {
   BackupService({BudgetRepository? repository})
       : _repository = repository ?? BudgetRepository(LocalStorage());
@@ -19,7 +21,9 @@ class BackupService {
     final file = File('${dir.path}/natasaku_backup_$timestamp.json');
 
     final payload = <String, dynamic>{
+      'app': 'NataSaku',
       'version': 1,
+      'schemaVersion': 1,
       'createdAt': DateTime.now().toIso8601String(),
       'raw': raw,
     };
@@ -45,8 +49,11 @@ class BackupService {
     if (files.isEmpty) return false;
 
     final content = await files.first.readAsString();
-    final decoded = jsonDecode(content) as Map<String, dynamic>;
-    final raw = decoded['raw'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final validation = NominalInputValidator.validateRestore(content, files.first.path);
+    if (validation['status'] == 'error') {
+      return false;
+    }
+    final raw = validation['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
     await _repository.importRawData(raw);
     return true;
   }

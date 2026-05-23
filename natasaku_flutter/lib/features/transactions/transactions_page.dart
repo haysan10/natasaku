@@ -364,7 +364,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                                 ),
                               )
                     else if (filtered.isEmpty)
-                      SliverFillRemaining(
+                      const SliverFillRemaining(
                         hasScrollBody: false,
                         child: NataEmptyState(
                           icon: PhosphorIconsRegular.magnifyingGlass,
@@ -396,11 +396,12 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                                     ),
                                   ).animate().fade(),
                                    ...entry.value.map((tx) {
+                                      final messenger = ScaffoldMessenger.of(context);
                                       return NataSwipeableRow(
                                         onEdit: () => _editTransaction(tx),
                                         onDeleteConfirmed: () => ref.read(dashboardProvider.notifier).deleteTransaction(tx.id).then((_) {
                                           if (mounted) {
-                                            ScaffoldMessenger.of(context)
+                                            messenger
                                               ..hideCurrentSnackBar()
                                               ..showSnackBar(
                                                 SnackBar(
@@ -426,7 +427,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                                           onDelete: () => _deleteTransaction(tx),
                                         ),
                                       );
-                                    }).toList(),
+                                    }),
                                 ],
                               );
                             },
@@ -492,7 +493,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
 
 class _SummaryCard extends StatelessWidget {
   final String title;
-  final double amount;
+  final num amount;
   final bool isExpense;
 
   const _SummaryCard({
@@ -509,9 +510,9 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(isDark ? 0.1 : 0.05),
+        color: color.withValues(alpha: isDark ? 0.1 : 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +637,7 @@ class _TransactionRow extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: PhosphorIcon(

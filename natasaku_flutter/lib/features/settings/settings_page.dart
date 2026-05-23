@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/app_constants.dart';
+import '../../core/providers/theme_mode_provider.dart';
 import '../../core/routing/app_router.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/dev/mock_data_seeder.dart';
@@ -31,13 +33,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _soundEnabled = prefs.getBool('sound_enabled') ?? true;
+      _soundEnabled = prefs.getBool(AppConstants.soundEnabledKey) ?? true;
     });
   }
 
   Future<void> _toggleSound(bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('sound_enabled', value);
+    await prefs.setBool(AppConstants.soundEnabledKey, value);
     setState(() {
       _soundEnabled = value;
     });
@@ -95,6 +97,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pengaturan'),
@@ -134,10 +137,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             Card(
-              color: Colors.purple.withOpacity(0.08),
+              color: Colors.purple.withValues(alpha: 0.08),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.purple.withOpacity(0.3), width: 1),
+                side: BorderSide(color: Colors.purple.withValues(alpha: 0.3), width: 1),
               ),
               child: ListTile(
                 title: const Text(
@@ -195,6 +198,52 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 trailing: Switch(
                   value: _soundEnabled,
                   onChanged: _toggleSound,
+                ),
+              ),
+            ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tema',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Pilih tampilan terang, gelap, atau ikuti perangkat.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    SegmentedButton<ThemeMode>(
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text('Terang'),
+                          icon: Icon(Icons.light_mode_outlined),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text('Gelap'),
+                          icon: Icon(Icons.dark_mode_outlined),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text('Sistem'),
+                          icon: Icon(Icons.settings_suggest_outlined),
+                        ),
+                      ],
+                      selected: {themeMode},
+                      onSelectionChanged: (selection) {
+                        final selectedMode = selection.first;
+                        ref
+                            .read(themeModeProvider.notifier)
+                            .updateThemeMode(selectedMode);
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),

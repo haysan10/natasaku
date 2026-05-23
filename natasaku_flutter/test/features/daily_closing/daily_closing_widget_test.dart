@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/data/datasources/local/local_storage.dart';
-import 'package:natasaku_flutter/data/models/budget_period.dart';
-import 'package:natasaku_flutter/data/models/transaction_model.dart';
-import 'package:natasaku_flutter/data/repositories/budget_repository.dart';
-import 'package:natasaku_flutter/features/daily_closing/daily_closing_page.dart';
+import 'package:natasaku/data/datasources/local/local_storage.dart';
+import 'package:natasaku/data/models/budget_period.dart';
+import 'package:natasaku/data/models/transaction_model.dart';
+import 'package:natasaku/data/repositories/budget_repository.dart';
+import 'package:natasaku/features/daily_closing/daily_closing_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

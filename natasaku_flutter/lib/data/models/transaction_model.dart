@@ -10,7 +10,7 @@ class TransactionModel {
 
   final String id;
   final DateTime date;
-  final double amount;
+  final int amount;
   final bool isExpense;
   final String? note;
   final String? category;

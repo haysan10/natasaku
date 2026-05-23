@@ -190,8 +190,8 @@ class _DeleteConfirmSheet extends StatelessWidget {
           // Icon
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEE2E2),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFEE2E2),
               shape: BoxShape.circle,
             ),
             child: const Icon(

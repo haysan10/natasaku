@@ -10,6 +10,7 @@ class LocalStorage {
   static const _savingBalanceKey = 'saving_balance';
   static const _savingAllocationsKey = 'saving_allocations';
   static const _savingGoalKey = 'saving_goal';
+  static const _onboardingCompleteKey = 'onboarding_complete';
   static const _dashboardTutorialSeenKey = 'dashboard_tutorial_seen';
   static const _featureTourCompletedKey = 'feature_tour_completed';
   static const _categoryBudgetsKey = 'category_budgets';
@@ -67,14 +68,21 @@ class LocalStorage {
     return jsonDecode(raw) as Map<String, dynamic>;
   }
 
-  Future<void> saveSavingBalance(double value) async {
+  Future<void> saveSavingBalance(int value) async {
     final pref = await SharedPreferences.getInstance();
-    await pref.setDouble(_savingBalanceKey, value);
+    await pref.setInt(_savingBalanceKey, value);
   }
 
-  Future<double> getSavingBalance() async {
+  Future<int> getSavingBalance() async {
     final pref = await SharedPreferences.getInstance();
-    return pref.getDouble(_savingBalanceKey) ?? 0;
+    final raw = pref.get(_savingBalanceKey);
+    if (raw is int) return raw;
+    if (raw is double) {
+      final migrated = raw.round();
+      await pref.setInt(_savingBalanceKey, migrated);
+      return migrated;
+    }
+    return 0;
   }
 
   Future<void> saveSavingAllocations(List<Map<String, dynamic>> payload) async {
@@ -124,6 +132,8 @@ class LocalStorage {
       mapped[key] = pref.getString(key);
     }
     mapped[_savingBalanceKey] = pref.getDouble(_savingBalanceKey)?.toString();
+    mapped[_onboardingCompleteKey] =
+        pref.getBool(_onboardingCompleteKey)?.toString();
     return mapped;
   }
 
@@ -140,8 +150,16 @@ class LocalStorage {
         if (parsed == null) {
           await pref.remove(_savingBalanceKey);
         } else {
-          await pref.setDouble(_savingBalanceKey, parsed);
+          await pref.setInt(_savingBalanceKey, parsed.round());
         }
+        continue;
+      }
+
+      if (key == _onboardingCompleteKey) {
+        final parsed = value is bool
+            ? value
+            : (value?.toString().toLowerCase() == 'true');
+        await pref.setBool(_onboardingCompleteKey, parsed);
         continue;
       }
 
@@ -151,6 +169,26 @@ class LocalStorage {
         await pref.setString(key, value.toString());
       }
     }
+  }
+
+  Future<void> saveOnboardingComplete(bool value) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setBool(_onboardingCompleteKey, value);
+  }
+
+  Future<bool> getOnboardingComplete() async {
+    final pref = await SharedPreferences.getInstance();
+    if (pref.containsKey(_onboardingCompleteKey)) {
+      return pref.getBool(_onboardingCompleteKey) ?? false;
+    }
+
+    final rawPeriod = pref.getString(_budgetPeriodKey);
+    final hasLegacyPeriod = rawPeriod != null && rawPeriod.isNotEmpty;
+    if (hasLegacyPeriod) {
+      await pref.setBool(_onboardingCompleteKey, true);
+      return true;
+    }
+    return false;
   }
 
   Future<void> saveDashboardTutorialSeen(bool value) async {
@@ -230,6 +268,22 @@ class LocalStorage {
   Future<List<Map<String, dynamic>>> getSavingGoals() async {
     final pref = await SharedPreferences.getInstance();
     final raw = pref.getString(_savingGoalsKey);
+    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => item as Map<String, dynamic>).toList();
+  }
+
+  // Fixed Expense Items v2
+  static const _fixedExpenseItemsKey = 'fixed_expense_items_v2';
+
+  Future<void> saveFixedExpenseItems(List<Map<String, dynamic>> payload) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_fixedExpenseItemsKey, jsonEncode(payload));
+  }
+
+  Future<List<Map<String, dynamic>>> getFixedExpenseItems() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_fixedExpenseItemsKey);
     if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded.map((item) => item as Map<String, dynamic>).toList();

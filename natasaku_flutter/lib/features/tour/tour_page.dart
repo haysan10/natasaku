@@ -64,6 +64,7 @@ class _TourPageState extends State<TourPage> {
 
   Future<void> _finish() async {
     await _storage.saveDashboardTutorialSeen(true);
+    await _storage.saveFeatureTourCompleted(true);
     if (!mounted) return;
     context.go(AppRouter.setup);
   }

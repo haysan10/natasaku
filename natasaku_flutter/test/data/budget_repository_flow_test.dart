@@ -1,12 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/data/datasources/local/local_storage.dart';
-import 'package:natasaku_flutter/data/models/budget_period.dart';
-import 'package:natasaku_flutter/data/models/daily_closing.dart';
-import 'package:natasaku_flutter/data/models/saving_goal.dart';
-import 'package:natasaku_flutter/data/models/transaction_model.dart';
-import 'package:natasaku_flutter/data/models/user_settings.dart';
-import 'package:natasaku_flutter/data/repositories/budget_repository.dart';
+import 'package:natasaku/data/datasources/local/local_storage.dart';
+import 'package:natasaku/data/models/budget_period.dart';
+import 'package:natasaku/data/models/daily_closing.dart';
+import 'package:natasaku/data/models/saving_goal.dart';
+import 'package:natasaku/data/models/transaction_model.dart';
+import 'package:natasaku/data/models/user_settings.dart';
+import 'package:natasaku/data/repositories/budget_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   late BudgetRepository repository;
@@ -132,6 +133,7 @@ void main() {
       dailyReminderTime: '21:30',
       quickToolsNotificationEnabled: false,
       autoSavingEnabled: false,
+      themeMode: ThemeMode.dark,
     );
 
     await repository.saveUserSettings(settings);
@@ -141,5 +143,6 @@ void main() {
     expect(loaded.dailyReminderTime, '21:30');
     expect(loaded.quickToolsNotificationEnabled, false);
     expect(loaded.autoSavingEnabled, false);
+    expect(loaded.themeMode, ThemeMode.dark);
   });
 }

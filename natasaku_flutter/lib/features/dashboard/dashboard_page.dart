@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_shadows.dart';
 import '../../core/services/currency_service.dart';
 import '../../shared/widgets/main_shell.dart';
 import '../../data/models/transaction_model.dart';
@@ -130,7 +131,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     super.initState();
     _chartController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
     );
     _chartController.forward();
   }
@@ -141,7 +142,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     super.dispose();
   }
 
-  String _formatMoney(double value) {
+  String _formatMoney(num value) {
     if (_hideBalance) return '••••••';
     return CurrencyService.formatRupiah(value);
   }
@@ -150,10 +151,10 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     final now = DateTime.now();
     final last7DaysTotal = state.transactions
         .where((t) => t.isExpense && t.date.isAfter(now.subtract(const Duration(days: 7))))
-        .fold<double>(0.0, (sum, t) => sum + t.amount);
+        .fold(0, (sum, t) => sum + t.amount);
     final prev7DaysTotal = state.transactions
         .where((t) => t.isExpense && t.date.isAfter(now.subtract(const Duration(days: 14))) && t.date.isBefore(now.subtract(const Duration(days: 7))))
-        .fold<double>(0.0, (sum, t) => sum + t.amount);
+        .fold(0, (sum, t) => sum + t.amount);
 
     String weeklyInsight;
     if (prev7DaysTotal > 0) {
@@ -161,7 +162,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
       if (diff < 0) {
         weeklyInsight = 'Pengeluaran minggu ini ${diff.abs()}% lebih rendah dari minggu lalu 📉';
       } else {
-        weeklyInsight = 'Pengeluaran minggu ini ${diff}% lebih tinggi dari minggu lalu 📈';
+        weeklyInsight = 'Pengeluaran minggu ini $diff% lebih tinggi dari minggu lalu 📈';
       }
     } else {
       weeklyInsight = 'Bagus! Catat terus transaksi harian agar insight lebih lengkap 📊';
@@ -204,9 +205,9 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceVariantDark : Colors.teal.shade50.withOpacity(0.4),
+              color: isDark ? AppColors.surfaceVariantDark : Colors.teal.shade50.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: isDark ? AppColors.borderDark : Colors.teal.shade100.withOpacity(0.5)),
+              border: Border.all(color: isDark ? AppColors.borderDark : Colors.teal.shade100.withValues(alpha: 0.5)),
             ),
             child: Row(
               children: [
@@ -297,25 +298,52 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     }
   }
 
-  List<BarChartGroupData> _buildChartGroups(List<TransactionModel> transactions, double dailySafeBudget) {
+  int _chartMaxValue(List<TransactionModel> transactions, int dailySafeBudget) {
+    final now = DateTime.now();
+    var maxValue = dailySafeBudget;
+    for (int i = 0; i < 7; i++) {
+      final day = now.subtract(Duration(days: i));
+      final dayExpense = transactions
+          .where((t) =>
+              t.isExpense &&
+              t.date.year == day.year &&
+              t.date.month == day.month &&
+              t.date.day == day.day)
+          .fold(0, (sum, t) => sum + t.amount);
+      if (dayExpense > maxValue) {
+        maxValue = dayExpense;
+      }
+    }
+    if (maxValue <= 0) {
+      return 100000;
+    }
+    return max(maxValue + (maxValue ~/ 10), dailySafeBudget);
+  }
+
+  List<BarChartGroupData> _buildChartGroups(
+    List<TransactionModel> transactions,
+    int dailySafeBudget,
+    int chartMax,
+  ) {
     final now = DateTime.now();
     final list = <BarChartGroupData>[];
     
     for (int i = 6; i >= 0; i--) {
       final index = 6 - i;
       final day = now.subtract(Duration(days: i));
-      final startOfDay = DateTime(day.year, day.month, day.day);
-      final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
-      
       final dayExpense = transactions
-          .where((t) => t.isExpense && t.date.isAfter(startOfDay) && t.date.isBefore(endOfDay))
-          .fold(0.0, (sum, t) => sum + t.amount);
+          .where((t) =>
+              t.isExpense &&
+              t.date.year == day.year &&
+              t.date.month == day.month &&
+              t.date.day == day.day)
+          .fold(0, (sum, t) => sum + t.amount);
           
       final isToday = i == 0;
 
       // Staggered animation using Interval
-      final start = (index * 60) / 1000.0;
-      final end = (start + 0.4).clamp(0.0, 1.0);
+      final start = (index * 60) / 600.0;
+      final end = (start + 0.45).clamp(0.0, 1.0);
       final animationValue = CurvedAnimation(
         parent: _chartController,
         curve: Interval(start, end, curve: Curves.easeOutBack),
@@ -325,9 +353,11 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
       final colorScheme = Theme.of(context).colorScheme;
       final Color barColor = dayExpense > dailySafeBudget
           ? colorScheme.error
-          : (isToday 
-              ? colorScheme.primary 
-              : colorScheme.primary.withValues(alpha: 0.3)); // Muted to 30% opacity if not today
+          : dayExpense > dailySafeBudget * 0.8
+              ? const Color(0xFFF59E0B) // Amber
+              : isToday
+                  ? colorScheme.primary
+                  : colorScheme.primary.withValues(alpha: 0.55);
 
       list.add(
         BarChartGroupData(
@@ -340,7 +370,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
               borderRadius: const BorderRadius.vertical(top: Radius.circular(6)), // RRect corners
               backDrawRodData: BackgroundBarChartRodData(
                 show: true,
-                toY: dailySafeBudget == 0 ? 100000 : dailySafeBudget,
+                toY: chartMax.toDouble(),
                 color: colorScheme.primary.withValues(alpha: 0.08),
               ),
             ),
@@ -368,9 +398,10 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    final remainingBudgetToday = max(state.dailySafeBudget - state.todayExpense, 0.0);
+    final remainingBudgetToday = max(state.dailySafeBudget - state.todayExpense, 0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
+    final weeklyChartMax = _chartMaxValue(state.transactions, state.dailySafeBudget);
 
     final allowanceSpentPercent = state.dailySafeBudget == 0 ? 0.0 : state.todayExpense / state.dailySafeBudget;
 
@@ -472,102 +503,108 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                       context.go(AppRouter.budget);
                     },
                     scaleTo: 0.98,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.28),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
+                    child: Hero(
+                      tag: 'main_balance_card',
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: AppShadows.heroCard(),
                           ),
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.10),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Sisa Jatah Boleh Dipakai',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Boleh Dipakai Hari Ini',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  // NataStatusChipOnDark — crossfade animation, rose soft for overbudget
+                                  AnimatedSwitcher(
+                                    key: TourKeys.statusChip,
+                                    duration: const Duration(milliseconds: 400),
+                                    transitionBuilder: (child, animation) => FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(scale: animation, child: child),
+                                    ),
+                                    child: NataStatusChipOnDark(
+                                      key: ValueKey(allowanceSpentPercent > 1.0 ? 'over' : allowanceSpentPercent > 0.7 ? 'waspada' : 'aman'),
+                                      status: budgetStatusFromRatio(allowanceSpentPercent),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // NataStatusChipOnDark — crossfade animation, rose soft for overbudget
-                              NataStatusChipOnDark(
-                                key: TourKeys.statusChip,
-                                status: budgetStatusFromRatio(allowanceSpentPercent),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _AnimatedCountText(
-                            value: remainingBudgetToday,
-                            isSecret: _hideBalance,
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              color: Colors.white,
-                              fontSize: 38,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Daily spend progress bar
-                          NataProgressBar(
-                            value: allowanceSpentPercent.clamp(0.0, 1.0),
-                            height: 6,
-                            gradient: LinearGradient(
-                              colors: allowanceSpentPercent > 1.0
-                                  ? [const Color(0xFFFCA5A5), const Color(0xFFF87171)]
-                                  : allowanceSpentPercent > 0.7
-                                      ? [const Color(0xFFFDE68A), const Color(0xFFFCD34D)]
-                                      : [Colors.white.withValues(alpha: 0.6), Colors.white.withValues(alpha: 0.9)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            backgroundColor: Colors.white.withValues(alpha: 0.18),
-                          ),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SubStat(
-                                  label: 'Dipakai',
-                                  value: _formatMoney(state.todayExpense),
-                                  icon: PhosphorIconsRegular.arrowDownRight,
-                                  isExpense: true,
-                                ),
-                              ),
-                              Container(
-                                width: 1,
-                                height: 36,
-                                color: Colors.white.withValues(alpha: 0.25),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 16),
-                                  child: _SubStat(
-                                    label: 'Batas Aman',
-                                    value: _formatMoney(state.dailySafeBudget),
-                                    icon: PhosphorIconsRegular.shieldCheck,
-                                    isExpense: false,
+                              const SizedBox(height: 10),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: _AnimatedCountText(
+                                  value: remainingBudgetToday,
+                                  isSecret: _hideBalance,
+                                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.5,
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 20),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: NataProgressBar(
+                                  value: allowanceSpentPercent.clamp(0.0, 1.0),
+                                  height: 8,
+                                  gradient: LinearGradient(
+                                    colors: allowanceSpentPercent > 1.0
+                                        ? [AppColors.alert, AppColors.alert]
+                                        : allowanceSpentPercent > 0.7
+                                            ? [const Color(0xFFF59E0B), const Color(0xFFF59E0B)]
+                                            : [Colors.white, Colors.white],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _SubStat(
+                                      label: 'Hari Ini',
+                                      value: _formatMoney(state.todayExpense),
+                                      icon: PhosphorIconsRegular.trendDown,
+                                      isExpense: true,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 36,
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(left: 16),
+                                      child: _SubStat(
+                                        label: 'Batas Harian',
+                                        value: _formatMoney(state.dailySafeBudget),
+                                        icon: PhosphorIconsRegular.shieldCheck,
+                                        isExpense: false,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
@@ -587,13 +624,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                           color: AppColors.accent.withValues(alpha: 0.07),
                           border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.accent.withValues(alpha: 0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          boxShadow: AppShadows.card(isDark: isDark),
                         ),
                         child: Row(
                           children: [
@@ -630,13 +661,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                       color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      boxShadow: AppShadows.card(isDark: isDark),
                     ),
                     child: Row(
                       children: [
@@ -647,13 +672,13 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Auto Amankan Sisa', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                              const Text('Otomatis tabung sisa jatah di akhir hari', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              const Text('Setiap tengah malam, sisa uangmu otomatis masuk celengan 🌙', style: TextStyle(fontSize: 11, color: Colors.grey)),
                             ],
                           ),
                         ),
                         Switch.adaptive(
                           value: state.userSettings?.autoSavingEnabled ?? true,
-                          activeColor: AppColors.primary,
+                          activeThumbColor: AppColors.primary,
                           onChanged: (val) async {
                             HapticFeedback.selectionClick();
                             await ref.read(dashboardProvider.notifier).updateAutoSaving(val);
@@ -663,8 +688,8 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                                 ..showSnackBar(
                                   SnackBar(
                                     content: Text(val 
-                                        ? 'Auto-amankan sisa aktif! Sisa jatahmu akan otomatis ditabung tiap tengah malam. ⏰'
-                                        : 'Auto-amankan sisa dinonaktifkan.'),
+                                        ? 'Celengan otomatis aktif! Sisa jatah harianmu akan dipindahkan ke tabungan setiap tengah malam 🌙'
+                                        : 'Celengan otomatis dinonaktifkan.'),
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   ),
@@ -714,13 +739,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                         color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
+                        boxShadow: AppShadows.card(isDark: isDark),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,13 +830,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                       color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      boxShadow: AppShadows.card(isDark: isDark),
                     ),
                     child: SizedBox(
                       height: 160,
@@ -827,7 +840,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                           BarChartData(
                             barTouchData: BarTouchData(
                               touchTooltipData: BarTouchTooltipData(
-                                getTooltipColor: (group) => isDark ? const Color(0xFF162826) : Colors.teal.shade50.withOpacity(0.9),
+                                getTooltipColor: (group) => isDark ? const Color(0xFF162826) : Colors.teal.shade50.withValues(alpha: 0.9),
                                 tooltipRoundedRadius: 12,
                                 tooltipBorder: BorderSide(
                                   color: isDark ? AppColors.borderDark : Colors.teal.shade100,
@@ -892,17 +905,21 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                               getDrawingHorizontalLine: (value) {
                                 return FlLine(
                                   color: isDark 
-                                      ? Colors.white.withOpacity(0.08) 
-                                      : Colors.black.withOpacity(0.05),
+                                      ? Colors.white.withValues(alpha: 0.08) 
+                                      : Colors.black.withValues(alpha: 0.05),
                                   strokeWidth: 1,
                                   dashArray: [4, 4],
                                 );
                               },
                             ),
-                            barGroups: _buildChartGroups(state.transactions, state.dailySafeBudget),
+                            barGroups: _buildChartGroups(
+                              state.transactions,
+                              state.dailySafeBudget,
+                              weeklyChartMax,
+                            ),
                             borderData: FlBorderData(show: false),
                             alignment: BarChartAlignment.spaceAround,
-                            maxY: state.dailySafeBudget * 1.5 < 100000 ? 150000 : state.dailySafeBudget * 1.5,
+                            maxY: weeklyChartMax.toDouble(),
                             titlesData: FlTitlesData(
                               show: true,
                               leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -933,13 +950,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                       color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      boxShadow: AppShadows.card(isDark: isDark),
                     ),
                     child: Column(
                       children: [
@@ -949,7 +960,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Column(
                                 children: [
-                                  Icon(Icons.emoji_emotions_outlined, color: Colors.grey.withOpacity(0.5), size: 36),
+                                  Icon(Icons.emoji_emotions_outlined, color: Colors.grey.withValues(alpha: 0.5), size: 36),
                                   const SizedBox(height: 8),
                                   const Text(
                                     'Belum ada pengeluaran hari ini.\nDompetmu tersenyum! 🪙',
@@ -1014,7 +1025,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                                             child: LinearProgressIndicator(
                                               value: percent,
                                               minHeight: 4,
-                                              backgroundColor: color.withOpacity(0.1),
+                                              backgroundColor: color.withValues(alpha: 0.1),
                                               valueColor: AlwaysStoppedAnimation(color),
                                             ),
                                           ),
@@ -1139,13 +1150,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                         color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: AppShadows.card(isDark: isDark),
                       ),
                       child: Row(
                         children: [
@@ -1184,7 +1189,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
 
                   if (state.transactions.isEmpty)
                     const Center(
@@ -1209,7 +1214,6 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
   void _showHealthDetailBottomSheet(BuildContext context, DashboardState state) {
     final score = state.healthScore;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
 
     Color statusColor;
     String statusTitle;
@@ -1270,7 +1274,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1368,7 +1372,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                               child: LinearProgressIndicator(
                                 value: itemScore / 100.0,
                                 minHeight: 6,
-                                backgroundColor: itemColor.withOpacity(0.1),
+                                backgroundColor: itemColor.withValues(alpha: 0.1),
                                 valueColor: AlwaysStoppedAnimation(itemColor),
                               ),
                             ),
@@ -1453,12 +1457,12 @@ class _SubStat extends StatelessWidget {
       children: [
         Row(
           children: [
-            PhosphorIcon(icon, color: Colors.white.withOpacity(0.9), size: 16),
+            PhosphorIcon(icon, color: Colors.white.withValues(alpha: 0.9), size: 16),
             const SizedBox(width: 6),
             Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
             ),
           ],
@@ -1559,13 +1563,7 @@ class _EmptySetupView extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                boxShadow: AppShadows.button(),
               ),
               child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 48),
             ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
@@ -1622,7 +1620,7 @@ class _EmptySetupView extends ConsumerWidget {
   }
 }
 
-void _showSecureLeftoverSheet(BuildContext context, WidgetRef ref, double amount) {
+void _showSecureLeftoverSheet(BuildContext context, WidgetRef ref, int amount) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
@@ -1782,13 +1780,7 @@ class _HealthDiagnosisCard extends StatelessWidget {
         color: isDark ? AppColors.surfaceVariantDark : Colors.white,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppShadows.card(isDark: isDark),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1966,7 +1958,7 @@ class _AnimatedCountText extends StatefulWidget {
     required this.style,
   });
 
-  final double value;
+  final int value;
   final bool isSecret;
   final TextStyle? style;
 
@@ -1977,17 +1969,17 @@ class _AnimatedCountText extends StatefulWidget {
 class _AnimatedCountTextState extends State<_AnimatedCountText> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  double _oldValue = 0;
+  var _oldValue = 0;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 550),
     );
-    _animation = Tween<double>(begin: 0, end: widget.value).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    _animation = Tween<double>(begin: 0, end: widget.value.toDouble()).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
     _controller.forward();
   }
@@ -1997,8 +1989,11 @@ class _AnimatedCountTextState extends State<_AnimatedCountText> with SingleTicke
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
       _oldValue = oldWidget.value;
-      _animation = Tween<double>(begin: _oldValue, end: widget.value).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      _animation = Tween<double>(
+        begin: _oldValue.toDouble(),
+        end: widget.value.toDouble(),
+      ).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
       );
       _controller.reset();
       _controller.forward();
@@ -2040,7 +2035,7 @@ class HealthScorePainter extends CustomPainter {
     final radius = min(size.width, size.height) / 2 - 8;
     
     final bgPaint = Paint()
-      ..color = scoreColor.withOpacity(0.15)
+      ..color = scoreColor.withValues(alpha: 0.15)
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -2078,7 +2073,7 @@ class HealthScorePainter extends CustomPainter {
 
 class NataDonutChart extends StatefulWidget {
   final Map<String, double> categoryTotals;
-  final double totalAmount;
+  final num totalAmount;
   final Color Function(String) getCategoryColor;
 
   const NataDonutChart({
@@ -2212,7 +2207,7 @@ class _NataDonutChartState extends State<NataDonutChart> with SingleTickerProvid
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                     )
                   ]
@@ -2278,7 +2273,7 @@ class DonutPainter extends CustomPainter {
 
     if (total == 0) {
       final paint = Paint()
-        ..color = Colors.grey.withOpacity(0.2)
+        ..color = Colors.grey.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = outerRadius - innerRadius;
       canvas.drawCircle(center, (outerRadius + innerRadius) / 2, paint);

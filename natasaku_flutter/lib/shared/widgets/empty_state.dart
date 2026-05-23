@@ -107,7 +107,14 @@ class NataEmptyState extends StatelessWidget {
                   duration: 600.ms,
                   curve: Curves.easeOutBack,
                 )
-                .fade(duration: 400.ms),
+                .fade(duration: 400.ms)
+                .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
+                .slideY(
+                  begin: 0.0,
+                  end: -0.08,
+                  duration: 1500.ms,
+                  curve: Curves.easeInOut,
+                ),
 
             const SizedBox(height: 28),
 

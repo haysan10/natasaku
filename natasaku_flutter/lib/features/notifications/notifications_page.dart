@@ -26,7 +26,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   // State Simulator Notifikasi Jatah Harian
   bool _simulatorHideBalance = false;
   String _simulatorState = 'aman';
-  double _simulatorSisaJatah = 166667;
+  int _simulatorSisaJatah = 166667;
 
   @override
   void initState() {
@@ -54,13 +54,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }) async {
     final hh = reminderTime.hour.toString().padLeft(2, '0');
     final mm = reminderTime.minute.toString().padLeft(2, '0');
-    final updated = UserSettings(
+    final updated = _settings.copyWith(
       dailyReminderEnabled: reminderEnabled,
       dailyReminderTime: '$hh:$mm',
       quickToolsNotificationEnabled: quickToolsNotificationEnabled,
-      autoSavingEnabled: _settings.autoSavingEnabled,
-      budgetMode: _settings.budgetMode,
-      usageStyle: _settings.usageStyle,
     );
     await _repo.saveUserSettings(updated);
     await _service.scheduleDailyReminder(
@@ -92,13 +89,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _buildStateChip({
     required String label,
     required String stateValue,
-    required double sisa,
+    required int sisa,
   }) {
     final isSelected = _simulatorState == stateValue;
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
       onSelected: (selected) async {
         if (!selected) return;
         setState(() {
@@ -217,15 +214,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
               elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.teal.withOpacity(0.3), width: 1.5),
+                side: BorderSide(color: Colors.teal.withValues(alpha: 0.3), width: 1.5),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(Icons.science_outlined, color: Colors.teal),
                         SizedBox(width: 8),
                         Expanded(

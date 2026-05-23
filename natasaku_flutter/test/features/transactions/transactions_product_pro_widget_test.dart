@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:natasaku_flutter/features/transactions/transactions_page.dart';
+import 'package:natasaku/features/transactions/transactions_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -92,9 +92,9 @@ void main() {
     // Tap transaction to edit
     await tester.tap(find.text('Makan'));
     await tester.pumpAndSettle();
-    expect(find.text('Simpan Transaksi'), findsOneWidget);
-    // Dismiss sheet by tapping Simpan Transaksi
-    await tester.tap(find.text('Simpan Transaksi'));
+    expect(find.text('Simpan'), findsOneWidget);
+    // Dismiss sheet by tapping Simpan
+    await tester.tap(find.text('Simpan'));
     await tester.pumpAndSettle();
 
     // Search filter

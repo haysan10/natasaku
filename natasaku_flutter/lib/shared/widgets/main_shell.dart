@@ -44,81 +44,99 @@ class MainShell extends ConsumerWidget {
 
     final showFab = currentIndex == 0 || currentIndex == 1;
 
-    return Scaffold(
-      body: navigationShell ?? child ?? const SizedBox.shrink(),
-      floatingActionButton: showFab
-          ? Container(
-              key: TourKeys.fabButton,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (navigationShell != null && currentIndex != 0) {
+          navigationShell!.goBranch(0);
+          return;
+        }
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('Kamu sudah di Beranda utama.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+      },
+      child: Scaffold(
+        body: navigationShell ?? child ?? const SizedBox.shrink(),
+        floatingActionButton: showFab
+            ? Container(
+                key: TourKeys.fabButton,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: () => _addTransaction(context, ref),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: const CircleBorder(),
+                  tooltip: 'Catat Pengeluaran',
+                  child: const Icon(Icons.add_rounded, size: 28),
+                ),
+              )
+            : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: isDark ? Theme.of(context).colorScheme.outlineVariant : Colors.grey.shade300,
+                width: 0.5,
               ),
-              child: FloatingActionButton(
-                onPressed: () => _addTransaction(context, ref),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: const CircleBorder(),
-                tooltip: 'Catat Pengeluaran',
-                child: const Icon(Icons.add_rounded, size: 28),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: isDark ? Theme.of(context).colorScheme.outlineVariant : Colors.grey.shade300,
-              width: 0.5,
             ),
           ),
-        ),
-        child: NavigationBar(
-          selectedIndex: currentIndex,
-          onDestinationSelected: (idx) {
-            if (navigationShell != null) {
-              navigationShell!.goBranch(
-                idx,
-                initialLocation: idx == currentIndex,
-              );
-            } else {
-              onNavigate?.call(idx);
-            }
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded),
-              label: 'Beranda',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long_rounded),
-              label: 'Transaksi',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-              label: 'Budget',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.savings_outlined),
-              selectedIcon: Icon(Icons.savings_rounded),
-              label: 'Tabungan',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.analytics_outlined),
-              selectedIcon: Icon(Icons.analytics_rounded),
-              label: 'Laporan',
-            ),
-          ],
+          child: NavigationBar(
+            selectedIndex: currentIndex,
+            onDestinationSelected: (idx) {
+              if (navigationShell != null) {
+                navigationShell!.goBranch(
+                  idx,
+                  initialLocation: idx == currentIndex,
+                );
+              } else {
+                onNavigate?.call(idx);
+              }
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Beranda',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long_rounded),
+                label: 'Transaksi',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                label: 'Budget',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.savings_outlined),
+                selectedIcon: Icon(Icons.savings_rounded),
+                label: 'Tabungan',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.analytics_outlined),
+                selectedIcon: Icon(Icons.analytics_rounded),
+                label: 'Laporan',
+              ),
+            ],
+          ),
         ),
       ),
     );

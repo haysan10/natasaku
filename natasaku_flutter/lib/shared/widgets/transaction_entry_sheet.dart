@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 
+import '../../data/datasources/local/local_storage.dart';
+import '../../data/repositories/budget_repository.dart';
 import '../../core/theme/app_colors.dart';
 
 class TransactionDraft {
@@ -14,7 +16,7 @@ class TransactionDraft {
     this.note,
   });
 
-  final double amount;
+  final int amount;
   final bool isExpense;
   final DateTime date;
   final String? category;
@@ -22,14 +24,26 @@ class TransactionDraft {
 }
 
 const List<String> nataCategories = <String>[
-  'Makan', 'Minum', 'Transport', 'Belanja', 'Tagihan', 
-  'Keluarga', 'Hiburan', 'Kesehatan', 'Lainnya',
+  '🍜 Makan & Minum',
+  '🚌 Transportasi',
+  '🛒 Belanja Bulanan',
+  '☕ Kopi & Jajan',
+  '🎬 Hiburan',
+  '👕 Pakaian',
+  '💊 Kesehatan',
+  '💄 Kecantikan',
+  '📱 Elektronik',
+  '🏃 Olahraga',
+  '📖 Pendidikan',
+  '🎀 Hadiah',
+  '🚨 Darurat',
+  '➕ Lainnya',
 ];
 
 Future<TransactionDraft?> showTransactionEntrySheet(
   BuildContext context, {
   bool initialExpense = true,
-  double? initialAmount,
+  int? initialAmount,
   String? initialCategory,
   String? initialNote,
   DateTime? initialDate,
@@ -52,7 +66,7 @@ Future<TransactionDraft?> showTransactionEntrySheet(
 
 class _TransactionEntryContent extends StatefulWidget {
   final bool initialExpense;
-  final double? initialAmount;
+  final int? initialAmount;
   final String? initialCategory;
   final String? initialNote;
   final DateTime? initialDate;
@@ -89,7 +103,7 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
     String initialText = '';
     if (widget.initialAmount != null && widget.initialAmount! > 0) {
       final formatter = NumberFormat.decimalPattern('id');
-      initialText = 'Rp ${formatter.format(widget.initialAmount!.toInt())}';
+      initialText = 'Rp ${formatter.format(widget.initialAmount!)}';
     }
     _amountController = TextEditingController(text: initialText);
   }
@@ -100,18 +114,34 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
     super.dispose();
   }
 
-  double get _parsedAmount {
+  int get _parsedAmount {
     final digits = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) return 0;
-    return double.tryParse(digits) ?? 0;
+    return int.tryParse(digits) ?? 0;
   }
 
+  bool get _canSubmit => !_isSaving && _parsedAmount > 0 && _category != null;
+
   Future<void> _pickDate() async {
+    final today = DateTime.now();
+    final todayDateOnly = DateTime(today.year, today.month, today.day);
+    final period = await BudgetRepository(LocalStorage()).loadPeriod();
+    final firstDate = period == null
+        ? DateTime(2020)
+        : DateTime(
+            period.startDate.year,
+            period.startDate.month,
+            period.startDate.day,
+          );
+    final initialDate = _date.isAfter(todayDateOnly)
+        ? todayDateOnly
+        : (_date.isBefore(firstDate) ? firstDate : _date);
+    if (!mounted) return;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: todayDateOnly,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -217,6 +247,11 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
       setState(() => _errorMessage = 'Nominal terlalu besar!');
       return;
     }
+    if (_category == null) {
+      HapticFeedback.heavyImpact();
+      setState(() => _errorMessage = 'Pilih kategori pengeluaran dulu.');
+      return;
+    }
 
     HapticFeedback.lightImpact();
     setState(() {
@@ -232,7 +267,7 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
           amount: amount,
           isExpense: _isExpense,
           date: _date,
-          category: _category ?? 'Lainnya',
+          category: _category,
           note: _note,
         ),
       );
@@ -327,7 +362,7 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    RupiahInputFormatter(),
+                    _RupiahInputFormatter(),
                   ],
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -409,9 +444,10 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: activeColor,
+                    disabledBackgroundColor: activeColor.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  onPressed: _isSaving ? null : _submit,
+                  onPressed: _canSubmit ? _submit : null,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: _isSaving
@@ -424,7 +460,7 @@ class _TransactionEntryContentState extends State<_TransactionEntryContent> {
                             ),
                           )
                         : const Text(
-                            'Simpan Transaksi',
+                            'Simpan',
                             key: ValueKey('save_text'),
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
@@ -531,7 +567,7 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-class RupiahInputFormatter extends TextInputFormatter {
+class _RupiahInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) {

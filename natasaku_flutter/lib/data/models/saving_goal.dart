@@ -12,20 +12,20 @@ class SavingGoal {
 
   final String id;
   final String name;
-  final double targetAmount;
-  final double currentAmount;
+  final int targetAmount;
+  final int currentAmount;
   final DateTime? targetDate;
-  final double? autoSaveAmount;
+  final int? autoSaveAmount;
   final String? autoSaveFrequency; // 'daily', 'weekly', 'monthly'
   final DateTime? lastAutoSaveDate;
 
   SavingGoal copyWith({
     String? id,
     String? name,
-    double? targetAmount,
-    double? currentAmount,
+    int? targetAmount,
+    int? currentAmount,
     DateTime? targetDate,
-    double? autoSaveAmount,
+    int? autoSaveAmount,
     String? autoSaveFrequency,
     DateTime? lastAutoSaveDate,
   }) {
@@ -58,14 +58,14 @@ class SavingGoal {
     return SavingGoal(
       id: json['id'] as String,
       name: json['name'] as String,
-      targetAmount: (json['targetAmount'] as num).toDouble(),
-      currentAmount: (json['currentAmount'] as num).toDouble(),
+      targetAmount: (json['targetAmount'] as num).round(),
+      currentAmount: (json['currentAmount'] as num).round(),
       targetDate: json['targetDate'] == null
           ? null
           : DateTime.tryParse(json['targetDate'] as String),
       autoSaveAmount: json['autoSaveAmount'] == null
           ? null
-          : (json['autoSaveAmount'] as num).toDouble(),
+          : (json['autoSaveAmount'] as num).round(),
       autoSaveFrequency: json['autoSaveFrequency'] as String?,
       lastAutoSaveDate: json['lastAutoSaveDate'] == null
           ? null

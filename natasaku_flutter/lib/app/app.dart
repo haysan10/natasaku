@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/providers/theme_mode_provider.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/app_theme.dart';
 import '../features/notifications/notifications_service.dart';
@@ -46,13 +47,14 @@ class _NataSakuAppState extends State<NataSakuApp> {
     return Consumer(
       builder: (context, ref, child) {
         final securityState = ref.watch(securityProvider);
-        
+        final themeMode = ref.watch(themeModeProvider);
+
         return MaterialApp.router(
           title: 'NataSaku',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
-          themeMode: ThemeMode.system,
+          themeMode: themeMode,
           routerConfig: AppRouter.router,
           builder: (context, child) {
             // App-wide overlay for PIN Security

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:natasaku_flutter/app/router.dart';
-import 'package:natasaku_flutter/features/budget/budget_page.dart';
-import 'package:natasaku_flutter/features/dashboard/dashboard_page.dart';
-import 'package:natasaku_flutter/features/reports/reports_page.dart';
-import 'package:natasaku_flutter/features/savings/savings_page.dart';
-import 'package:natasaku_flutter/features/transactions/transactions_page.dart';
+import 'package:natasaku/app/router.dart';
+import 'package:natasaku/features/budget/budget_page.dart';
+import 'package:natasaku/features/dashboard/dashboard_page.dart';
+import 'package:natasaku/features/reports/reports_page.dart';
+import 'package:natasaku/features/savings/savings_page.dart';
+import 'package:natasaku/features/transactions/transactions_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

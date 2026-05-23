@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/currency_service.dart';
 import '../../core/services/report_export_service.dart';
@@ -193,7 +191,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
       final totalExpense = state.totalExpense;
       final totalIncome = state.totalIncome;
       final averageExpense = expenses.isEmpty ? 0.0 : totalExpense / expenses.length;
-      final savingBalance = state.savingGoal?.currentAmount ?? 0.0;
+      final savingBalance = state.savingGoal?.currentAmount ?? 0;
 
       final file = await _reportPdfService.exportMonthlyReportPdf(
         transactions: state.transactions,
@@ -203,6 +201,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
         averageExpense: averageExpense,
         savingBalance: savingBalance,
         healthScore: state.healthScore,
+        savingGoals: state.savingGoals,
       );
 
       if (!mounted) return;
@@ -786,7 +785,7 @@ class _ExecutiveSummaryTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'AI Rekomendasi Manager',
+                    'Catatan untuk Kamu',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -1266,7 +1265,10 @@ class _ExecutiveSummaryTab extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _buildPieSections(List<MapEntry<String, double>> sortedCategories, double totalExpense) {
+  List<PieChartSectionData> _buildPieSections(
+    List<MapEntry<String, double>> sortedCategories,
+    num totalExpense,
+  ) {
     return sortedCategories.map((e) {
       final pct = totalExpense > 0 ? (e.value / totalExpense) * 100 : 0.0;
       return PieChartSectionData(
@@ -1288,7 +1290,7 @@ class _ExecutiveSummaryTab extends StatelessWidget {
 
 class _SummaryItemCard extends StatelessWidget {
   final String title;
-  final double amount;
+  final num amount;
   final IconData icon;
   final Color color;
   final bool isDark;
@@ -1347,7 +1349,7 @@ class _SummaryItemCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.0, end: amount),
+            tween: Tween<double>(begin: 0.0, end: amount.toDouble()),
             duration: const Duration(milliseconds: 600),
             curve: Curves.easeOutCubic,
             builder: (context, val, _) {
@@ -1501,8 +1503,8 @@ class _ActionPanel extends StatelessWidget {
   final VoidCallback? onSharePdf;
   final VoidCallback? onShareExcel;
   final int totalTx;
-  final double totalExpense;
-  final double totalIncome;
+  final int totalExpense;
+  final int totalIncome;
 
   const _ActionPanel({
     required this.isDark,
@@ -1622,7 +1624,7 @@ class _LedgerList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (txList.isEmpty) {
-      return NataEmptyState(
+      return const NataEmptyState(
         icon: PhosphorIconsRegular.receipt,
         title: 'Belum Ada Transaksi',
         subtitle: 'Mulai catat pemasukan dan pengeluaran dari Dashboard.\nLaporan akan tampil di sini secara otomatis.',
@@ -1734,4 +1736,3 @@ class _LedgerList extends StatelessWidget {
     ).animate().fade(delay: 300.ms).slideY(begin: 0.05, end: 0);
   }
 }
-

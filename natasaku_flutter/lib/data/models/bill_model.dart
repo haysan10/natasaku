@@ -12,7 +12,7 @@ class BillModel {
 
   final String id;
   final String name;
-  final double amount;
+  final int amount;
   final int? dueDate;
   final bool isPaid;
   final bool isAutoPay;
@@ -22,7 +22,7 @@ class BillModel {
   BillModel copyWith({
     String? id,
     String? name,
-    double? amount,
+    int? amount,
     int? dueDate,
     bool? isPaid,
     bool? isAutoPay,
@@ -58,7 +58,7 @@ class BillModel {
     return BillModel(
       id: json['id'] as String,
       name: json['name'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: (json['amount'] as num).round(),
       dueDate: json['dueDate'] as int?,
       isPaid: json['isPaid'] as bool? ?? false,
       isAutoPay: json['isAutoPay'] as bool? ?? false,

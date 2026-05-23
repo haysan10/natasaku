@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/datasources/local/local_storage.dart';
 import '../../features/bills/bills_page.dart';
 import '../../features/budget/budget_page.dart';
 import '../../features/daily_closing/daily_closing_page.dart';
@@ -36,6 +37,27 @@ class AppRouter {
 
   static final router = GoRouter(
     initialLocation: launch,
+    redirect: (context, state) async {
+      final storage = LocalStorage();
+      final onboardingComplete = await storage.getOnboardingComplete();
+      final hasPeriod = await storage.getBudgetPeriod() != null;
+      final location = state.matchedLocation;
+      final isOnboardingFlow =
+          location == launch || location == tour || location == setup;
+
+      if (!onboardingComplete) {
+        if (!isOnboardingFlow) return launch;
+        return null;
+      }
+
+      if (!hasPeriod) {
+        if (location != setup) return setup;
+        return null;
+      }
+
+      if (isOnboardingFlow) return dashboard;
+      return null;
+    },
     routes: [
       GoRoute(
         path: launch,

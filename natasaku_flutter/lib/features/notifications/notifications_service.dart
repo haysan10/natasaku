@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../../core/constants/app_constants.dart';
 import '../../core/services/currency_service.dart';
 import '../../data/datasources/local/local_storage.dart';
 import '../../data/models/transaction_model.dart';
@@ -21,7 +23,7 @@ void notificationTapBackground(NotificationResponse response) async {
     if (input.isEmpty) return;
 
     final amount =
-        double.tryParse(input.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0.0;
+        int.tryParse(input.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     if (amount <= 0) return;
 
     final repo = BudgetRepository(LocalStorage());
@@ -124,7 +126,7 @@ class NotificationsService {
 
   /// Tampilkan Notifikasi Jatah Harian NataSaku (Ongoing/Persistent)
   Future<void> showDailyAllowanceNotification({
-    required double sisaJatah,
+    required int sisaJatah,
     required String status, // 'aman', 'waspada', 'over', 'loading', 'error'
     required bool hideBalance,
   }) async {
@@ -146,12 +148,12 @@ class NotificationsService {
       case 'waspada':
         accentColor = const Color(0xFFF59E0B); // Oranye
         statusText = 'Waspada';
-        adviceText = 'Sudah mendekati batas jatah hari ini! ⚠️';
+        adviceText = 'Hampir sampai batasmu hari ini. Pertimbangkan dua kali ya 🙏';
         break;
       case 'over':
         accentColor = const Color(0xFFEF4444); // Merah
         statusText = 'Over';
-        adviceText = 'Jatah hari ini sudah terlampaui! 🚨';
+        adviceText = 'Hari ini sudah melebihi rencana. Tidak apa-apa, besok mulai baru! 💪';
         break;
       case 'loading':
         accentColor = const Color(0xFF64748B); // Abu-abu
@@ -218,7 +220,7 @@ class NotificationsService {
 
   /// Update persistent notification with latest data.
   Future<void> updateDailyAllowanceNotification({
-    required double sisaJatah,
+    required int sisaJatah,
     required String status,
     required bool hideBalance,
   }) async {
@@ -239,8 +241,8 @@ class NotificationsService {
     final expenses = tx.where((t) => t.isExpense).toList();
     final incomes = tx.where((t) => !t.isExpense).toList();
 
-    final totalExpense = expenses.fold<double>(0, (a, b) => a + b.amount);
-    final totalIncome = incomes.fold<double>(0, (a, b) => a + b.amount);
+    final totalExpense = expenses.fold(0, (a, b) => a + b.amount);
+    final totalIncome = incomes.fold(0, (a, b) => a + b.amount);
     final remainingFund = period.flexibleFund + totalIncome - totalExpense;
 
     final today = DateTime.now();
@@ -264,25 +266,15 @@ class NotificationsService {
             t.date.year == today.year &&
             t.date.month == today.month &&
             t.date.day == today.day)
-        .fold<double>(0, (a, b) => a + b.amount);
+        .fold(0, (a, b) => a + b.amount);
 
     final dailyStatus = BudgetingEngine.getDailyBudgetStatus(
       todayExpense: todayExpense,
       dailySafeBudget: dailySafe,
     );
 
-    final periodStatus = BudgetingEngine.getPeriodFundStatus(
-      remainingFund: remainingFund,
-      remainingDays: remainingDays,
-    );
-
-    final adviceText = BudgetingEngine.generateDynamicRecommendation(
-      dailyStatus: dailyStatus,
-      periodStatus: periodStatus,
-    );
-
     final prefs = await SharedPreferences.getInstance();
-    final hideBalance = prefs.getBool('hide_balance') ?? false;
+    final hideBalance = prefs.getBool(AppConstants.hideBalanceKey) ?? false;
 
     // Tentukan status string untuk showDailyAllowanceNotification
     String statusStr = 'aman';
@@ -293,7 +285,7 @@ class NotificationsService {
       statusStr = 'over';
     }
 
-    final sisa = (dailySafe - todayExpense).clamp(0.0, double.infinity);
+    final sisa = max(dailySafe - todayExpense, 0);
 
     await showDailyAllowanceNotification(
       sisaJatah: sisa,
@@ -309,8 +301,8 @@ class NotificationsService {
     if (usage >= 0.8 && !playSuccessSound) {
       await _plugin.show(
         9004,
-        '⚠️ Awas Mendekati Batas',
-        'Kamu sudah pakai ${(usage * 100).toStringAsFixed(0)}% jatah hari ini. Hati-hati ya!',
+        '⚠️ Hampir Batas Harian',
+        'Kamu sudah memakai ${(usage * 100).toStringAsFixed(0)}% batas harianmu. Simpan sisanya ya! 🙏',
         const NotificationDetails(
           android: AndroidNotificationDetails(
             _eventChannelId,
@@ -325,7 +317,7 @@ class NotificationsService {
 
     if (playSuccessSound) {
       final remainingToday =
-          (dailySafe - todayExpense).clamp(0.0, double.infinity);
+          max(dailySafe - todayExpense, 0);
       await _plugin.show(
         9003,
         '✔️ Tersimpan',
@@ -341,21 +333,6 @@ class NotificationsService {
           ),
         ),
       );
-    }
-  }
-
-  String _dailyStatusLabel(DailyBudgetStatus status) {
-    switch (status) {
-      case DailyBudgetStatus.belumAdaPengeluaran:
-        return 'Belum Ada Pengeluaran';
-      case DailyBudgetStatus.aman:
-        return 'Aman Terkendali';
-      case DailyBudgetStatus.mendekatiBatas:
-        return 'Mendekati Batas';
-      case DailyBudgetStatus.melebihiSedikit:
-        return 'Melebihi Sedikit';
-      case DailyBudgetStatus.boros:
-        return 'Boros';
     }
   }
 
@@ -412,16 +389,16 @@ class NotificationsService {
       importance: Importance.high,
       priority: Priority.high,
       styleInformation: BigTextStyleInformation(
-        'Jangan lupa cek sisa jatahmu hari ini dan catat pengeluaran yang belum masuk ya. Tutup hari dengan tenang!',
-        contentTitle: '🌙 Waktunya cek pengeluaran hari ini',
+        'Yuk cek pengeluaran hari ini dan catat yang belum masuk. Tutup hari dengan tenang! 🌙',
+        contentTitle: '🌙 Tutup hari dengan tenang',
         summaryText: 'NataSaku Reminder',
       ),
     );
 
     await _plugin.zonedSchedule(
       _dailyReminderId,
-      '🌙 Waktunya cek pengeluaran',
-      'Jangan lupa cek sisa jatahmu hari ini.',
+      '🌙 Tutup hari dengan tenang',
+      'Yuk cek pengeluaran hari ini dan catat yang belum masuk. Tutup hari dengan tenang! 🌙',
       _nextInstanceOfTime(hour, minute),
       const NotificationDetails(
         android: androidDetails,

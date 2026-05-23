@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/core/services/currency_service.dart';
+import 'package:natasaku/core/services/currency_service.dart';
 
 void main() {
   test('formatRupiah formats idr currency', () {

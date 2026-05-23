@@ -1,256 +1,86 @@
 # NataSaku
 
-**NataSaku** adalah aplikasi Android offline-first untuk membantu pengguna mengatur penghasilan pribadi menjadi pengeluaran tetap, target tabungan, jatah harian otomatis, pencatatan pengeluaran, warning overbudget, alokasi sisa harian, laporan bulanan, export PDF/CSV, serta backup dan restore lokal.
+[![Build Status](https://img.shields.io/badge/Build-Verified-success.svg)](#)
+[![Download APK](https://img.shields.io/badge/Download-Release%20APK-blue.svg)](_releases/natasaku-v0.1.1-release.apk)
 
-Tagline:
+**NataSaku** adalah aplikasi Android offline-first yang dirancang untuk membantu pengguna mengelola keuangan pribadi dengan pendekatan alokasi dana harian yang adaptif dan bebas stres.
 
-> Atur uang bulanan, nikmati hidup harian.
+> "Atur uang bulanan, nikmati hidup harian."
 
----
-
-## 1. Tujuan Project
-
-Project ini bertujuan membangun aplikasi budgeting Android native yang:
-
-- mudah digunakan,
-- ramah untuk pekerja gajian, mahasiswa, freelancer, dan pengguna umum,
-- bekerja sepenuhnya offline,
-- menyimpan data secara lokal,
-- tidak membutuhkan login,
-- tidak menggunakan backend,
-- tidak memakai cloud sync,
-- tidak terhubung ke bank,
-- mengikuti Material Design 3,
-- dibangun dengan Kotlin dan Jetpack Compose.
+### Status Project: 🚀 Stable Release Candidate (v0.1.1+2)
+Aplikasi telah melalui pengerasan (*hardening*) kode sumber, pembersihan scaffolding AI development, pengujian fungsionalitas asinkronus lokal, dan berhasil dikompilasi ke APK Rilis final dengan SDK target Android 36 (kompatibel hingga Android 7.0+ / API 24).
 
 ---
 
-## 2. Core Product Idea
+## 1. Core Product Idea
+NataSaku menjawab satu pertanyaan mendasar bagi pengguna:
+**"Hari ini saya aman belanja berapa?"**
 
-NataSaku membantu user menjawab pertanyaan sederhana:
-
-> Hari ini aku aman belanja berapa?
-
-Rumus utama:
-
+Aplikasi menghitung dana harian secara otomatis berdasarkan formula keuangan:
 ```text
 Dana Fleksibel = Total Penghasilan - Pengeluaran Tetap - Target Tabungan
-
-Jatah Harian = Dana Fleksibel / Jumlah Hari Periode
+Jatah Harian = Dana Fleksibel / Sisa Hari Periode
 ```
 
-Jika user melewati jatah harian, aplikasi memberi warning yang ramah dan menjelaskan bahwa jatah berikutnya dapat disesuaikan.
+Jika pengeluaran harian melebihi jatah harian, aplikasi akan memberikan peringatan bersahabat dan menghitung ulang jatah hari berikutnya secara dinamis.
 
-Jika user masih punya sisa jatah harian, aplikasi menawarkan alokasi:
+---
 
-1. Tambah ke jatah besok.
-2. Masukkan ke tabungan.
-3. Bagi otomatis.
-4. Simpan sebagai saldo bebas.
+## 2. Fitur Utama
+* 📱 **Onboarding & Setup Mudah**: Konfigurasi cepat untuk periode gajian, total income, alokasi tabungan impian, dan daftar pengeluaran tetap.
+* 🛠️ **Multi Fixed Expenses**: Kelola daftar tagihan rutin (kos, listrik, cicilan) secara dinamis.
+* 📊 **Laporan Finansial Premium**: Laporan eksekutif PDF 4-halaman (grafik kesehatan, tabel pengeluaran kategori, rencana aksi) dan file Excel 3-sheet siap olah (Ringkasan, Transaksi, Data Pivot).
+* 💾 **Backup & Restore Lokal**: Ekspor dan impor data dalam format JSON terenkripsi lokal untuk keamanan privasi penuh tanpa cloud/internet.
+* 🔊 **Efek Suara Interaktif**: Nada bel ramah saat mencatat transaksi atau mencapai target tabungan.
 
 ---
 
 ## 3. Tech Stack
-
-Wajib:
-
-- Kotlin.
-- Android Native.
-- Jetpack Compose.
-- Material Design 3.
-- Navigation Compose.
-- Room Database.
-- DataStore Preferences.
-- Kotlin Coroutines.
-- Flow / StateFlow.
-- ViewModel.
-- Local PDF export.
-- Local CSV export.
-- Local JSON backup/restore.
-
-Tidak boleh:
-
-- Backend.
-- Login.
-- Cloud sync.
-- Bank integration.
-- Payment gateway.
-- Ads.
-- Analytics SDK.
-- Online-only features.
+* **Core**: Flutter & Dart (Offline-First)
+* **State Management**: Flutter Riverpod
+* **Local Storage**: `shared_preferences`
+* **Local Notifications**: `flutter_local_notifications`
+* **File Export**: `pdf`, `excel`, `open_filex`, `share_plus`
+* **UI & Animation**: Phosphor Icons, Google Fonts, `flutter_animate`
 
 ---
 
-## 4. Project Context Files
+## 4. Cara Menjalankan Project
 
-Project ini menggunakan context-driven development.
+### Prasyarat
+* Flutter SDK `>= 3.10.0`
+* Dart SDK `>= 3.0.0`
+* Android SDK (minSdk 24, targetSdk 34)
 
-Struktur context:
+### Langkah Pemasangan
+1. Masuk ke direktori aplikasi Flutter:
+   ```bash
+   cd natasaku_flutter
+   ```
+2. Ambil paket dependensi:
+   ```bash
+   flutter pub get
+   ```
+3. Jalankan pengujian:
+   ```bash
+   flutter test
+   ```
+4. Jalankan aplikasi di emulator atau perangkat:
+   ```bash
+   flutter run
+   ```
 
-```text
-.agent/
-  skill.md
-  agents/
+---
 
-conductor/
-  index.md
-  product.md
-  product-guidelines.md
-  tech-stack.md
-  workflow.md
-  tracks.md
-  code_styleguides/
-  tracks/
-
-docs/
-  README.md
-  app-flow.md
-  data-model.md
-  calculation-rules.md
-  design-tokens.md
-  component-system.md
-  ui-screen-spec.md
-  copywriting.md
-  accessibility-guidelines.md
-  microinteractions.md
-  monthly-report-spec.md
-  export-spec.md
-  backup-restore-spec.md
-  testing-checklist.md
-  release-checklist.md
+## 5. Build Release APK
+Untuk mengompilasi APK rilis dengan pembagian arsitektur untuk meminimalkan ukuran file:
+```bash
+cd natasaku_flutter
+flutter build apk --release --split-per-abi
 ```
+File APK rilis final hasil kompilasi siap unduh juga disediakan langsung di folder [`_releases/natasaku-v0.1.1-release.apk`](_releases/natasaku-v0.1.1-release.apk).
 
 ---
 
-## 5. Required Reading Order for Antigravity
-
-Sebelum mulai coding, agent harus membaca:
-
-1. `.agent/skill.md`
-2. `conductor/index.md`
-3. `conductor/product.md`
-4. `conductor/product-guidelines.md`
-5. `conductor/tech-stack.md`
-6. `conductor/workflow.md`
-7. `conductor/tracks.md`
-8. `docs/README.md`
-9. File track aktif di `conductor/tracks/<track-id>/`
-
-Untuk coding Kotlin:
-
-- `conductor/code_styleguides/kotlin.md`
-
-Untuk coding Jetpack Compose:
-
-- `conductor/code_styleguides/jetpack-compose.md`
-
----
-
-## 6. Recommended Development Order
-
-Ikuti urutan ini:
-
-1. Project Foundation.
-2. Design System.
-3. Budget Calculation.
-4. Local Database.
-5. Setup Flow.
-6. Home Dashboard.
-7. Transaction History.
-8. Saving and Leftover.
-9. Monthly Report Export.
-10. Settings Backup Restore.
-11. QA Accessibility Polish.
-
-Detail lengkap ada di:
-
-- `IMPLEMENTATION_ORDER.md`
-- `conductor/tracks.md`
-
----
-
-## 7. Main Features
-
-MVP harus mencakup:
-
-1. Splash Screen.
-2. Welcome Screen.
-3. Onboarding.
-4. Setup Periode Gajian.
-5. Setup Penghasilan.
-6. Setup Pengeluaran Tetap.
-7. Setup Target Tabungan.
-8. Review Budget.
-9. Home Dashboard.
-10. Add Expense Bottom Sheet.
-11. Warning Overbudget Dialog.
-12. Leftover Allocation Dialog.
-13. Transaction History.
-14. Budget Screen.
-15. Saving Screen.
-16. Monthly Report Screen.
-17. Export Success Screen.
-18. Settings Screen.
-19. Export PDF.
-20. Export CSV.
-21. Backup lokal.
-22. Restore lokal.
-
----
-
-## 8. Brand and UX Tone
-
-NataSaku harus terasa:
-
-- helpful,
-- calm,
-- friendly,
-- professional,
-- tidak menghakimi,
-- seperti manager keuangan pribadi yang ramah.
-
-Gunakan copy seperti:
-
-- “Jatah kamu hari ini”
-- “Aman. Pengeluaranmu masih terkendali.”
-- “Jatah hari ini terlewati.”
-- “Budget akan disesuaikan.”
-- “Kamu masih punya sisa.”
-
-Jangan gunakan:
-
-- “Kamu boros”
-- “Budget gagal”
-- “Kamu salah”
-- “Tidak disiplin”
-- “Pengeluaranmu buruk”
-
----
-
-## 9. Definition of Done
-
-Sebuah fitur dianggap selesai jika:
-
-1. Requirement terpenuhi.
-2. Berjalan offline.
-3. Data tersimpan lokal.
-4. Tidak menambahkan fitur terlarang.
-5. Business logic tidak berada di Composable.
-6. Money menggunakan `Long`, bukan `Double` atau `Float`.
-7. Unit test tersedia untuk logic penting.
-8. UI mengikuti Material Design 3.
-9. Light/dark mode tidak rusak.
-10. Accessibility dasar terpenuhi.
-11. Copywriting sesuai tone NataSaku.
-
----
-
-## 10. Start Command for Antigravity
-
-Gunakan instruksi awal ini:
-
-```text
-Baca README.md, .agent/skill.md, conductor/index.md, conductor/product.md, conductor/tech-stack.md, conductor/workflow.md, conductor/tracks.md, dan docs/README.md.
-
-Bangun aplikasi Android NataSaku secara bertahap mengikuti IMPLEMENTATION_ORDER.md. Mulai dari Track 001 Project Foundation. Jangan membuat login, backend, cloud sync, integrasi bank, analytics, ads, atau fitur online. Gunakan Kotlin, Jetpack Compose, Material Design 3, Room, DataStore, dan local-only storage.
-```
+## 6. Arsip Scaffolding AI
+Dokumen perencanaan dan scaffolding pengembangan AI dipindahkan ke [`_archive/ai-scaffolding/`](_archive/ai-scaffolding/) agar root project tetap bersih dan siap untuk rilis produksi.

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/core/services/report_export_service.dart';
-import 'package:natasaku_flutter/data/models/transaction_model.dart';
+import 'package:natasaku/core/services/report_export_service.dart';
+import 'package:natasaku/data/models/transaction_model.dart';
 
 void main() {
   test('buildTransactionsCsv exports escaped transaction rows', () {

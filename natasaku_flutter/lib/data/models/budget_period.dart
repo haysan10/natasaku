@@ -14,8 +14,8 @@ class BudgetPeriod {
   final String id;
   final DateTime startDate;
   final DateTime endDate;
-  final double flexibleFund;
-  final double fixedExpenses;
-  final double monthlySavingAllocation;
+  final int flexibleFund;
+  final int fixedExpenses;
+  final int monthlySavingAllocation;
   final BudgetMode mode;
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/app/router.dart';
-import 'package:natasaku_flutter/features/tour/tour_page.dart';
+import 'package:natasaku/app/router.dart';
+import 'package:natasaku/features/tour/tour_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

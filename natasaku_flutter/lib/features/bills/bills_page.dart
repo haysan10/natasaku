@@ -79,7 +79,7 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
+                              color: AppColors.primary.withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -93,7 +93,7 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const PhosphorIcon(PhosphorIconsRegular.receipt, color: Colors.white, size: 20),
@@ -102,7 +102,7 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                                 Text(
                                   'Sisa Tagihan Bulan Ini',
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -314,7 +314,7 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                             ],
                           ),
                         ).animate().fade(delay: 200.ms).slideY(begin: 0.1);
-                      }).toList(),
+                      }),
                     ],
                   ),
       ),
@@ -329,7 +329,7 @@ class _BillsPageState extends ConsumerState<BillsPage> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const PhosphorIcon(PhosphorIconsRegular.receipt, color: AppColors.primary, size: 64),
@@ -391,9 +391,8 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
     _isAutoPay = widget.existingBill?.isAutoPay ?? false;
   }
 
-  double _parseAmount(String raw) {
-    final value = double.tryParse(raw.replaceAll('.', '').replaceAll(',', '.').trim()) ?? 0;
-    return value.isFinite ? value : 0;
+  int _parseAmount(String raw) {
+    return int.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), '').trim()) ?? 0;
   }
 
   @override
@@ -526,7 +525,7 @@ class _AddBillSheetState extends ConsumerState<_AddBillSheet> {
                   ),
                   Switch.adaptive(
                     value: _isAutoPay,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     onChanged: (value) => setState(() => _isAutoPay = value),
                   ),
                 ],

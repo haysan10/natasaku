@@ -4,17 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/services/currency_service.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/dev/mock_data_seeder.dart';
 import '../../data/models/budget_mode.dart';
 import '../../data/models/budget_period.dart';
 import '../../data/models/saving_goal.dart';
 import '../dashboard/providers/dashboard_provider.dart';
-import '../../core/utils/nominal_formatter.dart';
+import '../../core/utils/rupiah_input_formatter.dart';
+import '../../core/theme/app_shadows.dart';
+import '../../data/models/fixed_expense_item.dart';
+import '../../core/services/currency_service.dart';
 import '../../core/utils/nominal_input_validator.dart';
 
 class SetupPage extends ConsumerStatefulWidget {
@@ -36,15 +39,88 @@ class _SetupPageState extends ConsumerState<SetupPage> {
   DateTime _endDate = DateTime.now().add(const Duration(days: 29));
   BudgetMode _mode = BudgetMode.normal;
   bool _saving = false;
+  List<FixedExpenseItem> _fixedExpenseItems = [];
 
-  double _parseAmount(String raw) {
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+    _fundController.addListener(_onControllerChanged);
+    _fixedExpensesController.addListener(_onControllerChanged);
+    _savingAllocationController.addListener(_onControllerChanged);
+  }
+
+  void _onControllerChanged() {
+    setState(() {});
+  }
+
+  Future<void> _loadInitialData() async {
+    final repo = ref.read(budgetRepositoryProvider);
+    final items = await repo.loadFixedExpenseItems();
+    setState(() {
+      _fixedExpenseItems = items;
+      _updateFixedExpensesTotal();
+    });
+  }
+
+  void _updateFixedExpensesTotal() {
+    final total = FixedExpenseItem.totalOf(_fixedExpenseItems);
+    _fixedExpensesController.text = total > 0 ? NumberFormat('#,###', 'id_ID').format(total) : '';
+  }
+
+  void _addFixedExpenseItem(FixedExpenseItem item) {
+    setState(() {
+      _fixedExpenseItems.add(item);
+      _updateFixedExpensesTotal();
+    });
+  }
+
+  void _editFixedExpenseItem(FixedExpenseItem item) {
+    setState(() {
+      final index = _fixedExpenseItems.indexWhere((i) => i.id == item.id);
+      if (index >= 0) {
+        _fixedExpenseItems[index] = item;
+      }
+      _updateFixedExpensesTotal();
+    });
+  }
+
+  void _deleteFixedExpenseItem(String id) {
+    setState(() {
+      _fixedExpenseItems.removeWhere((i) => i.id == id);
+      _updateFixedExpensesTotal();
+    });
+  }
+
+  void _toggleFixedExpenseItem(String id) {
+    setState(() {
+      final index = _fixedExpenseItems.indexWhere((i) => i.id == id);
+      if (index >= 0) {
+        final item = _fixedExpenseItems[index];
+        _fixedExpenseItems[index] = FixedExpenseItem(
+          id: item.id,
+          name: item.name,
+          amount: item.amount,
+          category: item.category,
+          emoji: item.emoji,
+          isActive: !item.isActive,
+        );
+      }
+      _updateFixedExpensesTotal();
+    });
+  }
+
+  int _parseAmount(String raw) {
     final normalized = raw.replaceAll('.', '').replaceAll(',', '.').trim();
-    final value = double.tryParse(normalized) ?? 0;
-    return value.isFinite ? value : 0;
+    final value = int.tryParse(normalized) ?? 0;
+    return value < 0 ? 0 : value;
   }
 
   @override
   void dispose() {
+    _fundController.removeListener(_onControllerChanged);
+    _fixedExpensesController.removeListener(_onControllerChanged);
+    _savingAllocationController.removeListener(_onControllerChanged);
     _fundController.dispose();
     _fixedExpensesController.dispose();
     _savingAllocationController.dispose();
@@ -116,6 +192,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
     final savingTarget = _parseAmount(_savingTargetController.text);
 
     final repo = ref.read(budgetRepositoryProvider);
+    await repo.saveOnboardingComplete(true);
+    await repo.saveFixedExpenseItems(_fixedExpenseItems);
 
     await repo.savePeriod(
       BudgetPeriod(
@@ -151,6 +229,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
   Future<void> _seedMockData() async {
     setState(() => _saving = true);
     await MockDataSeeder.seed();
+    await ref.read(budgetRepositoryProvider).saveOnboardingComplete(true);
     if (!mounted) return;
     setState(() => _saving = false);
     // Explicitly reload the dashboard provider state before navigating
@@ -196,12 +275,231 @@ class _SetupPageState extends ConsumerState<SetupPage> {
     });
   }
 
+  Future<void> _showAddEditFixedExpenseSheet([FixedExpenseItem? editingItem]) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: editingItem?.name);
+    final amountController = TextEditingController(
+      text: editingItem != null
+          ? NumberFormat('#,###', 'id_ID').format(editingItem.amount)
+          : '',
+    );
+    FixedExpenseCategory selectedCategory = editingItem?.category ?? FixedExpenseCategory.lainnya;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final result = await showModalBottomSheet<FixedExpenseItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.fromLTRB(
+            24, 
+            24, 
+            24, 
+            MediaQuery.of(context).viewInsets.bottom + 32
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  editingItem == null ? 'Tambah Tagihan Rutin' : 'Ubah Tagihan Rutin',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                
+                // Name field
+                TextFormField(
+                  controller: nameController,
+                  autofocus: editingItem == null,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  ),
+                  decoration: _buildInputDecoration(
+                    labelText: 'Nama Tagihan',
+                    prefixIcon: PhosphorIconsRegular.pencil,
+                    hintText: 'Contoh: Biaya Kos',
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Nama tagihan wajib diisi';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Category field
+                DropdownButtonFormField<FixedExpenseCategory>(
+                  initialValue: selectedCategory,
+                  dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  ),
+                  decoration: _buildInputDecoration(
+                    labelText: 'Kategori Tagihan',
+                    prefixIcon: PhosphorIconsRegular.tag,
+                  ),
+                  items: FixedExpenseCategory.values.map((cat) => DropdownMenuItem(
+                    value: cat,
+                    child: Text('${getCategoryEmoji(cat)}  ${getCategoryLabel(cat)}'),
+                  )).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setModalState(() {
+                        selectedCategory = val;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Amount field
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [RupiahInputFormatter()],
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    letterSpacing: 0.5,
+                  ),
+                  decoration: _buildInputDecoration(
+                    labelText: 'Nominal (Rp)',
+                    prefixIcon: PhosphorIconsRegular.money,
+                    hintText: 'Masukkan nominal rupiah',
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Nominal wajib diisi';
+                    final parsed = _parseAmount(val);
+                    if (parsed <= 0) return 'Nominal harus lebih dari Rp 0';
+                    if (parsed > 999999999999) return 'Nominal terlalu besar';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Batal'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          if (formKey.currentState!.validate()) {
+                            final name = nameController.text.trim();
+                            final amount = _parseAmount(amountController.text);
+                            Navigator.pop(
+                              context,
+                              FixedExpenseItem(
+                                id: editingItem?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                                name: name,
+                                amount: amount,
+                                category: selectedCategory,
+                                emoji: getCategoryEmoji(selectedCategory),
+                                isActive: editingItem?.isActive ?? true,
+                              ),
+                            );
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Simpan'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (result != null) {
+      if (editingItem == null) {
+        _addFixedExpenseItem(result);
+      } else {
+        _editFixedExpenseItem(result);
+      }
+    }
+  }
+
+  Widget _buildBudgetPreview() {
+    final fund = _parseAmount(_fundController.text);
+    final fixed = _parseAmount(_fixedExpensesController.text);
+    final saving = _parseAmount(_savingAllocationController.text);
+    final flexible = fund - fixed - saving;
+
+    if (fund == 0) return const SizedBox.shrink();
+
+    final isNegative = flexible < 0;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: isNegative
+            ? AppColors.alert.withValues(alpha: 0.08)
+            : AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isNegative ? AppColors.alert.withValues(alpha: 0.3) : AppColors.accent.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          _PreviewRow('Dana Masuk', fund, color: AppColors.accent),
+          _PreviewRow('Tagihan Tetap', -fixed, color: AppColors.alert),
+          _PreviewRow('Tabungan', -saving, color: Colors.amber),
+          const Divider(),
+          _PreviewRow(
+            isNegative ? '⚠️ Dana Minus!' : '✅ Dana Fleksibel',
+            flexible,
+            color: isNegative ? AppColors.alert : AppColors.accent,
+            isBold: true,
+          ),
+          if (isNegative) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Tagihan & tabunganmu melebihi pemasukan. Kurangi salah satunya.',
+              style: TextStyle(color: AppColors.alert, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildStepCard({
     required int step,
     required String title,
     required String subtitle,
     required Widget child,
     required IconData icon,
+    String? tooltipText,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
@@ -212,16 +510,10 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: isDark ? AppColors.borderDark.withOpacity(0.5) : AppColors.borderLight.withOpacity(0.8),
+          color: isDark ? AppColors.borderDark.withValues(alpha: 0.5) : AppColors.borderLight.withValues(alpha: 0.8),
           width: 1.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        boxShadow: AppShadows.card(isDark: isDark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,7 +523,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: PhosphorIcon(icon, color: AppColors.primary, size: 24),
@@ -244,7 +536,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
@@ -257,12 +549,31 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                            ),
+                          ),
+                        ),
+                        if (tooltipText != null) ...[
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message: tooltipText,
+                            triggerMode: TooltipTriggerMode.tap,
+                            showDuration: const Duration(seconds: 4),
+                            child: Icon(
+                              Icons.help_outline_rounded,
+                              size: 18,
+                              color: (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight).withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -307,7 +618,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
         fontWeight: FontWeight.bold,
       ),
       filled: true,
-      fillColor: isDark ? AppColors.surfaceVariantDark.withOpacity(0.3) : AppColors.surfaceVariantLight.withOpacity(0.4),
+      fillColor: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -389,7 +700,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
@@ -415,7 +726,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   Text(
                     'Isi form simpel ini agar NataSaku bisa menghitung jatah harianmu dengan akurat.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -428,13 +739,15 @@ class _SetupPageState extends ConsumerState<SetupPage> {
             // Step 1: Fund
             _buildStepCard(
               step: 1,
-              title: 'Dana Fleksibel',
-              subtitle: 'Berapa sisa uangmu yang bebas dipakai (di luar tagihan, cicilan, dan tabungan)?',
+              title: 'Uang yang Bisa Dipakai',
+              subtitle: 'Berapa uang yang kamu punya untuk dipakai bulan ini?',
+              tooltipText: 'Total uang yang bebas kamu pakai bulan ini — setelah dikurangi tagihan rutin dan tabungan wajib.',
               icon: PhosphorIconsRegular.money,
               child: TextFormField(
                 controller: _fundController,
                 keyboardType: TextInputType.number,
-                inputFormatters: [NominalFormatter()],
+                inputFormatters: [RupiahInputFormatter()],
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -465,7 +778,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark.withOpacity(0.3) : AppColors.surfaceVariantLight.withOpacity(0.4),
+                          color: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -516,7 +829,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceVariantDark.withOpacity(0.3) : AppColors.surfaceVariantLight.withOpacity(0.4),
+                          color: isDark ? AppColors.surfaceVariantDark.withValues(alpha: 0.3) : AppColors.surfaceVariantLight.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -560,47 +873,50 @@ class _SetupPageState extends ConsumerState<SetupPage> {
               ),
             ).animate().fade(delay: 200.ms).slideX(begin: 0.05),
             
-            // Step 3: Fixed Monthly Expenses
+            // Step 3: Fixed Monthly Expenses (Tagihan Rutin Bulanan)
             _buildStepCard(
               step: 3,
-              title: 'Pengeluaran Tetap',
-              subtitle: 'Berapa total tagihan rutin bulananmu? (kos, listrik, wifi, cicilan, dll)',
+              title: 'Tagihan Rutin Bulanan',
+              subtitle: 'Tambahkan semua tagihan tetapmu. NataSaku akan menjumlahkan otomatis.',
+              tooltipText: 'Tagihan rutin bulanan seperti sewa kos, cicilan kendaraan, internet, air, listrik, dll.',
               icon: PhosphorIconsRegular.receipt,
-              child: TextFormField(
-                controller: _fixedExpensesController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [NominalFormatter()],
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  letterSpacing: 0.5,
-                ),
-                decoration: _buildInputDecoration(
-                  labelText: 'Tagihan Tetap (Rp)',
-                  prefixIcon: PhosphorIconsRegular.lightning,
-                  hintText: 'Opsional — bisa 0',
-                ),
-                validator: (value) {
-                  if (value != null && value.trim().isNotEmpty) {
-                    final parsed = NominalInputValidator.parseNominal(value);
-                    if (parsed > 999999999999) return 'Nominal terlalu besar. Maksimum Rp 999.999.999.999';
-                  }
-                  return null;
-                },
+              child: Column(
+                children: [
+                  Offstage(
+                    child: TextFormField(
+                      controller: _fixedExpensesController,
+                      validator: (value) {
+                        if (value != null && value.trim().isNotEmpty) {
+                          final parsed = NominalInputValidator.parseNominal(value);
+                          if (parsed > 999999999999) return 'Nominal terlalu besar';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  _FixedExpenseListBuilder(
+                    items: _fixedExpenseItems,
+                    onAdd: () => _showAddEditFixedExpenseSheet(),
+                    onEdit: _showAddEditFixedExpenseSheet,
+                    onDelete: _deleteFixedExpenseItem,
+                    onToggle: _toggleFixedExpenseItem,
+                  ),
+                ],
               ),
             ).animate().fade(delay: 250.ms).slideX(begin: 0.05),
             
             // Step 4: Monthly Savings Allocation
             _buildStepCard(
               step: 4,
-              title: 'Alokasi Tabungan',
+              title: 'Berapa Ingin Kamu Tabung?',
               subtitle: 'Berapa yang ingin kamu sisihkan untuk tabungan per bulan ini?',
+              tooltipText: 'Berapa yang ingin kamu sisihkan setiap bulan. NataSaku akan mengamankan ini dulu sebelum menghitung jatah harianmu.',
               icon: PhosphorIconsRegular.vault,
               child: TextFormField(
                 controller: _savingAllocationController,
                 keyboardType: TextInputType.number,
-                inputFormatters: [NominalFormatter()],
+                inputFormatters: [RupiahInputFormatter()],
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -610,7 +926,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 decoration: _buildInputDecoration(
                   labelText: 'Tabungan Bulanan (Rp)',
                   prefixIcon: PhosphorIconsRegular.piggyBank,
-                  hintText: 'Opsional — bisa 0',
+                  hintText: 'Lewati jika belum ada tabungan wajib',
                 ),
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
@@ -621,6 +937,9 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                 },
               ),
             ).animate().fade(delay: 300.ms).slideX(begin: 0.05),
+
+            // Real-time Budget Preview
+            _buildBudgetPreview(),
             
             // Step 5: Savings Goal
             _buildStepCard(
@@ -646,7 +965,8 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   TextFormField(
                     controller: _savingTargetController,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [NominalFormatter()],
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    inputFormatters: [RupiahInputFormatter()],
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
@@ -687,7 +1007,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
               subtitle: 'Pilih mode budget untuk menyesuaikan tingkat kehematan pengeluaran Anda.',
               icon: PhosphorIconsRegular.sliders,
               child: DropdownButtonFormField<BudgetMode>(
-                value: _mode,
+                initialValue: _mode,
                 icon: const PhosphorIcon(PhosphorIconsRegular.caretDown, color: AppColors.primary),
                 dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(16),
@@ -722,13 +1042,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                boxShadow: AppShadows.button(),
               ),
               child: FilledButton.icon(
                 onPressed: _saving ? null : _submit,
@@ -743,7 +1057,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                   : const PhosphorIcon(PhosphorIconsFill.checkCircle, size: 20),
                 label: Text(
-                  _saving ? 'MENYIMPAN RENCANA...' : 'SIMPAN & MULAI BERSAKU!',
+                  _saving ? 'MENYIMPAN RENCANA...' : 'Siap! Mulai Atur Keuanganku 🚀',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
@@ -810,7 +1124,206 @@ class _SetupPageState extends ConsumerState<SetupPage> {
     switch (mode) {
       case BudgetMode.normal: return 'Normal (Bebas Belanja)';
       case BudgetMode.hemat: return 'Hemat (Tahan Tabungan)';
-      case BudgetMode.krisis: return 'Krisis (Batas Terendah)';
+      case BudgetMode.krisis: return 'Mode Darurat';
     }
+  }
+}
+
+// ── Category Helper Methods ───────────────────────────────────────────
+
+String getCategoryEmoji(FixedExpenseCategory cat) {
+  switch (cat) {
+    case FixedExpenseCategory.sewakos: return '🏠';
+    case FixedExpenseCategory.cicilanKendaraan: return '🚗';
+    case FixedExpenseCategory.cicilanRumah: return '🏡';
+    case FixedExpenseCategory.asuransi: return '🛡️';
+    case FixedExpenseCategory.internet: return '📶';
+    case FixedExpenseCategory.listrik: return '⚡';
+    case FixedExpenseCategory.air: return '💧';
+    case FixedExpenseCategory.gas: return '🔥';
+    case FixedExpenseCategory.streaming: return '📺';
+    case FixedExpenseCategory.gymKesehatan: return '💪';
+    case FixedExpenseCategory.sekolahKuliah: return '📚';
+    case FixedExpenseCategory.tabunganWajib: return '🏦';
+    case FixedExpenseCategory.lainnya: return '➕';
+  }
+}
+
+String getCategoryLabel(FixedExpenseCategory cat) {
+  switch (cat) {
+    case FixedExpenseCategory.sewakos: return 'Sewa/Kos';
+    case FixedExpenseCategory.cicilanKendaraan: return 'Cicilan Kendaraan';
+    case FixedExpenseCategory.cicilanRumah: return 'Cicilan Rumah';
+    case FixedExpenseCategory.asuransi: return 'Asuransi';
+    case FixedExpenseCategory.internet: return 'Internet/WiFi';
+    case FixedExpenseCategory.listrik: return 'Listrik';
+    case FixedExpenseCategory.air: return 'Air';
+    case FixedExpenseCategory.gas: return 'Gas';
+    case FixedExpenseCategory.streaming: return 'Streaming';
+    case FixedExpenseCategory.gymKesehatan: return 'Gym/Kesehatan';
+    case FixedExpenseCategory.sekolahKuliah: return 'Sekolah/Kuliah';
+    case FixedExpenseCategory.tabunganWajib: return 'Tabungan Wajib';
+    case FixedExpenseCategory.lainnya: return 'Lainnya';
+  }
+}
+
+// ── Preview Widget Helpers ───────────────────────────────────────────
+
+class _PreviewRow extends StatelessWidget {
+  final String label;
+  final int amount;
+  final Color color;
+  final bool isBold;
+
+  const _PreviewRow(this.label, this.amount, {required this.color, this.isBold = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontSize: isBold ? 14 : 13,
+            ),
+          ),
+          Text(
+            (amount < 0 ? '-' : '') + CurrencyService.formatRupiah(amount.abs()),
+            style: TextStyle(
+              color: color,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              fontSize: isBold ? 14 : 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Multi Fixed Expense List Widgets ─────────────────────────────────
+
+class _FixedExpenseListBuilder extends StatelessWidget {
+  final List<FixedExpenseItem> items;
+  final VoidCallback onAdd;
+  final ValueChanged<FixedExpenseItem> onEdit;
+  final ValueChanged<String> onDelete;
+  final ValueChanged<String> onToggle;
+
+  const _FixedExpenseListBuilder({
+    required this.items,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = FixedExpenseItem.totalOf(items);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (items.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.alert.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.receipt_long, color: AppColors.alert, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Total: ${CurrencyService.formatRupiah(total)}',
+                  style: const TextStyle(color: AppColors.alert, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        ...items.map((item) => _FixedExpenseTile(
+          item: item,
+          onEdit: () => onEdit(item),
+          onDelete: () => onDelete(item.id),
+          onToggle: () => onToggle(item.id),
+        )),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Tambah Tagihan'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FixedExpenseTile extends StatelessWidget {
+  final FixedExpenseItem item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onToggle;
+
+  const _FixedExpenseTile({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Opacity(
+      opacity: item.isActive ? 1.0 : 0.5,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: item.isActive ? AppColors.alert.withValues(alpha: 0.2) : (isDark ? AppColors.borderDark : AppColors.borderLight),
+          ),
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Text(item.emoji, style: const TextStyle(fontSize: 24)),
+          title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: Text(CurrencyService.formatRupiah(item.amount)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Switch.adaptive(
+                value: item.isActive,
+                activeThumbColor: AppColors.primary,
+                onChanged: (_) => onToggle(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: onEdit,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.alert),
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

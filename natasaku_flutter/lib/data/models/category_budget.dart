@@ -9,14 +9,14 @@ class CategoryBudget {
 
   final String id;
   final String category;
-  final double limitAmount;
+  final int limitAmount;
   final String emoji;
   final String? colorHex;
 
   CategoryBudget copyWith({
     String? id,
     String? category,
-    double? limitAmount,
+    int? limitAmount,
     String? emoji,
     String? colorHex,
   }) {
@@ -40,7 +40,7 @@ class CategoryBudget {
   factory CategoryBudget.fromMap(Map<String, dynamic> map) => CategoryBudget(
         id: map['id'] as String,
         category: map['category'] as String,
-        limitAmount: (map['limitAmount'] as num).toDouble(),
+        limitAmount: (map['limitAmount'] as num).round(),
         emoji: map['emoji'] as String? ?? '📦',
         colorHex: map['colorHex'] as String?,
       );

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/features/savings/savings_page.dart';
+import 'package:natasaku/features/savings/savings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 void main() {
   testWidgets('savings page shows active goal progress', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'saving_balance': 500000.0,
+      'saving_balance': 500000,
       'saving_goal': jsonEncode({
         'id': 'goal-1',
         'name': 'Dana Darurat',

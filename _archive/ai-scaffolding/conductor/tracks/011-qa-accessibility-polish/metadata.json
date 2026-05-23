@@ -1,0 +1,22 @@
+{
+  "id": "011",
+  "slug": "011-qa-accessibility-polish",
+  "title": "QA Accessibility Polish",
+  "priority": "P0",
+  "status": "planned",
+  "depends_on": [
+    "001",
+    "002",
+    "003",
+    "004",
+    "005",
+    "006",
+    "007",
+    "008",
+    "009",
+    "010"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

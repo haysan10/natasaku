@@ -43,7 +43,7 @@ val hasReleaseSigning =
 
 android {
     namespace = "com.natasaku.app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -61,10 +61,10 @@ android {
         applicationId = "com.natasaku.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 2
+        versionName = "0.1.1"
 
         multiDexEnabled = true
     }
@@ -89,6 +89,8 @@ android {
             } else {
                 signingConfig = signingConfigs.getByName("debug")
             }
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

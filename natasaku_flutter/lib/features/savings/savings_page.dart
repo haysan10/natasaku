@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../core/animations/nata_animations.dart';
-import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/services/currency_service.dart';
@@ -28,7 +26,7 @@ class SavingsPage extends ConsumerStatefulWidget {
 
 class _SavingsPageState extends ConsumerState<SavingsPage> {
   bool _loading = true;
-  double _balance = 0;
+  int _balance = 0;
   List<SavingGoal> _goals = [];
   List<Map<String, dynamic>> _history = [];
   UserSettings _settings = const UserSettings();
@@ -217,23 +215,22 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
   Future<void> _upsertGoal([SavingGoal? existingGoal]) async {
     final nameController = TextEditingController(text: existingGoal?.name ?? '');
     final targetController = TextEditingController(
-      text: existingGoal == null ? '' : existingGoal.targetAmount.toStringAsFixed(0),
+      text: existingGoal == null ? '' : existingGoal.targetAmount.toString(),
     );
     final currentController = TextEditingController(
-      text: existingGoal == null ? '0' : existingGoal.currentAmount.toStringAsFixed(0),
+      text: existingGoal == null ? '0' : existingGoal.currentAmount.toString(),
     );
     final autoSaveAmountController = TextEditingController(
-      text: existingGoal?.autoSaveAmount == null ? '' : existingGoal!.autoSaveAmount!.toStringAsFixed(0),
+      text: existingGoal?.autoSaveAmount == null ? '' : existingGoal!.autoSaveAmount!.toString(),
     );
     DateTime? targetDate = existingGoal?.targetDate;
     bool autoSaveEnabled = existingGoal?.autoSaveAmount != null && existingGoal!.autoSaveAmount! > 0;
     String autoSaveFrequency = existingGoal?.autoSaveFrequency ?? 'daily';
     String? modalErrorMessage;
 
-    double parseAmount(String raw) {
+    int parseAmount(String raw) {
       final normalized = raw.replaceAll('.', '').replaceAll(',', '.').trim();
-      final value = double.tryParse(normalized) ?? 0;
-      return value.isFinite ? value : 0;
+      return int.tryParse(normalized) ?? 0;
     }
 
     final saved = await showModalBottomSheet<bool>(
@@ -422,7 +419,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                               ),
                               Switch.adaptive(
                                 value: autoSaveEnabled,
-                                activeColor: AppColors.primary,
+                                activeThumbColor: AppColors.primary,
                                 onChanged: (value) => setModalState(() => autoSaveEnabled = value),
                               ),
                             ],
@@ -608,10 +605,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
     final dashboardState = ref.read(dashboardProvider);
     final remainingBudget = dashboardState.remainingFund;
 
-    double parseAmount(String raw) {
+    int parseAmount(String raw) {
       final normalized = raw.replaceAll('.', '').replaceAll(',', '.').trim();
-      final value = double.tryParse(normalized) ?? 0;
-      return value.isFinite ? value : 0;
+      return int.tryParse(normalized) ?? 0;
     }
 
     final success = await showModalBottomSheet<bool>(
@@ -981,7 +977,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                     // Auto-saving Switch Panel
                     Builder(
                       builder: (context) {
-                        final totalAutoSave = _goals.fold<double>(0.0, (sum, g) => sum + (g.autoSaveAmount ?? 0.0));
+                        final totalAutoSave = _goals.fold(0, (sum, g) => sum + (g.autoSaveAmount ?? 0));
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                           decoration: BoxDecoration(
@@ -1102,9 +1098,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                     ),
                                   ],
                                 ),
-                                child: Row(
+                                child: const Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
+                                  children: [
                                     Icon(Icons.add, size: 18, color: Colors.white),
                                     SizedBox(width: 8),
                                     Text(
@@ -1128,7 +1124,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                           final progress = goal.targetAmount <= 0 
                               ? 0.0 
                               : (goal.currentAmount / goal.targetAmount).clamp(0.0, 1.0);
-                          final remaining = (goal.targetAmount - goal.currentAmount).clamp(0.0, double.infinity);
+                          final remaining = goal.targetAmount > goal.currentAmount
+                              ? goal.targetAmount - goal.currentAmount
+                              : 0;
                           
                           String timelineText = 'Tanpa batas waktu';
                           if (goal.targetDate != null) {
@@ -1255,11 +1253,11 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                   goal.currentAmount == 0
                                       ? Shimmer.fromColors(
                                           baseColor: isDark ? const Color(0xFF1E2F2D) : const Color(0xFFE0F2F1),
-                                          highlightColor: isDark ? const Color(0xFF2DD4BF).withOpacity(0.3) : const Color(0xFFB2DFDB),
-                                          child: NataProgressBar(
+                                          highlightColor: isDark ? const Color(0xFF2DD4BF).withValues(alpha: 0.3) : const Color(0xFFB2DFDB),
+                                          child: const NataProgressBar(
                                             value: 0.05,
                                             height: 8,
-                                            gradient: const LinearGradient(
+                                            gradient: LinearGradient(
                                               colors: [Color(0xFF00B4A6), Color(0xFF00D4C8)],
                                             ),
                                           ),
@@ -1298,9 +1296,9 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
                                       ),
-                                      child: Row(
+                                      child: const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: const [
+                                        children: [
                                           Icon(Icons.add_circle_rounded, size: 18, color: AppColors.primary),
                                           SizedBox(width: 8),
                                           Text(

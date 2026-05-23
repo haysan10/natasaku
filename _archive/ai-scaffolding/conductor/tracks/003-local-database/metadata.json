@@ -1,0 +1,13 @@
+{
+  "id": "003",
+  "slug": "003-local-database",
+  "title": "Local Database",
+  "priority": "P0",
+  "status": "done",
+  "depends_on": [
+    "001"
+  ],
+  "owner": "Antigravity agents",
+  "project": "NataSaku",
+  "contains_prd": false
+}

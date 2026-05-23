@@ -7,6 +7,7 @@ import '../../core/services/currency_service.dart';
 import '../../data/datasources/local/local_storage.dart';
 import '../../data/models/daily_closing.dart';
 import '../../data/repositories/budget_repository.dart';
+import '../budgeting/budgeting_engine.dart';
 
 class DailyClosingPage extends StatefulWidget {
   const DailyClosingPage({super.key});
@@ -21,9 +22,9 @@ class _DailyClosingPageState extends State<DailyClosingPage> {
 
   bool _loading = true;
   bool _hasPeriod = true;
-  double _todayExpense = 0;
-  double _todayIncome = 0;
-  double _carryOver = 0;
+  int _todayExpense = 0;
+  int _todayIncome = 0;
+  int _carryOver = 0;
 
   @override
   void initState() {
@@ -48,7 +49,7 @@ class _DailyClosingPageState extends State<DailyClosingPage> {
             t.date.year == now.year &&
             t.date.month == now.month &&
             t.date.day == now.day)
-        .fold<double>(0, (a, b) => a + b.amount);
+        .fold(0, (a, b) => a + b.amount);
 
     final todayIncome = txs
         .where((t) => !t.isExpense)
@@ -56,18 +57,21 @@ class _DailyClosingPageState extends State<DailyClosingPage> {
             t.date.year == now.year &&
             t.date.month == now.month &&
             t.date.day == now.day)
-        .fold<double>(0, (a, b) => a + b.amount);
+        .fold(0, (a, b) => a + b.amount);
 
-    double carryOver = 0;
+    var carryOver = 0;
     if (period != null) {
       final remainingDays = max(1, period.endDate.difference(now).inDays + 1);
       final totalIncome = txs
           .where((t) => !t.isExpense)
-          .fold<double>(0, (a, b) => a + b.amount);
+          .fold(0, (a, b) => a + b.amount);
       final totalExpense =
-          txs.where((t) => t.isExpense).fold<double>(0, (a, b) => a + b.amount);
+          txs.where((t) => t.isExpense).fold(0, (a, b) => a + b.amount);
       final remainingFund = period.flexibleFund + totalIncome - totalExpense;
-      final safeDaily = remainingFund <= 0 ? 0 : remainingFund / remainingDays;
+      final safeDaily = BudgetingEngine.calculateDailySafeBudget(
+        remainingFund: remainingFund,
+        remainingDays: remainingDays,
+      );
       carryOver = safeDaily - todayExpense;
     }
 

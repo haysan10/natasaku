@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_shadows.dart';
+import '../../core/utils/rupiah_input_formatter.dart';
 import '../../core/services/currency_service.dart';
 import '../../data/models/budget_mode.dart';
 import '../../data/models/budget_status.dart';
@@ -205,7 +207,7 @@ class _BudgetContent extends ConsumerWidget {
     final remainingDays = state.remainingDays;
     
     final baseDaily = BudgetingEngine.calculateDailySafeBudget(
-      remainingFund: max<double>(remainingFund, 0),
+      remainingFund: max(remainingFund, 0),
       remainingDays: remainingDays,
     );
     
@@ -229,90 +231,116 @@ class _BudgetContent extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
       children: [
         // Status Card
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
+        Hero(
+          tag: 'main_balance_card',
+          child: Material(
+            type: MaterialType.transparency,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: AppShadows.heroCard(),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Jatah Aman Harian',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Jatah Aman Harian',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            const PhosphorIcon(PhosphorIconsFill.checkCircle, color: Colors.white, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              _periodStatusLabel(periodStatus),
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    CurrencyService.formatRupiah(safeDaily),
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.black.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       children: [
-                        const PhosphorIcon(PhosphorIconsFill.checkCircle, color: Colors.white, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          _periodStatusLabel(periodStatus),
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.white),
+                        const PhosphorIcon(PhosphorIconsRegular.calendar, color: Colors.white70, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_fmtDate(period.startDate)} - ${_fmtDate(period.endDate)}',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                              ),
+                              Text(
+                                'Sisa ${max(remainingDays, 0)} hari',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                CurrencyService.formatRupiah(safeDaily),
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const PhosphorIcon(PhosphorIconsRegular.calendar, color: Colors.white70, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_fmtDate(period.startDate)} - ${_fmtDate(period.endDate)}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
-                          ),
-                          Text(
-                            'Sisa ${max(remainingDays, 0)} hari',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+
+        if (remainingDays <= 1) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.amber),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    remainingDays == 0
+                        ? 'Periode berakhir hari ini. Sisa dana sebaiknya diamankan ke tabungan.'
+                        : 'Ini hari terakhir periode. Jatah hari ini = seluruh sisa dana yang ada.',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         const SizedBox(height: 20),
         
@@ -360,7 +388,7 @@ class _BudgetContent extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Jika hari ini kamu berhenti jajan, jatah besok akan naik!',
+                      'Kalau hari ini kamu hemat, besok kamu punya lebih banyak ruang gerak 🎯',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -391,10 +419,14 @@ class _BudgetContent extends ConsumerWidget {
               icon: PhosphorIconsRegular.wallet,
             ),
             _MetricCard(
-              label: 'Sisa Dana',
-              value: remainingFund,
+              label: remainingFund >= 0 ? 'Sisa Dana' : '⚠️ Dana Minus',
+              value: remainingFund.abs(),
+              prefix: remainingFund < 0 ? '-' : '',
               icon: PhosphorIconsRegular.piggyBank,
               color: remainingFund >= 0 ? AppColors.accent : AppColors.alert,
+              tooltip: remainingFund < 0
+                  ? 'Pengeluaranmu melebihi dana yang tersedia. Kurangi pengeluaran atau tambah pemasukan.'
+                  : null,
             ),
             _MetricCard(
               label: 'Terpakai',
@@ -525,7 +557,7 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
 
     String category = detail?.budget.category ?? availableCategories.first;
     final limitController = TextEditingController(
-      text: isNew ? '' : detail.budget.limitAmount.toInt().toString(),
+      text: isNew ? '' : NumberFormat('#,###', 'id_ID').format(detail.budget.limitAmount.toInt()),
     );
     String emoji = detail?.budget.emoji ?? '📦';
 
@@ -721,6 +753,7 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                       TextField(
                         controller: limitController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [RupiahInputFormatter()],
                         autofocus: isNew,
                         decoration: InputDecoration(
                           prefixText: 'Rp ',
@@ -785,7 +818,7 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
                                   return;
                                 }
 
-                                final amount = double.tryParse(amountStr.replaceAll('.', '').replaceAll(',', '.').trim()) ?? 0.0;
+                                final amount = int.tryParse(amountStr.replaceAll(RegExp(r'[^0-9]'), '').trim()) ?? 0;
                                 if (amount <= 0) {
                                   setModalState(() => modalErrorMessage = 'Nominal limit harus lebih dari Rp 0!');
                                   HapticFeedback.heavyImpact();
@@ -1055,60 +1088,74 @@ class _CategoryBudgetViewState extends ConsumerState<_CategoryBudgetView> {
 
 class _MetricCard extends StatelessWidget {
   final String label;
-  final double value;
+  final int value;
   final IconData icon;
   final Color? color;
+  final String? prefix;
+  final String? tooltip;
 
-  const _MetricCard({required this.label, required this.value, required this.icon, this.color});
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.color,
+    this.prefix,
+    this.tooltip,
+  });
 
   @override
   Widget build(BuildContext context) {
     final activeColor = color ?? AppColors.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
+    Widget cardContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: activeColor.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: PhosphorIcon(icon, color: activeColor, size: 20),
+        ),
+        const Spacer(),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${prefix ?? ''}${CurrencyService.formatRupiah(value).replaceAll('Rp', '')}',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: activeColor,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+
+    if (tooltip != null) {
+      cardContent = Tooltip(
+        message: tooltip!,
+        triggerMode: TooltipTriggerMode.tap,
+        showDuration: const Duration(seconds: 4),
+        child: cardContent,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceVariantDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppShadows.card(isDark: isDark),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: activeColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: PhosphorIcon(icon, color: activeColor, size: 20),
-          ),
-          const Spacer(),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            CurrencyService.formatRupiah(value).replaceAll('Rp', ''),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: activeColor,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
+      child: cardContent,
     );
   }
 }
@@ -1162,7 +1209,7 @@ class _BudgetBreakdownSection extends ConsumerStatefulWidget {
 }
 
 class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection> {
-  void _editComponent(String type, double currentValue) async {
+  void _editComponent(String type, int currentValue) async {
     final controller = TextEditingController(text: currentValue.toInt().toString());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
@@ -1318,11 +1365,11 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
                             return;
                           }
 
-                          final amount = double.tryParse(amountStr.replaceAll('.', '').replaceAll(',', '.').trim()) ?? 0.0;
+                          final amount = int.tryParse(amountStr.replaceAll(RegExp(r'[^0-9]'), '').trim()) ?? 0;
                           
-                          double targetIncome = widget.period.flexibleFund;
-                          double targetFixed = widget.period.fixedExpenses;
-                          double targetSavings = widget.period.monthlySavingAllocation;
+                          var targetIncome = widget.period.flexibleFund;
+                          var targetFixed = widget.period.fixedExpenses;
+                          var targetSavings = widget.period.monthlySavingAllocation;
 
                           if (type == 'income') targetIncome = amount;
                           if (type == 'fixed') targetFixed = amount;
@@ -1503,7 +1550,7 @@ class _BudgetBreakdownSectionState extends ConsumerState<_BudgetBreakdownSection
   Widget _buildBreakdownItem({
     required IconData icon,
     required String title,
-    required double value,
+    required int value,
     required Color color,
     required VoidCallback onEdit,
   }) {

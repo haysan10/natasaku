@@ -5,13 +5,17 @@ import '../models/category_budget.dart';
 import '../models/daily_closing.dart';
 import '../models/saving_goal.dart';
 import '../models/transaction_model.dart';
+import '../models/fixed_expense_item.dart';
 import '../models/usage_style.dart';
 import '../models/user_settings.dart';
+import 'package:flutter/material.dart';
 
 class BudgetRepository {
   BudgetRepository(this._localStorage);
 
   final LocalStorage _localStorage;
+
+  int _readMoney(Object? raw) => (raw as num?)?.round() ?? 0;
 
   Future<void> savePeriod(BudgetPeriod period) {
     return _localStorage.saveBudgetPeriod({
@@ -42,9 +46,9 @@ class BudgetRepository {
         id: id,
         startDate: DateTime.parse(startStr),
         endDate: DateTime.parse(endStr),
-        flexibleFund: (payload['flexibleFund'] as num?)?.toDouble() ?? 0.0,
-        fixedExpenses: (payload['fixedExpenses'] as num?)?.toDouble() ?? 0.0,
-        monthlySavingAllocation: (payload['monthlySavingAllocation'] as num?)?.toDouble() ?? 0.0,
+        flexibleFund: _readMoney(payload['flexibleFund']),
+        fixedExpenses: _readMoney(payload['fixedExpenses']),
+        monthlySavingAllocation: _readMoney(payload['monthlySavingAllocation']),
         mode: BudgetMode.values.firstWhere(
           (v) => v.name == payload['mode'],
           orElse: () => BudgetMode.normal,
@@ -68,7 +72,7 @@ class BudgetRepository {
           TransactionModel(
             id: id,
             date: DateTime.parse(dateStr),
-            amount: (item['amount'] as num?)?.toDouble() ?? 0.0,
+            amount: _readMoney(item['amount']),
             isExpense: item['isExpense'] as bool? ?? true,
             note: item['note'] as String?,
             category: item['category'] as String?,
@@ -149,8 +153,8 @@ class BudgetRepository {
         .map(
           (item) => DailyClosing(
             date: DateTime.parse(item['date'] as String),
-            finalExpense: (item['finalExpense'] as num).toDouble(),
-            carryOver: (item['carryOver'] as num).toDouble(),
+            finalExpense: _readMoney(item['finalExpense']),
+            carryOver: _readMoney(item['carryOver']),
             note: item['note'] as String?,
           ),
         )
@@ -187,6 +191,7 @@ class BudgetRepository {
       'dailyReminderTime': settings.dailyReminderTime,
       'quickToolsNotificationEnabled': settings.quickToolsNotificationEnabled,
       'autoSavingEnabled': settings.autoSavingEnabled,
+      'themeMode': settings.themeMode.name,
       'budgetMode': settings.budgetMode.name,
       'usageStyle': settings.usageStyle.name,
     });
@@ -202,6 +207,10 @@ class BudgetRepository {
       quickToolsNotificationEnabled:
           payload['quickToolsNotificationEnabled'] as bool? ?? true,
       autoSavingEnabled: payload['autoSavingEnabled'] as bool? ?? true,
+      themeMode: ThemeMode.values.firstWhere(
+        (v) => v.name == payload['themeMode'],
+        orElse: () => ThemeMode.system,
+      ),
       budgetMode: BudgetMode.values.firstWhere(
         (v) => v.name == payload['budgetMode'],
         orElse: () => BudgetMode.normal,
@@ -213,7 +222,7 @@ class BudgetRepository {
     );
   }
 
-  Future<double> loadSavingBalance() => _localStorage.getSavingBalance();
+  Future<int> loadSavingBalance() => _localStorage.getSavingBalance();
 
   Future<List<Map<String, dynamic>>> loadSavingAllocations() =>
       _localStorage.getSavingAllocations();
@@ -240,8 +249,8 @@ class BudgetRepository {
       return SavingGoal(
         id: id,
         name: name,
-        targetAmount: (payload['targetAmount'] as num?)?.toDouble() ?? 0.0,
-        currentAmount: (payload['currentAmount'] as num?)?.toDouble() ?? 0.0,
+        targetAmount: _readMoney(payload['targetAmount']),
+        currentAmount: _readMoney(payload['currentAmount']),
         targetDate: payload['targetDate'] == null
             ? null
             : DateTime.tryParse(payload['targetDate'] as String),
@@ -254,11 +263,11 @@ class BudgetRepository {
   Future<void> clearSavingGoal() => _localStorage.clearSavingGoal();
 
   Future<void> addAutoSavingAllocation({
-    required double amount,
+    required int amount,
     required DateTime date,
     String source = 'daily_closing',
   }) async {
-    if (!amount.isFinite || amount <= 0) return;
+    if (amount <= 0) return;
 
     final currentBalance = await loadSavingBalance();
     await _localStorage.saveSavingBalance(currentBalance + amount);
@@ -283,6 +292,12 @@ class BudgetRepository {
 
   Future<bool> hasSeenDashboardTutorial() =>
       _localStorage.getDashboardTutorialSeen();
+
+  Future<void> saveOnboardingComplete(bool value) =>
+      _localStorage.saveOnboardingComplete(value);
+
+  Future<bool> getOnboardingComplete() =>
+      _localStorage.getOnboardingComplete();
 
   // ─── Category Budgets ────────────────────────────────────────────────────────
 
@@ -340,5 +355,36 @@ class BudgetRepository {
   Future<void> deleteSavingGoalById(String id) async {
     final all = await loadSavingGoals();
     await saveAllSavingGoals(all.where((g) => g.id != id).toList());
+  }
+
+  // ─── Fixed Expense Items v2 ──────────────────────────────────────────────────
+
+  Future<List<FixedExpenseItem>> loadFixedExpenseItems() async {
+    final raw = await _localStorage.getFixedExpenseItems();
+    if (raw.isEmpty) {
+      // Legacy migration
+      final period = await loadPeriod();
+      if (period != null && period.fixedExpenses > 0) {
+        final migratedItem = FixedExpenseItem(
+          id: 'migrated_legacy',
+          name: 'Tagihan Lainnya',
+          amount: period.fixedExpenses,
+          category: FixedExpenseCategory.lainnya,
+          emoji: '📦',
+          isActive: true,
+        );
+        final list = [migratedItem];
+        await saveFixedExpenseItems(list);
+        return list;
+      }
+      return <FixedExpenseItem>[];
+    }
+    return raw.map((json) => FixedExpenseItem.fromJson(json)).toList();
+  }
+
+  Future<void> saveFixedExpenseItems(List<FixedExpenseItem> items) async {
+    await _localStorage.saveFixedExpenseItems(
+      items.map((i) => i.toJson()).toList(),
+    );
   }
 }

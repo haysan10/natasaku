@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/app_constants.dart';
 import 'nata_sound.dart';
 
 class NataSoundPlayer {
@@ -8,7 +9,7 @@ class NataSoundPlayer {
   static Future<bool> _isSoundEnabled() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool('sound_enabled') ?? true;
+      return prefs.getBool(AppConstants.soundEnabledKey) ?? true;
     } catch (_) {
       return true;
     }

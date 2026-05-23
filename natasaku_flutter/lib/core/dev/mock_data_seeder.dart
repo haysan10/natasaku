@@ -59,7 +59,7 @@ class MockDataSeeder {
     txList.add({
       'id': 'tx_${idCounter++}',
       'date': DateTime(now.year, now.month, min(8, now.day)).toIso8601String(),
-      'amount': 300000.0,
+      'amount': 300000,
       'isExpense': false,
       'category': 'Pemasukan',
       'note': 'Freelance desain',
@@ -75,7 +75,7 @@ class MockDataSeeder {
         final noteList = notes[cat]!;
         
         // Nominal belanja bervariasi Rp10.000 - Rp80.000
-        final amt = (10000 + _rng.nextInt(70) * 1000).toDouble();
+        final amt = 10000 + _rng.nextInt(70) * 1000;
 
         txList.add({
           'id': 'tx_${idCounter++}',

@@ -13,33 +13,31 @@ class BudgetingEngine {
     return end.difference(start).inDays + 1;
   }
 
-  static double calculateDailySafeBudget({
-    required double remainingFund,
+  static int calculateDailySafeBudget({
+    required int remainingFund,
     required int remainingDays,
   }) {
-    if (!remainingFund.isFinite || remainingDays <= 0) {
+    if (remainingFund <= 0 || remainingDays <= 0) {
       return 0;
     }
-    return remainingFund / remainingDays;
+    return remainingFund ~/ remainingDays;
   }
 
   static double calculateTodayBudgetUsage({
-    required double todayExpense,
-    required double dailySafeBudget,
+    required int todayExpense,
+    required int dailySafeBudget,
   }) {
-    if (!todayExpense.isFinite ||
-        !dailySafeBudget.isFinite ||
-        dailySafeBudget <= 0) {
+    if (todayExpense < 0 || dailySafeBudget <= 0) {
       return 0;
     }
     return todayExpense / dailySafeBudget;
   }
 
   static DailyBudgetStatus getDailyBudgetStatus({
-    required double todayExpense,
-    required double dailySafeBudget,
+    required int todayExpense,
+    required int dailySafeBudget,
   }) {
-    if (!todayExpense.isFinite || todayExpense == 0) {
+    if (todayExpense <= 0) {
       return DailyBudgetStatus.belumAdaPengeluaran;
     }
 
@@ -57,53 +55,53 @@ class BudgetingEngine {
   }
 
   static PeriodFundStatus getPeriodFundStatus({
-    required double remainingFund,
+    required int remainingFund,
     required int remainingDays,
   }) {
     if (remainingDays <= 0) return PeriodFundStatus.periodeSelesai;
-    if (!remainingFund.isFinite || remainingFund <= 0) {
+    if (remainingFund <= 0) {
       return PeriodFundStatus.danaHabis;
     }
 
-    final dailyBuffer = remainingFund / remainingDays;
+    final dailyBuffer = remainingFund ~/ remainingDays;
     if (dailyBuffer > 100000) return PeriodFundStatus.aman;
     if (dailyBuffer > 50000) return PeriodFundStatus.waspada;
     return PeriodFundStatus.kritis;
   }
 
-  static double calculateTomorrowSafeBudget({
-    required double remainingFundAfterToday,
+  static int calculateTomorrowSafeBudget({
+    required int remainingFundAfterToday,
     required int remainingDaysAfterToday,
   }) {
     return calculateDailySafeBudget(
-      remainingFund: remainingFundAfterToday,
+      remainingFund: remainingFundAfterToday < 0 ? 0 : remainingFundAfterToday,
       remainingDays: remainingDaysAfterToday,
     );
   }
 
-  static double predictEndingBalance({
-    required double remainingFund,
-    required double averageDailyExpense,
+  static int predictEndingBalance({
+    required int remainingFund,
+    required int averageDailyExpense,
     required int remainingDays,
   }) {
-    if (!remainingFund.isFinite || !averageDailyExpense.isFinite) return 0;
+    if (remainingFund <= 0 || averageDailyExpense <= 0) return 0;
     return remainingFund - (averageDailyExpense * remainingDays);
   }
 
   static DateTime? predictFundRunoutDate({
     required DateTime today,
-    required double remainingFund,
-    required double averageDailyExpense,
+    required int remainingFund,
+    required int averageDailyExpense,
   }) {
-    if (averageDailyExpense <= 0 || !averageDailyExpense.isFinite) return null;
-    if (remainingFund <= 0 || !remainingFund.isFinite) return today;
+    if (averageDailyExpense <= 0) return null;
+    if (remainingFund <= 0) return today;
 
-    final daysUntilRunout = (remainingFund / averageDailyExpense).floor();
+    final daysUntilRunout = remainingFund ~/ averageDailyExpense;
     return today.add(Duration(days: daysUntilRunout));
   }
 
   static String generateRecoveryPlan({
-    required double remainingFund,
+    required int remainingFund,
     required int remainingDays,
   }) {
     if (remainingDays <= 0) {
@@ -124,18 +122,18 @@ class BudgetingEngine {
 
   static String formatRupiah(num value) => CurrencyService.formatRupiah(value);
 
-  static double applyBudgetMode({
-    required double baseDailyBudget,
+  static int applyBudgetMode({
+    required int baseDailyBudget,
     required BudgetMode mode,
   }) {
-    if (!baseDailyBudget.isFinite) return 0;
+    if (baseDailyBudget <= 0) return 0;
     switch (mode) {
       case BudgetMode.normal:
         return baseDailyBudget;
       case BudgetMode.hemat:
-        return baseDailyBudget * 0.85;
+        return (baseDailyBudget * 85) ~/ 100;
       case BudgetMode.krisis:
-        return baseDailyBudget * 0.7;
+        return (baseDailyBudget * 70) ~/ 100;
     }
   }
 

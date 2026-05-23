@@ -10,8 +10,8 @@ class DailyBudgetSnapshot {
   });
 
   final DateTime date;
-  final double dailySafeBudget;
-  final double todayExpense;
+  final int dailySafeBudget;
+  final int todayExpense;
   final double usageRatio;
   final DailyBudgetStatus status;
 }

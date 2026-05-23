@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,11 +50,11 @@ class DashboardState {
   }
 
   // Helper getters for UI
-  double get totalIncome => transactions.where((t) => !t.isExpense).fold(0.0, (a, b) => a + b.amount);
-  double get totalExpense => transactions.where((t) => t.isExpense).fold(0.0, (a, b) => a + b.amount);
+  int get totalIncome => transactions.where((t) => !t.isExpense).fold(0, (a, b) => a + b.amount);
+  int get totalExpense => transactions.where((t) => t.isExpense).fold(0, (a, b) => a + b.amount);
   
-  double get remainingFund {
-    if (period == null) return 0.0;
+  int get remainingFund {
+    if (period == null) return 0;
     return period!.flexibleFund
         - period!.fixedExpenses
         - period!.monthlySavingAllocation
@@ -61,23 +62,29 @@ class DashboardState {
         - totalExpense;
   }
 
-  double get todayExpense {
+  int get todayExpense {
     final today = DateTime.now();
     return transactions
         .where((t) => t.isExpense)
         .where((t) => t.date.year == today.year && t.date.month == today.month && t.date.day == today.day)
-        .fold(0.0, (a, b) => a + b.amount);
+        .fold(0, (a, b) => a + b.amount);
   }
 
   int get remainingDays {
     if (period == null) return 0;
-    return BudgetingEngine.calculateRemainingDays(today: DateTime.now(), periodEnd: period!.endDate);
+    return max(
+      0,
+      BudgetingEngine.calculateRemainingDays(
+        today: DateTime.now(),
+        periodEnd: period!.endDate,
+      ),
+    );
   }
 
-  double get dailySafeBudget {
-    if (period == null) return 0.0;
+  int get dailySafeBudget {
+    if (period == null) return 0;
     final baseDaily = BudgetingEngine.calculateDailySafeBudget(
-      remainingFund: max(remainingFund, 0.0),
+      remainingFund: max(remainingFund, 0),
       remainingDays: remainingDays,
     );
     return BudgetingEngine.applyBudgetMode(baseDailyBudget: baseDaily, mode: period!.mode);
@@ -109,9 +116,14 @@ class DashboardState {
 
 class DashboardNotifier extends StateNotifier<DashboardState> {
   final Ref _ref;
+  bool _hasPlayedWarningThisSession = false;
 
   DashboardNotifier(this._ref) : super(const DashboardState()) {
     loadData();
+  }
+
+  void _playSound(Future<void> Function() sound) {
+    unawaited(sound());
   }
 
   Future<void> loadData() async {
@@ -242,7 +254,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     _syncHomeWidget();
   }
 
-  Future<void> transferToSavings(double amount) async {
+  Future<void> transferToSavings(int amount) async {
     final period = state.period;
     final goal = state.savingGoal;
     if (period == null || goal == null) return;
@@ -276,13 +288,13 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     await loadData();
 
     if (isReached && !wasReached && goal.targetAmount > 0) {
-      await NataSoundPlayer.playAchievement();
+      _playSound(NataSoundPlayer.playAchievement);
     } else {
-      await NataSoundPlayer.playSuccess();
+      _playSound(NataSoundPlayer.playSuccess);
     }
   }
 
-  Future<void> transferToGoal(double amount, SavingGoal goal) async {
+  Future<void> transferToGoal(int amount, SavingGoal goal) async {
     final period = state.period;
     if (period == null) return;
 
@@ -315,23 +327,16 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     await loadData();
 
     if (isReached && !wasReached && goal.targetAmount > 0) {
-      await NataSoundPlayer.playAchievement();
+      _playSound(NataSoundPlayer.playAchievement);
     } else {
-      await NataSoundPlayer.playSuccess();
+      _playSound(NataSoundPlayer.playSuccess);
     }
   }
 
   Future<void> updateAutoSaving(bool enabled) async {
     final repo = _ref.read(budgetRepositoryProvider);
     final currentSettings = state.userSettings ?? const UserSettings();
-    final updated = UserSettings(
-      dailyReminderEnabled: currentSettings.dailyReminderEnabled,
-      dailyReminderTime: currentSettings.dailyReminderTime,
-      quickToolsNotificationEnabled: currentSettings.quickToolsNotificationEnabled,
-      autoSavingEnabled: enabled,
-      budgetMode: currentSettings.budgetMode,
-      usageStyle: currentSettings.usageStyle,
-    );
+    final updated = currentSettings.copyWith(autoSavingEnabled: enabled);
     await repo.saveUserSettings(updated);
     await loadData();
   }
@@ -345,9 +350,12 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
     final isOver = state.todayExpense > state.dailySafeBudget;
     if (isOver && !wasOver && transaction.isExpense) {
-      await NataSoundPlayer.playWarning();
+      if (!_hasPlayedWarningThisSession) {
+        _hasPlayedWarningThisSession = true;
+        _playSound(NataSoundPlayer.playWarning);
+      }
     } else {
-      await NataSoundPlayer.playSuccess();
+      _playSound(NataSoundPlayer.playSuccess);
     }
   }
 
@@ -370,7 +378,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     );
     
     await loadData();
-    await NataSoundPlayer.playDelete();
+    _playSound(NataSoundPlayer.playDelete);
   }
 
   Future<void> _syncHomeWidget() async {
@@ -440,9 +448,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
           advice: adviceText,
           remainingDays: 'Sisa ${max(remainingDays, 0)} hari',
           usagePercent: (usage * 100).isFinite ? (usage * 100).round().clamp(0, 100) : 0,
-          dailySafeBudgetAmount: safeDaily.round(),
-          remainingFundAmount: remainingFund.round(),
-          todayExpenseAmount: todayExpense.round(),
+          dailySafeBudgetAmount: safeDaily,
+          remainingFundAmount: remainingFund,
+          todayExpenseAmount: todayExpense,
         );
       } catch (_) {}
     } catch (_) {

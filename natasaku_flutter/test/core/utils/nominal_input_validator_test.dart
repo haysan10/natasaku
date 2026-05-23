@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/core/utils/nominal_input_validator.dart';
+import 'package:natasaku/core/utils/nominal_input_validator.dart';
 
 void main() {
   group('NominalInputValidator - Kategori 1: Validasi Nominal', () {
@@ -151,7 +151,7 @@ void main() {
     });
 
     test('Rule BR3: Wrong schemaVersion -> ERROR', () {
-      final raw = '{"app": "NataSaku", "schemaVersion": 5, "raw": {}}';
+      const raw = '{"app": "NataSaku", "schemaVersion": 5, "raw": {}}';
       final res = NominalInputValidator.validateRestore(raw, 'backup.json');
       expect(res['status'], 'error');
       expect(res['message'], 'Versi backup tidak kompatibel. Backup ini dibuat di versi lama NataSaku.');

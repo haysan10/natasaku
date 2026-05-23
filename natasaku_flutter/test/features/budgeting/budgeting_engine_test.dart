@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:natasaku_flutter/data/models/budget_mode.dart';
-import 'package:natasaku_flutter/data/models/budget_status.dart';
-import 'package:natasaku_flutter/features/budgeting/budgeting_engine.dart';
+import 'package:natasaku/data/models/budget_mode.dart';
+import 'package:natasaku/data/models/budget_status.dart';
+import 'package:natasaku/features/budgeting/budgeting_engine.dart';
 
 void main() {
   group('BudgetingEngine', () {
@@ -21,6 +21,24 @@ void main() {
       );
 
       expect(result, 0);
+    });
+
+    test('calculateDailySafeBudget uses integer division and never returns negative money', () {
+      expect(
+        BudgetingEngine.calculateDailySafeBudget(
+          remainingFund: 2400000,
+          remainingDays: 30,
+        ),
+        80000,
+      );
+
+      expect(
+        BudgetingEngine.calculateDailySafeBudget(
+          remainingFund: -5000,
+          remainingDays: 5,
+        ),
+        0,
+      );
     });
 
     test('daily status mapping follows thresholds', () {
