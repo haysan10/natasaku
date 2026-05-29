@@ -12,17 +12,18 @@ import '../../features/reports/money_calendar_page.dart';
 import '../../features/reports/reports_page.dart';
 import '../../features/savings/savings_page.dart';
 import '../../features/settings/settings_page.dart';
+import '../../features/settings/recurring_transactions_page.dart';
 import '../../features/setup/setup_page.dart';
 import '../../features/transactions/transactions_page.dart';
+import '../../features/debts/debts_page.dart';
 import '../../shared/widgets/main_shell.dart';
 
-// Tour page — import only if the file exists
-import '../../features/tour/tour_page.dart';
+// Tour page removed
 
 class AppRouter {
   // Route constants — used across the whole app
   static const String launch        = '/';
-  static const String tour          = '/tour';
+// Tour route removed
   static const String setup         = '/setup';
   static const String dashboard     = '/dashboard';
   static const String transactions  = '/transactions';
@@ -34,6 +35,8 @@ class AppRouter {
   static const String moneyCalendar = '/money-calendar';
   static const String settings      = '/settings';
   static const String bills         = '/bills';
+  static const String recurringTransactions = '/recurring-transactions';
+  static const String debts         = '/debts';
 
   static final router = GoRouter(
     initialLocation: launch,
@@ -43,7 +46,7 @@ class AppRouter {
       final hasPeriod = await storage.getBudgetPeriod() != null;
       final location = state.matchedLocation;
       final isOnboardingFlow =
-          location == launch || location == tour || location == setup;
+          location == launch || location == setup;
 
       if (!onboardingComplete) {
         if (!isOnboardingFlow) return launch;
@@ -55,7 +58,11 @@ class AppRouter {
         return null;
       }
 
-      if (isOnboardingFlow) return dashboard;
+      // Allow access to setup (edit mode) if onboarding is complete and budget period exists.
+      // But redirect to dashboard if trying to access launch.
+      if (location == launch) {
+        return dashboard;
+      }
       return null;
     },
     routes: [
@@ -63,10 +70,7 @@ class AppRouter {
         path: launch,
         builder: (context, state) => const LaunchPage(),
       ),
-      GoRoute(
-        path: tour,
-        builder: (context, state) => const TourPage(),
-      ),
+// Tour GoRoute removed
       GoRoute(
         path: setup,
         builder: (context, state) => const SetupPage(),
@@ -164,6 +168,14 @@ class AppRouter {
       GoRoute(
         path: bills,
         builder: (context, state) => const BillsPage(),
+      ),
+      GoRoute(
+        path: recurringTransactions,
+        builder: (context, state) => const RecurringTransactionsPage(),
+      ),
+      GoRoute(
+        path: debts,
+        builder: (context, state) => const DebtsPage(),
       ),
     ],
   );

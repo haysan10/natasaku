@@ -4,6 +4,45 @@ import '../../data/models/budget_mode.dart';
 import '../../data/models/budget_status.dart';
 
 class BudgetingEngine {
+  /// Sisa dana fleksibel periode: net dari setup, dikurangi pengeluaran,
+  /// ditambah pemasukan transaksi, tanpa menghitung ulang gaji yang sudah
+  /// tercermin di [flexibleFund] (pemasukan utama setup).
+  static int calculateRemainingFund({
+    required int flexibleFund,
+    required int fixedExpenses,
+    required int monthlySavingAllocation,
+    required int totalIncome,
+    required int totalExpense,
+    required Iterable<int> incomeAmounts,
+  }) {
+    final netBase = flexibleFund - fixedExpenses - monthlySavingAllocation;
+    var duplicateSetupIncome = 0;
+    for (final amount in incomeAmounts) {
+      if (_matchesSetupIncome(amount, flexibleFund: flexibleFund, netBase: netBase)) {
+        duplicateSetupIncome = amount;
+        break;
+      }
+    }
+    return netBase - totalExpense + totalIncome - duplicateSetupIncome;
+  }
+
+  static bool _matchesSetupIncome(
+    int amount, {
+    required int flexibleFund,
+    required int netBase,
+  }) {
+    if (amount <= 0) return false;
+    const tolerance = 0.05;
+    if (flexibleFund > 0 &&
+        (amount - flexibleFund).abs() <= flexibleFund * tolerance) {
+      return true;
+    }
+    if (netBase > 0 && (amount - netBase).abs() <= netBase * tolerance) {
+      return true;
+    }
+    return false;
+  }
+
   static int calculateRemainingDays({
     required DateTime today,
     required DateTime periodEnd,
@@ -57,15 +96,17 @@ class BudgetingEngine {
   static PeriodFundStatus getPeriodFundStatus({
     required int remainingFund,
     required int remainingDays,
+    required int flexibleFund,
+    required int totalDays,
   }) {
     if (remainingDays <= 0) return PeriodFundStatus.periodeSelesai;
-    if (remainingFund <= 0) {
-      return PeriodFundStatus.danaHabis;
-    }
+    if (remainingFund <= 0) return PeriodFundStatus.danaHabis;
+    if (flexibleFund <= 0 || totalDays <= 0) return PeriodFundStatus.aman;
 
-    final dailyBuffer = remainingFund ~/ remainingDays;
-    if (dailyBuffer > 100000) return PeriodFundStatus.aman;
-    if (dailyBuffer > 50000) return PeriodFundStatus.waspada;
+    final expectedFund = (flexibleFund * remainingDays) / totalDays;
+    
+    if (remainingFund >= expectedFund * 0.8) return PeriodFundStatus.aman;
+    if (remainingFund >= expectedFund * 0.5) return PeriodFundStatus.waspada;
     return PeriodFundStatus.kritis;
   }
 

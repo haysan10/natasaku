@@ -47,15 +47,7 @@ class MockDataSeeder {
     final txList = <Map<String, dynamic>>[];
     int idCounter = 1;
 
-    // Pemasukan: gaji UMR + tambahan
-    txList.add({
-      'id': 'tx_${idCounter++}',
-      'date': DateTime(now.year, now.month, 1).toIso8601String(),
-      'amount': 5000000.0,
-      'isExpense': false,
-      'category': 'Pemasukan',
-      'note': 'Gaji Bulan Ini 💼',
-    });
+    // Pemasukan tambahan (gaji sudah tercermin di flexibleFund periode)
     txList.add({
       'id': 'tx_${idCounter++}',
       'date': DateTime(now.year, now.month, min(8, now.day)).toIso8601String(),

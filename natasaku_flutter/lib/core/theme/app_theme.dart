@@ -102,7 +102,7 @@ class AppTheme {
       errorContainer: Color(0xFF5C0014),
       onErrorContainer: Color(0xFFFFB3C1),
 
-      surface:          Color(0xFF0F1F1E),
+      surface:          AppColors.backgroundDark,
       onSurface:        Color(0xFFE0F2F0),
       surfaceContainerHighest: Color(0xFF1A2E2C),
       surfaceContainerHigh:    Color(0xFF162826),
@@ -116,7 +116,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0F1F1E),
+      scaffoldBackgroundColor: AppColors.backgroundDark,
       colorScheme: darkScheme,
       textTheme: AppTypography.darkTextTheme,
       cardColor: const Color(0xFF162826),
@@ -131,7 +131,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0F1F1E),
+        backgroundColor: AppColors.backgroundDark,
         foregroundColor: Color(0xFFE0F2F0),
         elevation: 0,
         centerTitle: false,
@@ -178,7 +178,7 @@ class AppTheme {
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         showDragHandle: true,
-        backgroundColor: Color(0xFF0F1F1E),
+        backgroundColor: AppColors.backgroundDark,
         dragHandleSize: Size(40, 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),

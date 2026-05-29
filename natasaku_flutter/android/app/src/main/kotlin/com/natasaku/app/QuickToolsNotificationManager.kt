@@ -31,31 +31,42 @@ object QuickToolsNotificationManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val action10kIntent = broadcastIntent(
+        val actionCatatIntent = broadcastIntent(
             context,
-            8101,
-            QuickToolsContract.receiverActionQuickExpense10k
-        )
-        val action50kIntent = broadcastIntent(
-            context,
-            8102,
-            QuickToolsContract.receiverActionQuickExpense50k
+            8104,
+            QuickToolsContract.receiverActionQuickAdd
         )
         val actionCheckIntent = broadcastIntent(
             context,
             8103,
             QuickToolsContract.receiverActionCheck
         )
+        val actionSimulasiIntent = broadcastIntent(
+            context,
+            8105,
+            QuickToolsContract.receiverActionSimulasi
+        )
+
+        val collapsedView = android.widget.RemoteViews(context.packageName, R.layout.notification_natasaku_collapsed)
+        collapsedView.setTextViewText(R.id.tv_main_value_collapsed, "${state.dailySafeBudgetText} masih aman hari ini")
+
+        val remainingPercent = (100 - state.usagePercent).coerceIn(0, 100)
+        
+        val expandedView = android.widget.RemoteViews(context.packageName, R.layout.notification_natasaku_expanded)
+        expandedView.setTextViewText(R.id.tv_main_value_expanded, "${state.dailySafeBudgetText} masih aman hari ini")
+        expandedView.setTextViewText(R.id.tv_summary_expanded, "Keluar ${state.todayExpenseText} · Besok aman ${state.tomorrowBudgetText}")
+        expandedView.setProgressBar(R.id.pb_progress_expanded, 100, remainingPercent, false)
+        expandedView.setTextViewText(R.id.tv_progress_text, "$remainingPercent% jatah hari ini masih tersedia")
+        expandedView.setTextViewText(R.id.tv_advice, state.advice)
+
+        expandedView.setOnClickPendingIntent(R.id.btn_catat, actionCatatIntent)
+        expandedView.setOnClickPendingIntent(R.id.btn_cek_jatah, actionCheckIntent)
+        expandedView.setOnClickPendingIntent(R.id.btn_simulasi, actionSimulasiIntent)
 
         val notification = NotificationCompat.Builder(context, QuickToolsContract.notificationChannelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("NataSaku · ${state.dailySafeBudgetText}")
-            .setContentText("${state.dailyStatus} · Sisa ${state.remainingFundText}")
-            .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    "Hari ini keluar ${state.todayExpenseText}\nBesok aman ${state.tomorrowBudgetText}\n${state.advice}"
-                )
-            )
+            .setSmallIcon(R.drawable.ic_notification)
+            .setCustomContentView(collapsedView)
+            .setCustomBigContentView(expandedView)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -63,14 +74,9 @@ object QuickToolsNotificationManager {
             .setSilent(true)
             .setLocalOnly(true)
             .setColor(Color.parseColor("#0D9488"))
-            .setSubText(state.remainingDays)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setProgress(100, state.usagePercent.coerceIn(0, 100), false)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(0, "Catat 10k", action10kIntent)
-            .addAction(0, "Catat 50k", action50kIntent)
-            .addAction(0, "Cek Jatah", actionCheckIntent)
             .build()
 
         manager.notify(QuickToolsContract.notificationId, notification)
@@ -81,7 +87,7 @@ object QuickToolsNotificationManager {
         ensureChannel(manager)
 
         val receipt = NotificationCompat.Builder(context, QuickToolsContract.notificationChannelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Catat cepat tersimpan")
             .setContentText("+Rp${formatRupiahNumber(amount)} · Sisa ${state.remainingFundText}")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

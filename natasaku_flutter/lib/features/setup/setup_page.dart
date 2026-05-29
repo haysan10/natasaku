@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,9 +58,25 @@ class _SetupPageState extends ConsumerState<SetupPage> {
   Future<void> _loadInitialData() async {
     final repo = ref.read(budgetRepositoryProvider);
     final items = await repo.loadFixedExpenseItems();
+    final period = await repo.loadPeriod();
+    final savingGoal = await repo.loadSavingGoal();
+
     setState(() {
       _fixedExpenseItems = items;
       _updateFixedExpensesTotal();
+      if (period != null) {
+        _startDate = period.startDate;
+        _endDate = period.endDate;
+        _mode = period.mode;
+        _fundController.text = NumberFormat('#,###', 'id_ID').format(period.flexibleFund);
+        _savingAllocationController.text = period.monthlySavingAllocation > 0
+            ? NumberFormat('#,###', 'id_ID').format(period.monthlySavingAllocation)
+            : '';
+      }
+      if (savingGoal != null) {
+        _savingNameController.text = savingGoal.name;
+        _savingTargetController.text = NumberFormat('#,###', 'id_ID').format(savingGoal.targetAmount);
+      }
     });
   }
 
@@ -229,6 +246,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
   }
 
   Future<void> _seedMockData() async {
+    if (kReleaseMode) return;
     setState(() => _saving = true);
     await MockDataSeeder.seed();
     await ref.read(budgetRepositoryProvider).saveOnboardingComplete(true);
@@ -1200,44 +1218,46 @@ class _SetupPageState extends ConsumerState<SetupPage> {
               ),
             ).animate().fade(delay: 400.ms),
 
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 16),
+            if (!kReleaseMode) ...[
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 16),
 
-            // Dev / Testing Shortcut (🧪 Muat Data Tes)
-            OutlinedButton.icon(
-              onPressed: _saving ? null : _seedMockData,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+              // Dev / Testing Shortcut (🧪 Muat Data Tes)
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _seedMockData,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
-              ),
-              icon: const Icon(Icons.science_outlined, size: 20),
-              label: const Text(
-                '🧪  MUAT DATA TES (UMR JAKARTA)',
+                icon: const Icon(Icons.science_outlined, size: 20),
+                label: const Text(
+                  '🧪  MUAT DATA TES (UMR JAKARTA)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    fontSize: 13,
+                  ),
+                ),
+              ).animate().fade(delay: 450.ms),
+
+              const SizedBox(height: 8),
+              Text(
+                'Menyediakan data realistis gaji UMR Jakarta terpopulasi lengkap untuk uji coba seluruh visualisasi.',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                  fontSize: 11,
+                  height: 1.3,
                 ),
               ),
-            ).animate().fade(delay: 450.ms),
-
-            const SizedBox(height: 8),
-            Text(
-              'Menyediakan data realistis gaji UMR Jakarta terpopulasi lengkap untuk uji coba seluruh visualisasi.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-                fontSize: 11,
-                height: 1.3,
-              ),
-            ),
+            ],
           ],
         ),
       ),

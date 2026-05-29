@@ -7,6 +7,7 @@ import '../core/theme/app_theme.dart';
 import '../features/notifications/notifications_service.dart';
 import '../features/security/pin_lock_page.dart';
 import '../features/security/providers/security_provider.dart';
+import '../shared/widgets/global_feature_tour.dart';
 
 class NataSakuApp extends StatefulWidget {
   const NataSakuApp({super.key});
@@ -57,11 +58,16 @@ class _NataSakuAppState extends State<NataSakuApp> {
           themeMode: themeMode,
           routerConfig: AppRouter.router,
           builder: (context, child) {
+            Widget content = child ?? const SizedBox.shrink();
+            
+            // Wrap the entire app with the global feature tour
+            content = GlobalFeatureTourManager(child: content);
+
             // App-wide overlay for PIN Security
             if (securityState.isLocked) {
               return Stack(
                 children: [
-                  if (child != null) child,
+                  content,
                   // Overlay PinLockPage directly above the router
                   const Positioned.fill(
                     child: PinLockPage(mode: PinMode.unlock),
@@ -69,7 +75,7 @@ class _NataSakuAppState extends State<NataSakuApp> {
                 ],
               );
             }
-            return child ?? const SizedBox.shrink();
+            return content;
           },
         );
       },

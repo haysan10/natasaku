@@ -1,2681 +1,1657 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NataSaku — Hari ini aman belanja berapa?</title>
-  <meta name="description" content="NataSaku menghitung jatah harianmu secara otomatis dari sisa budget bulanan. Aplikasi budgeting Android offline-first, tanpa akun, tanpa cloud, tanpa ribet.">
-  
-  <!-- Open Graph -->
+  <meta name="description" content="NataSaku adalah aplikasi budgeting Flutter offline-first untuk tahu jatah belanja harian, memantau tabungan, dan mencatat transaksi tanpa akun.">
+  <meta name="theme-color" content="#0f9f8c">
   <meta property="og:title" content="NataSaku — Hari ini aman belanja berapa?">
-  <meta property="og:description" content="Hitung jatah belanja harianmu dengan tenang. Tanpa akun, tanpa cloud, tanpa ribet.">
+  <meta property="og:description" content="Budgeting Android offline-first. Tanpa akun, tanpa backend, data tetap di perangkat.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://haysan10.github.io/natasaku/">
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
-  
-  <!-- Theme Color initialization to prevent flash of dark mode on light theme -->
-  <script>
-    (function() {
-      const saved = localStorage.getItem('theme');
-      const isLight = saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches);
-      if (isLight) {
-        document.documentElement.classList.add('light-mode');
-      }
-    })();
-  </script>
-
+  <meta property="og:image" content="https://haysan10.github.io/natasaku/docs/og-card.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f9f8c'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' fill='white' font-family='system-ui'%3EN%3C/text%3E%3C/svg%3E">
   <style>
-    /* CSS Design System & Custom Tokens */
-    @layer reset, base, theme, components, layout, utilities;
-
-    @layer reset {
-      *, *::before, *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      
-      html {
-        scroll-behavior: smooth;
-        text-size-adjust: 100%;
-      }
-      
-      body {
-        background-color: var(--color-bg);
-        color: var(--color-text-primary);
-        font-family: var(--font-body);
-        line-height: 1.5;
-        overflow-x: hidden;
-        -webkit-font-smoothing: antialiased;
-      }
-      
-      img, svg {
-        display: block;
-        max-width: 100%;
-      }
-      
-      button, input {
-        font: inherit;
-        color: inherit;
-        background: none;
-        border: none;
-      }
-      
-      button {
-        cursor: pointer;
-      }
-      
-      a {
-        text-decoration: none;
-        color: inherit;
-      }
+    :root {
+      --paper: #f7fbf8;
+      --ink: #10201d;
+      --nata: #0f9f8c;
+      --surface: #ffffff;
+      --surface-soft: #edf7f3;
+      --surface-strong: #e2f2ed;
+      --muted: #5e706a;
+      --line: #d8e8e2;
+      --success: #2e9c6a;
+      --warning: #c78a20;
+      --danger: #d84d62;
+      --danger-soft: #feecef;
+      --shadow: 0 1.2rem 3.6rem rgba(16, 32, 29, 0.12);
+      --phone: #15231f;
+      --phone-edge: #07100d;
+      --space: 1rem;
     }
 
-    @layer theme {
+    @media (prefers-color-scheme: dark) {
       :root {
-        /* NataSaku Brand Palette */
-        --primary: #0d9488;
-        --primary-dark: #0f766e;
-        --primary-soft: #ccfbf1;
-        --accent: #10b981;
-        --alert: #f43f5e;
-
-        /* Default Dark Mode Colors */
-        --color-bg: #0b0f19;          /* deep blue-black */
-        --color-surface: #131b2b;     /* card background */
-        --color-border: #1e293b;      /* subtle borders */
-        --color-accent: #0d9488;      /* Nata Teal */
-        --color-accent-soft: rgba(13, 148, 136, 0.15);
-        --color-text-primary: #f8fafc;
-        --color-text-muted: #94a3b8;
-        --color-warning: #fbbf24;     /* Warning amber */
-        --color-danger: #f43f5e;      /* Alert rose */
-        --color-phone-bg: #0b0f19;
-
-        /* Phone frame elements */
-        --phone-frame: #1e293b;
-        --phone-screen: #0b0f19;
-        --phone-notch: #131b2b;
-
-        /* Fonts */
-        --font-heading: 'Plus Jakarta Sans', sans-serif;
-        --font-body: 'Inter', sans-serif;
-        --font-mono: 'JetBrains Mono', monospace;
-
-        /* Spacing Scale (4px base) */
-        --space-1: 4px;
-        --space-2: 8px;
-        --space-3: 12px;
-        --space-4: 16px;
-        --space-6: 24px;
-        --space-8: 32px;
-        --space-12: 48px;
-        --space-16: 64px;
-        --space-24: 96px;
-
-        /* Radius (Matched to app's card radius) */
-        --radius-sm: 12px;
-        --radius-md: 24px;
-        --radius-lg: 32px;
-        --radius-full: 9999px;
-      }
-
-      /* Light Theme Overrides */
-      :root.light-mode {
-        --color-bg: #f8fafc;
-        --color-surface: #ffffff;
-        --color-border: #e2e8f0;
-        --color-accent: #0d9488;
-        --color-accent-soft: #ccfbf1;
-        --color-text-primary: #0f172a;
-        --color-text-muted: #64748b;
-        --color-warning: #fbbf24;
-        --color-danger: #f43f5e;
-        --color-phone-bg: #f8fafc;
-
-        /* Phone frame elements */
-        --phone-frame: #e2e8f0;
-        --phone-screen: #ffffff;
-        --phone-notch: #f1f5f9;
+        --paper: #0f1514;
+        --ink: #edf7f3;
+        --nata: #7ee5d3;
+        --surface: #17201e;
+        --surface-soft: #20302d;
+        --surface-strong: #263b36;
+        --muted: #a8bbb5;
+        --line: #2e403b;
+        --success: #7ddc9d;
+        --warning: #f0b763;
+        --danger: #ff8a8a;
+        --danger-soft: #3a2025;
+        --shadow: 0 1.2rem 3.6rem rgba(0, 0, 0, 0.28);
+        --phone: #08110f;
+        --phone-edge: #020605;
       }
     }
 
-    @layer base {
-      body {
-        scrollbar-width: thin;
-        scrollbar-color: var(--color-border) var(--color-bg);
-      }
-      
-      body::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      
-      body::-webkit-scrollbar-track {
-        background: var(--color-bg);
-      }
-      
-      body::-webkit-scrollbar-thumb {
-        background: var(--color-border);
-        border-radius: var(--radius-full);
-      }
-
-      h1, h2, h3, h4 {
-        font-family: var(--font-heading);
-        font-weight: 800;
-        color: var(--color-text-primary);
-        line-height: 1.25;
-      }
-
-      h1 {
-        font-size: clamp(2.5rem, 2rem + 3vw, 4.5rem);
-      }
-
-      h2 {
-        font-size: clamp(1.8rem, 1.5rem + 1.5vw, 3rem);
-        margin-bottom: var(--space-4);
-      }
-
-      p {
-        font-family: var(--font-body);
-        color: var(--color-text-muted);
-        font-size: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
-      }
+    * {
+      box-sizing: border-box;
     }
 
-    @layer components {
-      /* Navbar */
-      .navbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-        background-color: transparent;
-        border-bottom: 1px solid transparent;
-        transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
-      }
-
-      .navbar.scrolled {
-        background-color: rgba(13, 17, 23, 0.75);
-        border-bottom: 1px solid var(--color-border);
-        backdrop-filter: blur(12px) saturate(180%);
-        -webkit-backdrop-filter: blur(12px) saturate(180%);
-      }
-
-      .nav-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: var(--space-4) var(--space-6);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .logo-link {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        font-family: var(--font-heading);
-        font-weight: 800;
-        font-size: 1.25rem;
-        color: var(--color-text-primary);
-      }
-
-      .logo-icon {
-        width: 32px;
-        height: 32px;
-        color: var(--color-accent);
-      }
-
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: var(--space-8);
-      }
-
-      .nav-item {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: var(--color-text-muted);
-        transition: color 0.2s ease;
-      }
-
-      .nav-item:hover, .nav-item:focus-visible {
-        color: var(--color-text-primary);
-      }
-
-      .nav-github {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        padding: 6px 14px;
-        border-radius: var(--radius-sm);
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: background-color 0.2s ease, border-color 0.2s ease;
-      }
-
-      .nav-github:hover, .nav-github:focus-visible {
-        background-color: var(--color-border);
-        border-color: var(--color-text-muted);
-      }
-
-      .nav-github svg {
-        width: 18px;
-        height: 18px;
-      }
-
-      /* Theme Toggle Button */
-      .theme-toggle-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--color-border);
-        background-color: var(--color-surface);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--color-text-primary);
-        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-        padding: 0;
-      }
-
-      .theme-toggle-btn:hover {
-        background-color: var(--color-border);
-        border-color: var(--color-text-muted);
-        transform: scale(1.05);
-      }
-
-      .theme-toggle-btn svg {
-        width: 18px;
-        height: 18px;
-      }
-
-      :root.light-mode .theme-icon-sun {
-        display: none;
-      }
-      :root:not(.light-mode) .theme-icon-moon {
-        display: none;
-      }
-
-      /* Mobile Nav Menu Drawer */
-      .menu-toggle {
-        display: none;
-        width: 40px;
-        height: 40px;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--color-border);
-        color: var(--color-text-primary);
-      }
-
-      .menu-toggle svg {
-        width: 24px;
-        height: 24px;
-      }
-
-      .menu-toggle .close-icon {
-        display: none;
-      }
-
-      .menu-toggle.active .menu-icon {
-        display: none;
-      }
-
-      .menu-toggle.active .close-icon {
-        display: block;
-      }
-
-      .mobile-drawer {
-        position: fixed;
-        top: 73px;
-        left: 0;
-        right: 0;
-        background-color: var(--color-bg);
-        border-bottom: 1px solid var(--color-border);
-        padding: var(--space-6);
-        display: none;
-        flex-direction: column;
-        gap: var(--space-4);
-        z-index: 99;
-        transform: translateY(-20px);
-        opacity: 0;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-      }
-
-      .mobile-drawer.active {
-        display: flex;
-        transform: translateY(0);
-        opacity: 1;
-      }
-
-      /* Buttons */
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-3);
-        padding: var(--space-4) var(--space-8);
-        border-radius: var(--radius-full);
-        font-size: 1.05rem;
-        font-weight: 600;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
-        will-change: transform;
-      }
-
-      .btn-primary {
-        background-color: var(--color-accent);
-        color: #ffffff;
-        box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
-        animation: pulseShadow 2.5s infinite;
-      }
-
-      .btn-primary:hover, .btn-primary:focus-visible {
-        transform: translateY(-2px);
-        background-color: var(--primary-dark);
-      }
-
-      .btn-secondary {
-        border: 1px solid var(--color-border);
-        color: var(--color-text-primary);
-        background-color: rgba(22, 27, 34, 0.5);
-      }
-
-      .btn-secondary:hover, .btn-secondary:focus-visible {
-        transform: translateY(-2px);
-        background-color: var(--color-border);
-        border-color: var(--color-text-muted);
-      }
-
-      /* CSS Phone Frame */
-      .phone-chassis {
-        width: 280px;
-        height: 560px;
-        background-color: var(--phone-frame);
-        border-radius: 40px;
-        padding: 10px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-        border: 2px solid var(--color-border);
-        position: relative;
-        flex-shrink: 0;
-        will-change: transform;
-      }
-
-      .phone-screen {
-        width: 100%;
-        height: 100%;
-        background-color: var(--phone-screen);
-        border-radius: 32px;
-        overflow: hidden;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .phone-notch {
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 110px;
-        height: 24px;
-        background-color: var(--phone-notch);
-        border-bottom-left-radius: 16px;
-        border-bottom-right-radius: 16px;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .phone-camera {
-        width: 8px;
-        height: 8px;
-        background-color: #0d1117;
-        border-radius: var(--radius-full);
-      }
-
-      .phone-statusBar {
-        height: 36px;
-        padding: 12px 20px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: var(--font-mono);
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--color-text-muted);
-        z-index: 4;
-      }
-
-      .phone-statusBar-icons {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .phone-statusBar-icons svg {
-        width: 12px;
-        height: 12px;
-        fill: currentColor;
-      }
-
-      .phone-homeBar {
-        position: absolute;
-        bottom: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90px;
-        height: 4px;
-        background-color: var(--color-text-muted);
-        border-radius: var(--radius-full);
-        z-index: 5;
-      }
-
-      .phone-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: var(--space-4);
-        padding-top: var(--space-3);
-        color: var(--color-text-primary);
-        font-size: 0.85rem;
-        background-color: var(--color-phone-bg);
-        position: relative;
-        overflow: hidden;
-      }
-
-      /* Animated Letter Reveal styling */
-      .word {
-        margin-right: 0.25em;
-      }
-      .letter {
-        opacity: 0;
-        transform: translateY(20px);
-        animation: revealLetter 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-      }
-
-      /* Scroll Animation Classes */
-      .fade-slide-up {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-        will-change: transform, opacity;
-      }
-
-      .fade-slide-up.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    html {
+      scroll-behavior: smooth;
+      background: var(--paper);
     }
 
-    @layer layout {
-      /* Sections Setup */
-      section {
-        position: relative;
-        padding: var(--space-24) var(--space-6);
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-
-      .section-label {
-        display: inline-block;
-        font-family: var(--font-mono);
-        font-size: 0.85rem;
-        color: var(--color-accent);
-        background-color: var(--color-accent-soft);
-        padding: var(--space-1) var(--space-3);
-        border-radius: var(--radius-full);
-        margin-bottom: var(--space-4);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-
-      /* HERO SECTION */
-      .hero-section {
-        min-height: 100dvh;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        align-items: center;
-        gap: var(--space-12);
-        padding-top: calc(80px + var(--space-12));
-        padding-bottom: var(--space-16);
-      }
-
-      .hero-particles {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: -1;
-        background: radial-gradient(circle, rgba(13, 148, 136, 0.12) 1.5px, transparent 1.5px);
-        background-size: 32px 32px;
-        animation: gridMove 20s linear infinite;
-        opacity: 0.7;
-        pointer-events: none;
-      }
-
-      .hero-content {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .hero-title {
-        margin-bottom: var(--space-6);
-        letter-spacing: -0.03em;
-      }
-
-      .hero-subtitle {
-        margin-bottom: var(--space-8);
-        opacity: 0;
-        transform: translateY(15px);
-        animation: fadeInDelayed 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.8s forwards;
-      }
-
-      .hero-actions {
-        display: flex;
-        gap: var(--space-4);
-        margin-bottom: var(--space-12);
-        opacity: 0;
-        transform: translateY(15px);
-        animation: fadeInDelayed 0.8s cubic-bezier(0.25, 1, 0.5, 1) 1s forwards;
-      }
-
-      .hero-badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-6);
-        opacity: 0;
-        transform: translateY(15px);
-        animation: fadeInDelayed 0.8s cubic-bezier(0.25, 1, 0.5, 1) 1.2s forwards;
-      }
-
-      .hero-badge {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        font-family: var(--font-mono);
-        font-size: 0.85rem;
-        color: var(--color-text-muted);
-      }
-
-      .hero-badge::before {
-        content: '';
-        display: block;
-        width: 6px;
-        height: 6px;
-        border-radius: var(--radius-full);
-        background-color: var(--color-accent);
-      }
-
-      .hero-visual {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-      }
-
-      .hero-phone-floating {
-        animation: floatPhone 3.5s ease-in-out infinite alternate;
-      }
-
-      /* Glow background behind phone */
-      .hero-glow {
-        position: absolute;
-        width: 320px;
-        height: 320px;
-        background-color: rgba(13, 148, 136, 0.2);
-        filter: blur(80px);
-        border-radius: var(--radius-full);
-        z-index: -1;
-      }
-
-      /* STORYTELLING SECTION */
-      .story-section {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-24);
-      }
-
-      .story-block {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-16);
-        align-items: center;
-      }
-
-      .story-block.reversed .story-text-container {
-        grid-column: 2;
-      }
-
-      .story-block.reversed .story-visual-container {
-        grid-column: 1;
-        grid-row: 1;
-      }
-
-      .story-text-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-
-      .story-headline {
-        margin-bottom: var(--space-4);
-        letter-spacing: -0.01em;
-      }
-
-      .story-visual-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      /* Story A Visual - Banking Balance Sheet Card */
-      .story-visual-card {
-        width: 340px;
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: var(--space-6);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        transition: border-color 0.5s ease;
-      }
-
-      .story-visual-card.danger-border {
-        border-color: var(--color-danger);
-      }
-
-      .card-header-bank {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: var(--space-6);
-        border-bottom: 1px solid var(--color-border);
-        padding-bottom: var(--space-3);
-      }
-
-      .card-header-bank .bank-title {
-        font-family: var(--font-heading);
-        font-size: 0.9rem;
-        letter-spacing: 0.5px;
-        color: var(--color-text-muted);
-      }
-
-      .card-header-bank .bank-logo {
-        width: 14px;
-        height: 14px;
-        border-radius: var(--radius-full);
-        background-color: var(--color-text-muted);
-      }
-
-      .card-balance-label {
-        font-size: 0.8rem;
-        color: var(--color-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: var(--space-1);
-      }
-
-      .counter-val {
-        font-family: var(--font-mono);
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--color-text-primary);
-        display: block;
-        transition: color 0.5s ease;
-      }
-
-      .counter-val.danger-text {
-        color: var(--color-danger);
-      }
-
-      .story-warning-lbl {
-        margin-top: var(--space-4);
-        padding: var(--space-2) var(--space-3);
-        background-color: rgba(248, 81, 73, 0.1);
-        border: 1px solid rgba(248, 81, 73, 0.2);
-        border-radius: var(--radius-sm);
-        color: var(--color-danger);
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        opacity: 0;
-        transition: opacity 0.5s ease;
-      }
-
-      .story-tx-list {
-        margin-top: var(--space-6);
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3);
-      }
-
-      .story-tx-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.85rem;
-      }
-
-      .story-tx-name {
-        color: var(--color-text-muted);
-      }
-
-      .story-tx-val {
-        font-family: var(--font-mono);
-        color: var(--color-danger);
-      }
-
-      /* PHONE SHOWCASE CAROUSEL */
-      .showcase-section {
-        background-color: #0b0e14;
-        border-top: 1px solid var(--color-border);
-        border-bottom: 1px solid var(--color-border);
-        padding-top: var(--space-16);
-        padding-bottom: var(--space-24);
-        max-width: 100vw;
-        width: 100%;
-        overflow: hidden;
-      }
-
-      .showcase-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 var(--space-6);
-        position: relative;
-      }
-
-      .showcase-title-area {
-        text-align: center;
-        margin-bottom: var(--space-12);
-      }
-
-      .carousel-wrapper {
-        position: relative;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--space-8);
-      }
-
-      /* Horizontal Scrollable Track */
-      .carousel-track {
-        display: flex;
-        gap: 32px;
-        width: 100%;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none; /* Firefox */
-        scroll-behavior: smooth;
-        padding: 20px 0;
-        padding-inline: calc(50% - 140px); /* Centers active snaps */
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .carousel-track::-webkit-scrollbar {
-        display: none; /* Safari & Chrome */
-      }
-
-      .carousel-item {
-        scroll-snap-align: center;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--space-4);
-        width: 280px;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-        opacity: 0.5;
-        transform: scale(0.92);
-      }
-
-      .carousel-item.active {
-        opacity: 1;
-        transform: scale(1.02);
-      }
-
-      .carousel-item:hover:not(.active) {
-        opacity: 0.75;
-      }
-
-      .carousel-item .phone-chassis {
-        transition: box-shadow 0.3s ease, transform 0.3s ease;
-      }
-
-      .carousel-item.active .phone-chassis:hover {
-        transform: scale(1.01);
-        box-shadow: 0 30px 60px -10px rgba(13, 148, 136, 0.25);
-      }
-
-      .carousel-description {
-        text-align: center;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--color-text-muted);
-        max-width: 240px;
-        transition: color 0.3s ease;
-      }
-
-      .carousel-item.active .carousel-description {
-        color: var(--color-text-primary);
-      }
-
-      /* Carousel Controls */
-      .carousel-controls {
-        display: flex;
-        align-items: center;
-        gap: var(--space-6);
-      }
-
-      .carousel-btn {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-full);
-        border: 1px solid var(--color-border);
-        background-color: var(--color-surface);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--color-text-primary);
-        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-      }
-
-      .carousel-btn:hover, .carousel-btn:focus-visible {
-        background-color: var(--color-border);
-        border-color: var(--color-text-muted);
-        transform: scale(1.05);
-      }
-
-      .carousel-btn svg {
-        width: 24px;
-        height: 24px;
-      }
-
-      .carousel-dots {
-        display: flex;
-        gap: 10px;
-      }
-
-      .carousel-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: var(--radius-full);
-        background-color: var(--color-border);
-        transition: background-color 0.3s ease, transform 0.3s ease;
-      }
-
-      .carousel-dot.active {
-        background-color: var(--color-accent);
-        transform: scale(1.2);
-      }
-
-      /* FITUR UNGGULAN */
-      .features-section {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .features-title-area {
-        text-align: center;
-        margin-bottom: var(--space-12);
-        max-width: 600px;
-      }
-
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--space-6);
-        width: 100%;
-      }
-
-      .feature-card {
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: var(--space-6);
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-4);
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-        will-change: transform;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .feature-card:hover {
-        transform: scale(1.02);
-        border-color: rgba(13, 148, 136, 0.4);
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px -2px rgba(13, 148, 136, 0.1);
-      }
-
-      .feature-icon-container {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-sm);
-        background-color: var(--color-accent-soft);
-        color: var(--color-accent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .feature-icon-container svg {
-        width: 24px;
-        height: 24px;
-      }
-
-      .feature-name {
-        font-size: 1.2rem;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-      }
-
-      .feature-desc {
-        font-size: 0.95rem;
-        line-height: 1.4;
-      }
-
-      /* DOWNLOAD CTA SECTION */
-      .cta-section {
-        margin: var(--space-16) auto var(--space-24);
-        width: 100%;
-        max-width: 1100px;
-        background: linear-gradient(135deg, var(--color-surface), var(--color-bg));
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-16) var(--space-6);
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-      }
-
-      /* Subtle shifting gradient behind CTA */
-      .cta-section::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 60%);
-        animation: rotateGlow 15s linear infinite;
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .cta-content {
-        position: relative;
-        z-index: 1;
-        max-width: 600px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--space-4);
-      }
-
-      .cta-title {
-        font-size: clamp(2rem, 1.8rem + 1vw, 2.75rem);
-        letter-spacing: -0.02em;
-      }
-
-      .cta-subtitle {
-        font-family: var(--font-mono);
-        color: var(--color-accent);
-        margin-bottom: var(--space-4);
-        font-size: 1rem;
-      }
-
-      .cta-btn {
-        margin-bottom: var(--space-4);
-      }
-
-      .cta-link {
-        font-size: 0.9rem;
-        color: var(--color-text-muted);
-        transition: color 0.2s ease;
-      }
-
-      .cta-link:hover, .cta-link:focus-visible {
-        color: var(--color-text-primary);
-        text-decoration: underline;
-      }
-
-      /* FOOTER */
-      footer {
-        border-top: 1px solid var(--color-border);
-        padding: var(--space-12) var(--space-6) var(--space-16);
-      }
-
-      .footer-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        align-items: center;
-      }
-
-      .footer-left {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2);
-      }
-
-      .footer-logo {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        font-family: var(--font-heading);
-        font-weight: 700;
-        font-size: 1.1rem;
-      }
-
-      .footer-logo svg {
-        width: 24px;
-        height: 24px;
-        color: var(--color-accent);
-      }
-
-      .footer-copy {
-        font-size: 0.8rem;
-        color: var(--color-text-muted);
-      }
-
-      .footer-center {
-        display: flex;
-        justify-content: center;
-        gap: var(--space-6);
-        flex-wrap: wrap;
-      }
-
-      .footer-link {
-        font-size: 0.85rem;
-        color: var(--color-text-muted);
-        transition: color 0.2s ease;
-      }
-
-      .footer-link:hover, .footer-link:focus-visible {
-        color: var(--color-text-primary);
-      }
-
-      .footer-right {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: var(--space-4);
-      }
-
-      .footer-github {
-        color: var(--color-text-muted);
-        transition: color 0.2s ease;
-      }
-
-      .footer-github:hover {
-        color: var(--color-text-primary);
-      }
-
-      .footer-github svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      .footer-badge {
-        font-size: 0.8rem;
-        color: var(--color-text-muted);
-        background-color: var(--color-surface);
-        padding: 4px 10px;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--color-border);
-      }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
     }
 
-    @layer utilities {
-      /* Animation Keyframes */
-      @keyframes gridMove {
-        from {
-          background-position: 0 0;
-        }
-        to {
-          background-position: 32px 64px;
-        }
-      }
-
-      @keyframes floatPhone {
-        0% {
-          transform: translateY(0);
-        }
-        100% {
-          transform: translateY(-16px);
-        }
-      }
-
-      @keyframes pulseShadow {
-        0% {
-          box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
-        }
-        70% {
-          box-shadow: 0 0 0 12px rgba(13, 148, 136, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(13, 148, 136, 0);
-        }
-      }
-
-      @keyframes rotateGlow {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @keyframes cursorBlink {
-        0%, 100% {
-          opacity: 0;
-        }
-        50% {
-          opacity: 1;
-        }
-      }
-
-      @keyframes revealLetter {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes fadeInDelayed {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* Helpers */
-      .accent-text {
-        color: var(--color-accent);
-      }
-
-      .danger-text {
-        color: var(--color-danger) !important;
-      }
-
-      .font-mono {
-        font-family: var(--font-mono) !important;
-      }
-
-      .text-center {
-        text-align: center;
-      }
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    /* CSS Phone Content Rendering Custom Styles */
-    .p-header {
-      font-size: 0.75rem;
-      color: var(--color-text-muted);
-      margin-bottom: 2px;
+    button,
+    input,
+    textarea {
+      font: inherit;
     }
 
-    .p-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--color-text-primary);
-      margin-bottom: var(--space-4);
+    svg {
+      display: block;
+      max-width: 100%;
     }
 
-    .p-card {
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      padding: var(--space-4);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-      margin-bottom: var(--space-4);
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      z-index: 30;
+      transform: translateY(-8rem);
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
     }
 
-    .p-card-accent {
-      background-color: rgba(13, 148, 136, 0.05);
-      border-color: rgba(13, 148, 136, 0.25);
+    .skip-link:focus {
+      transform: translateY(0);
     }
 
-    .p-label {
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: var(--color-text-muted);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+    .section {
+      padding: 4.5rem 1.25rem;
     }
 
-    .p-number {
-      font-family: var(--font-mono);
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--color-text-primary);
+    .wrap {
+      width: min(100%, 72rem);
+      margin: 0 auto;
     }
 
-    .p-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      font-size: 0.65rem;
-      font-weight: 600;
-      width: fit-content;
+    .narrow {
+      width: min(100%, 48rem);
+      margin: 0 auto;
     }
 
-    .p-badge-success {
-      background-color: rgba(16, 185, 129, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+    .section-title {
+      margin: 0 0 1rem;
+      font-size: 2rem;
+      line-height: 1.15;
     }
 
-    .p-badge-warning {
-      background-color: rgba(240, 136, 62, 0.15);
-      color: var(--color-warning);
-      border: 1px solid rgba(240, 136, 62, 0.3);
+    .section-lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
     }
 
-    .p-progress {
-      height: 6px;
-      width: 100%;
-      background-color: var(--color-border);
-      border-radius: var(--radius-full);
+    .hero {
+      position: relative;
       overflow: hidden;
-      margin-top: 4px;
+      padding: 1.25rem 1.25rem 4.5rem;
+      background: var(--paper);
+      isolation: isolate;
     }
 
-    .p-progress-bar {
+    .hero-pattern {
+      position: absolute;
+      inset: 0;
+      width: 100%;
       height: 100%;
-      background-color: var(--color-accent);
-      border-radius: var(--radius-full);
+      color: color-mix(in srgb, var(--nata) 34%, transparent);
+      opacity: 0.45;
+      z-index: -1;
     }
 
-    .p-grid-cats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-top: var(--space-4);
-    }
-
-    .p-cat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.6rem;
-      color: var(--color-text-muted);
-      text-align: center;
-    }
-
-    .p-cat-circle {
-      width: 38px;
-      height: 38px;
-      border-radius: var(--radius-full);
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      color: var(--color-text-primary);
-    }
-
-    /* Screen 1 Setup specifics */
-    .p-form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 12px;
-    }
-
-    .p-input-box {
-      border: 1px solid var(--color-border);
-      background-color: var(--color-surface);
-      border-radius: var(--radius-sm);
-      padding: var(--space-2) var(--space-3);
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
+    .topbar {
+      width: min(100%, 72rem);
+      margin: 0 auto 2.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1rem;
     }
 
-    .p-cursor {
-      display: inline-block;
-      width: 2px;
-      height: 14px;
-      background-color: var(--color-accent);
-      animation: cursorBlink 1s step-end infinite;
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-weight: 800;
+      font-size: 1.05rem;
     }
 
-    .p-btn-mock {
-      background-color: var(--color-accent);
-      color: white;
-      border-radius: var(--radius-sm);
-      padding: var(--space-3);
-      font-weight: 600;
-      text-align: center;
-      font-size: 0.75rem;
-      margin-top: var(--space-2);
-    }
-
-    /* Screen 3 Keyboard specifics */
-    .p-keyboard {
+    .brand-mark {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: auto;
-      background-color: rgba(13, 17, 23, 0.4);
-      padding: 6px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--color-border);
+      place-items: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 0.75rem;
+      background: var(--nata);
+      color: #ffffff;
+      box-shadow: 0 0.7rem 1.4rem rgba(15, 159, 140, 0.2);
     }
 
-    .p-key {
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: 6px 0;
-      text-align: center;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
+    .topbar-link {
+      color: var(--muted);
+      font-size: 0.95rem;
       font-weight: 700;
     }
 
-    .p-chips-row {
+    .hero-grid {
+      width: min(100%, 72rem);
+      margin: 0 auto;
+      display: grid;
+      gap: 2.25rem;
+      align-items: center;
+    }
+
+    .hero-copy {
+      max-width: 42rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.65rem;
+      line-height: 1.04;
+      font-weight: 850;
+    }
+
+    .hero-copy p {
+      margin: 1.25rem 0 0;
+      max-width: 39rem;
+      color: var(--muted);
+      font-size: 1.06rem;
+    }
+
+    .cta-row {
       display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 2rem;
     }
 
-    .p-chip {
-      flex-shrink: 0;
-      padding: 4px 10px;
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-full);
-      font-size: 0.65rem;
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      min-height: 3.05rem;
+      padding: 0.82rem 1.1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.65rem;
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--ink);
+      background: var(--surface);
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
     }
 
-    .p-chip.active {
-      background-color: var(--color-accent-soft);
-      border-color: var(--color-accent);
-      color: var(--color-accent);
+    .btn-primary {
+      border-color: var(--nata);
+      background: var(--nata);
+      color: #ffffff;
+      box-shadow: 0 0.8rem 1.7rem rgba(15, 159, 140, 0.22);
     }
 
-    /* Screen 4 Closing specifics */
-    .p-option-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .btn:hover {
+      transform: translateY(-0.1rem);
+      box-shadow: 0 0.7rem 1.5rem rgba(16, 32, 29, 0.1);
     }
 
-    .p-option {
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: 8px var(--space-3);
+    .hero-note {
       display: flex;
       align-items: center;
-      gap: var(--space-3);
+      gap: 0.6rem;
+      margin-top: 1.25rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .hero-phone {
+      justify-self: center;
+    }
+
+    .phone {
+      position: relative;
+      width: min(100%, 20.5rem);
+      margin: 0 auto;
+      border: 0.62rem solid var(--phone-edge);
+      border-radius: 2.1rem;
+      background: var(--phone-edge);
+      box-shadow: var(--shadow);
+    }
+
+    .phone.large {
+      width: min(100%, 22rem);
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 0.55rem;
+      left: 50%;
+      z-index: 2;
+      width: 4.4rem;
+      height: 0.42rem;
+      transform: translateX(-50%);
+      border-radius: 999rem;
+      background: color-mix(in srgb, var(--paper) 35%, var(--phone-edge));
+    }
+
+    .phone-screen {
+      min-height: 34rem;
+      overflow: hidden;
+      border-radius: 1.48rem;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .phone.large .phone-screen {
+      min-height: 37rem;
+    }
+
+    .mock {
+      padding: 1.6rem 1rem 1rem;
+    }
+
+    .screen-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .screen-kicker {
+      margin: 0 0 0.2rem;
+      color: var(--nata);
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    .screen-title {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.15;
+      font-weight: 850;
+    }
+
+    .icon-circle {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: var(--surface-strong);
+      color: var(--nata);
+    }
+
+    .hero-card,
+    .screen-card {
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      background: var(--surface);
+      box-shadow: 0 0.45rem 1rem rgba(16, 32, 29, 0.06);
+    }
+
+    .daily-card {
+      padding: 1rem;
+      color: #ffffff;
+      background: var(--nata);
+      border: 0;
+    }
+
+    .daily-card .muted-on-accent {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.72rem;
+    }
+
+    .daily-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .amount {
+      display: block;
+      margin-top: 0.45rem;
+      font-size: 1.9rem;
+      line-height: 1.05;
+      font-weight: 850;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      height: 1.55rem;
+      padding: 0 0.55rem;
+      border-radius: 999rem;
+      font-size: 0.66rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .progress {
+      position: relative;
+      height: 0.45rem;
+      overflow: hidden;
+      border-radius: 999rem;
+      background: color-mix(in srgb, var(--ink) 12%, transparent);
+    }
+
+    .progress span {
+      display: block;
+      width: var(--value);
+      height: 100%;
+      border-radius: inherit;
+      background: currentColor;
+    }
+
+    .daily-card .progress {
+      margin: 1.1rem 0 0.8rem;
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+
+    .tiny-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+    }
+
+    .tiny-tile {
+      padding: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      background: var(--surface);
+    }
+
+    .tiny-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+
+    .tiny-value {
+      display: block;
+      margin-top: 0.15rem;
+      font-weight: 850;
+      font-size: 0.95rem;
+    }
+
+    .screen-list {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.8rem;
+    }
+
+    .screen-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      background: var(--surface);
+    }
+
+    .screen-row strong {
+      display: block;
+      font-size: 0.78rem;
+    }
+
+    .screen-row small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.66rem;
+    }
+
+    .money-out {
+      color: var(--danger);
+      font-size: 0.78rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .bottom-nav {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.3rem;
+      margin: 1rem -0.35rem -0.2rem;
+      padding: 0.5rem 0.25rem 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .bottom-nav span {
+      display: grid;
+      place-items: center;
+      gap: 0.18rem;
+      font-size: 0.56rem;
+    }
+
+    .bottom-nav svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .bottom-nav .active {
+      color: var(--nata);
+      font-weight: 850;
+    }
+
+    .hook {
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hook p {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.55;
+      font-weight: 750;
+    }
+
+    .steps-grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .step {
+      min-height: 100%;
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: 0.9rem;
+      background: var(--surface);
+    }
+
+    .step-number {
+      margin: 0;
+      color: var(--nata);
+      font-size: 3rem;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .step h3,
+    .feature-card h3,
+    .contribution h3,
+    .showcase-copy h3 {
+      margin: 0.85rem 0 0.35rem;
+      font-size: 1.05rem;
+      line-height: 1.25;
+    }
+
+    .step p,
+    .feature-card p,
+    .contribution p,
+    .showcase-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .step-art {
+      height: 5.7rem;
+      margin-top: 1.1rem;
+      border-radius: 0.8rem;
+      background: var(--surface-soft);
+      color: var(--nata);
+    }
+
+    .showcase-head {
+      display: grid;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .showcase-grid {
+      display: grid;
+      gap: 2rem 1.2rem;
+    }
+
+    .showcase-item {
+      min-width: 0;
+    }
+
+    .showcase-copy {
+      max-width: 20.5rem;
+      margin: 1rem auto 0;
+    }
+
+    .showcase-copy h3 {
+      margin-top: 0;
+    }
+
+    .form-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .tab {
+      padding: 0.65rem 0.5rem;
+      border: 1px solid var(--line);
+      border-radius: 999rem;
+      background: var(--surface);
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      border-color: var(--danger);
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .amount-field {
+      display: grid;
+      place-items: center;
+      height: 3.25rem;
+      border: 1px solid color-mix(in srgb, var(--danger) 70%, var(--line));
+      border-radius: 0.85rem;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 1.45rem;
+      font-weight: 850;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.75rem 0;
+    }
+
+    .chip {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 999rem;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 750;
+    }
+
+    .field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      min-height: 2.75rem;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 0.82rem;
+      background: var(--surface);
+      color: var(--muted);
       font-size: 0.75rem;
     }
 
-    .p-option.selected {
-      border-color: var(--color-accent);
-      background-color: rgba(13, 148, 136, 0.05);
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.45rem;
+      margin-top: 0.65rem;
     }
 
-    .p-radio {
-      width: 14px;
-      height: 14px;
-      border-radius: var(--radius-full);
-      border: 1px solid var(--color-border);
+    .keypad span {
+      display: grid;
+      place-items: center;
+      min-height: 2rem;
+      border-radius: 0.55rem;
+      background: var(--surface);
+      font-weight: 850;
+      border: 1px solid var(--line);
+    }
+
+    .save-button {
+      display: grid;
+      place-items: center;
+      min-height: 2.65rem;
+      margin-top: 0.75rem;
+      border-radius: 0.8rem;
+      background: color-mix(in srgb, var(--danger) 70%, #ffffff);
+      color: #ffffff;
+      font-weight: 850;
+      font-size: 0.82rem;
+    }
+
+    .budget-panel {
+      padding: 1rem;
+      border-radius: 1rem;
+      background: var(--nata);
+      color: #ffffff;
+    }
+
+    .budget-panel small {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .formula {
+      display: grid;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+    }
+
+    .formula-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.62rem 0.7rem;
+      border-radius: 0.65rem;
+      background: color-mix(in srgb, #ffffff 12%, transparent);
+      font-size: 0.72rem;
+      font-weight: 750;
     }
 
-    .p-option.selected .p-radio::after {
-      content: '';
-      width: 8px;
-      height: 8px;
-      border-radius: var(--radius-full);
-      background-color: var(--color-accent);
+    .prediction {
+      margin-top: 0.8rem;
+      padding: 0.8rem;
+      border-radius: 0.85rem;
+      background: var(--surface-strong);
+      color: var(--ink);
     }
 
-    /* Screen 5 Report specifics */
-    .p-mini-calendar {
+    .prediction strong {
+      color: var(--nata);
+    }
+
+    .saving-hero {
+      padding: 1rem;
+      border-radius: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .saving-target {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .saving-target strong {
+      font-size: 0.9rem;
+    }
+
+    .saving-target small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.65rem;
+    }
+
+    .saving-total {
+      margin: 0.3rem 0 0.8rem;
+      color: var(--nata);
+      font-size: 1.65rem;
+      font-weight: 850;
+    }
+
+    .date-card {
+      margin-top: 0.75rem;
+      padding: 0.8rem;
+      border-radius: 0.85rem;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: end;
+      gap: 0.55rem;
+      height: 8rem;
+      padding: 0.9rem;
+      border-radius: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .bar {
+      flex: 1;
+      min-width: 0;
+      height: var(--height);
+      border-radius: 999rem 999rem 0.35rem 0.35rem;
+      background: var(--nata);
+    }
+
+    .bar:nth-child(2),
+    .bar:nth-child(5) {
+      background: var(--warning);
+    }
+
+    .bar:nth-child(4) {
+      background: var(--danger);
+    }
+
+    .category-list {
+      display: grid;
+      gap: 0.5rem;
+      margin-top: 0.8rem;
+    }
+
+    .category-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.7rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.75rem;
+    }
+
+    .category-row:last-child {
+      border-bottom: 0;
+    }
+
+    .calendar {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: 10px;
-      margin-bottom: 12px;
+      gap: 0.35rem;
+      padding: 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: var(--surface);
     }
 
-    .p-cal-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: var(--radius-full);
-      background-color: var(--color-accent);
-      opacity: 0.75;
+    .day {
+      display: grid;
+      place-items: center;
+      min-height: 1.8rem;
+      border-radius: 0.5rem;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 800;
     }
 
-    .p-cal-dot.warning {
-      background-color: var(--color-warning);
+    .day.safe {
+      background: color-mix(in srgb, var(--success) 18%, var(--surface));
+      color: var(--success);
     }
 
-    .p-cal-dot.danger {
-      background-color: var(--color-danger);
+    .day.warn {
+      background: color-mix(in srgb, var(--warning) 20%, var(--surface));
+      color: var(--warning);
     }
 
-    .p-charts-row {
+    .day.over {
+      background: color-mix(in srgb, var(--danger) 18%, var(--surface));
+      color: var(--danger);
+    }
+
+    .legend {
       display: flex;
-      justify-content: space-around;
-      align-items: flex-end;
-      height: 64px;
-      margin-top: 10px;
-      border-bottom: 1px solid var(--color-border);
-      padding-bottom: 4px;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.66rem;
     }
 
-    .p-chart-bar-container {
-      display: flex;
-      flex-direction: column;
+    .legend span {
+      display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 0.3rem;
     }
 
-    .p-chart-bar {
-      width: 18px;
-      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-      background-color: var(--color-accent);
+    .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--success);
     }
 
-    .p-chart-bar.grey {
-      background-color: var(--color-border);
+    .dot.warn {
+      background: var(--warning);
     }
 
-    .p-chart-bar-lbl {
-      font-size: 0.55rem;
-      color: var(--color-text-muted);
+    .dot.over {
+      background: var(--danger);
     }
 
-    /* MEDIA QUERIES (RESPONSIVENESS) */
-    @media (max-width: 1024px) {
-      .hero-section {
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: var(--space-6);
-      }
-
-      .features-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
+    .over-card {
+      padding: 1rem;
+      border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--line));
+      border-radius: 1rem;
+      background: var(--danger-soft);
     }
 
-    @media (max-width: 768px) {
-      .menu-toggle {
-        display: flex;
+    .over-card h4 {
+      margin: 0;
+      color: var(--danger);
+      font-size: 1.05rem;
+    }
+
+    .over-card p {
+      margin: 0.55rem 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .recovery-list {
+      display: grid;
+      gap: 0.5rem;
+      margin-top: 0.8rem;
+    }
+
+    .recovery-list div {
+      padding: 0.68rem 0.75rem;
+      border-radius: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 0.74rem;
+      font-weight: 750;
+    }
+
+    .feature-grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .feature-card {
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: 0.9rem;
+      background: var(--surface);
+    }
+
+    .feature-icon,
+    .contribution-icon {
+      display: grid;
+      place-items: center;
+      width: 2.7rem;
+      height: 2.7rem;
+      border-radius: 0.8rem;
+      background: var(--surface-strong);
+      color: var(--nata);
+    }
+
+    .open-source {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .open-source .section-title,
+    .open-source .section-lead,
+    .open-source p {
+      color: inherit;
+    }
+
+    .open-source .section-lead {
+      max-width: 46rem;
+      opacity: 0.82;
+    }
+
+    .contribution-grid {
+      display: grid;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .contribution {
+      padding: 1.2rem;
+      border: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
+      border-radius: 0.9rem;
+      background: color-mix(in srgb, var(--paper) 8%, transparent);
+    }
+
+    .contribution-icon {
+      background: color-mix(in srgb, var(--paper) 14%, transparent);
+      color: var(--nata);
+    }
+
+    .contribution p {
+      opacity: 0.78;
+    }
+
+    .open-source .btn {
+      border-color: color-mix(in srgb, var(--paper) 25%, transparent);
+      background: color-mix(in srgb, var(--paper) 10%, transparent);
+      color: var(--paper);
+    }
+
+    .open-source .btn-primary {
+      border-color: var(--nata);
+      background: var(--nata);
+      color: #06211c;
+    }
+
+    .final-cta {
+      text-align: center;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+    }
+
+    .final-cta h2 {
+      width: min(100%, 46rem);
+      margin: 0 auto 1rem;
+      font-size: 2.15rem;
+      line-height: 1.12;
+    }
+
+    .final-cta p {
+      margin: 0 auto 1.7rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .footer {
+      padding: 2.4rem 1.25rem;
+      border-top: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--muted);
+    }
+
+    .footer-inner {
+      width: min(100%, 72rem);
+      margin: 0 auto;
+      display: grid;
+      gap: 1.2rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem 1rem;
+    }
+
+    .footer a {
+      color: var(--ink);
+      font-weight: 750;
+    }
+
+    .credit {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    @media (min-width: 768px) {
+      .section {
+        padding: 6rem 1.5rem;
       }
 
-      .nav-links {
-        display: none;
+      .hero {
+        min-height: 44rem;
+        padding: 1.5rem 1.5rem 5rem;
       }
 
-      .hero-section {
-        grid-template-columns: 1fr;
-        text-align: center;
-        padding-top: calc(80px + var(--space-4));
-        gap: var(--space-12);
+      .topbar {
+        margin-bottom: 3rem;
       }
 
-      .hero-content {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1.08fr) minmax(19rem, 0.92fr);
+        gap: 3rem;
+      }
+
+      h1 {
+        font-size: 4.3rem;
+      }
+
+      .hero-copy p {
+        font-size: 1.14rem;
+      }
+
+      .steps-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .showcase-head {
+        grid-template-columns: 0.9fr 1.1fr;
+        align-items: end;
+      }
+
+      .showcase-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .feature-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .contribution-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .footer-inner {
+        grid-template-columns: auto 1fr;
         align-items: center;
       }
 
-      .hero-actions {
-        justify-content: center;
-      }
-
-      .hero-badges {
-        justify-content: center;
-      }
-
-      .hero-visual {
-        order: -1;
-      }
-
-      .story-block {
-        grid-template-columns: 1fr;
-        gap: var(--space-8);
-      }
-
-      .story-block.reversed .story-text-container {
-        grid-column: 1;
-      }
-
-      .story-block.reversed .story-visual-container {
-        grid-column: 1;
-        grid-row: 2;
-      }
-
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .footer-container {
-        grid-template-columns: 1fr;
-        gap: var(--space-8);
-        text-align: center;
-      }
-
-      .footer-left {
-        align-items: center;
-      }
-
-      .footer-center {
-        justify-content: center;
-      }
-
-      .footer-right {
-        justify-content: center;
+      .footer-links {
+        justify-content: end;
       }
     }
 
-    @media (max-width: 480px) {
-      .hero-actions {
-        flex-direction: column;
-        width: 100%;
-      }
-      
-      .btn {
-        width: 100%;
+    @media (min-width: 1080px) {
+      .showcase-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
-    /* Accessibility: Respect Reduced Motion Preferences */
     @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-delay: 0s !important;
-        animation-duration: 0s !important;
-        transition-duration: 0s !important;
-        animation-iteration-count: 1 !important;
+      *,
+      *::before,
+      *::after {
         scroll-behavior: auto !important;
-      }
-      .hero-phone-floating {
-        transform: none !important;
-        animation: none !important;
-      }
-      .hero-particles {
-        animation: none !important;
-      }
-      .letter {
-        opacity: 1 !important;
-        transform: none !important;
-        animation: none !important;
-      }
-      .fade-slide-up {
-        opacity: 1 !important;
-        transform: none !important;
         transition: none !important;
+        animation: none !important;
       }
     }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Lewati ke konten</a>
 
-  <!-- SECTION 1: NAVBAR -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-container">
-      <a href="#" class="logo-link" aria-label="NataSaku Beranda">
-        <!-- Inline Logo Icon (Wallet Shape) -->
-        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9"/>
-          <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
-        </svg>
+  <section class="hero" aria-labelledby="hero-title">
+    <svg class="hero-pattern" aria-hidden="true" viewBox="0 0 1200 780" preserveAspectRatio="none">
+      <defs>
+        <pattern id="nata-grid" width="72" height="72" patternUnits="userSpaceOnUse">
+          <path d="M72 0H0v72" fill="none" stroke="currentColor" stroke-width="1"/>
+          <circle cx="72" cy="72" r="3" fill="currentColor"/>
+        </pattern>
+      </defs>
+      <rect width="1200" height="780" fill="url(#nata-grid)"/>
+      <path d="M946 120h160v160H946zM86 498h112v112H86zM232 158l80 46-80 46-80-46z" fill="none" stroke="currentColor" stroke-width="2"/>
+    </svg>
+
+    <div class="topbar">
+      <a class="brand" href="#top" aria-label="NataSaku">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+            <path d="M5 6.5h9.5a4.5 4.5 0 0 1 0 9H5v-9Z" fill="currentColor" opacity=".95"/>
+            <path d="M7 9.2h7.7a1.8 1.8 0 0 1 0 3.6H7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M17.5 16.5 20 19" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </span>
         <span>NataSaku</span>
       </a>
-
-      <div class="nav-links">
-        <a href="#fitur" class="nav-item">Fitur</a>
-        <a href="#cerita" class="nav-item">Cerita</a>
-        <a href="#download" class="nav-item">Download</a>
-        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Ubah tema warna">
-          <!-- Moon Icon (for switching to light mode) -->
-          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <!-- Sun Icon (for switching to dark mode) -->
-          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-          </svg>
-        </button>
-        <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="nav-github">
-          <!-- Inline GitHub Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-          </svg>
-          <span>GitHub</span>
-        </a>
-      </div>
-
-      <button class="menu-toggle" id="menu-toggle" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobile-drawer">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-        <svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-  </nav>
-
-  <!-- Mobile Drawer Menu -->
-  <div class="mobile-drawer" id="mobile-drawer">
-    <a href="#fitur" class="nav-item">Fitur</a>
-    <a href="#cerita" class="nav-item">Cerita</a>
-    <a href="#download" class="nav-item">Download</a>
-    <button id="mobile-theme-toggle" class="theme-toggle-btn" style="align-self: center;" aria-label="Ubah tema warna">
-      <!-- Moon Icon -->
-      <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-      </svg>
-      <!-- Sun Icon -->
-      <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="5"/>
-        <line x1="12" y1="1" x2="12" y2="3"/>
-        <line x1="12" y1="21" x2="12" y2="23"/>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-        <line x1="1" y1="12" x2="3" y2="12"/>
-        <line x1="21" y1="12" x2="23" y2="12"/>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-      </svg>
-    </button>
-    <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="nav-github" style="justify-content: center; width: 100%;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-      </svg>
-      <span>GitHub</span>
-    </a>
-  </div>
-
-  <!-- SECTION 2: HERO -->
-  <section class="hero-section">
-    <div class="hero-particles"></div>
-    <div class="hero-content">
-      <h1 class="hero-title" id="hero-title">
-        Hari ini aman belanja berapa?
-      </h1>
-      <p class="hero-subtitle">
-        NataSaku menghitung jatah harianmu — tanpa akun, tanpa cloud, tanpa ribet.
-      </p>
-      
-      <div class="hero-actions">
-        <a href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v0.1.1-release.apk" class="btn btn-primary">
-          <!-- Inline Download Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <span>Download APK</span>
-        </a>
-        <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-          <span>Lihat di GitHub</span>
-        </a>
-      </div>
-
-      <div class="hero-badges">
-        <div class="hero-badge">Android 7.0+</div>
-        <div class="hero-badge">Offline 100%</div>
-        <div class="hero-badge">Open Source MIT</div>
-      </div>
+      <a class="topbar-link" href="https://github.com/haysan10/natasaku">GitHub</a>
     </div>
 
-    <div class="hero-visual">
-      <div class="hero-glow"></div>
-      <div class="phone-chassis hero-phone-floating">
-        <div class="phone-screen">
-          <div class="phone-notch"><div class="phone-camera"></div></div>
-          <div class="phone-statusBar">
-            <span>09:41</span>
-            <div class="phone-statusBar-icons">
-              <!-- Network Icon -->
-              <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-              <!-- Battery Icon -->
-              <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
-            </div>
-          </div>
-          
-          <!-- Screen Content (Dashboard Preview) -->
-          <div class="phone-content">
-            <div class="p-header">Selamat pagi, Ihsan 👋</div>
-            <div class="p-title">NataSaku</div>
-            
-            <div class="p-card p-card-accent">
-              <span class="p-label">Jatah kamu hari ini</span>
-              <span class="p-number">Rp 87.500</span>
-              <div class="p-badge p-badge-success">
-                <span>Aman Belanja</span>
-              </div>
-              <div class="p-progress">
-                <div class="p-progress-bar" style="width: 25%;"></div>
-              </div>
-            </div>
-
-            <div class="p-card" style="margin-top: auto; margin-bottom: var(--space-6);">
-              <span class="p-label" style="margin-bottom: 4px;">Kategori Pengeluaran</span>
-              <div class="p-grid-cats">
-                <div class="p-cat">
-                  <div class="p-cat-circle">🍔</div>
-                  <span>Makan</span>
-                </div>
-                <div class="p-cat">
-                  <div class="p-cat-circle">🚗</div>
-                  <span>Transport</span>
-                </div>
-                <div class="p-cat">
-                  <div class="p-cat-circle">☕</div>
-                  <span>Kopi</span>
-                </div>
-                <div class="p-cat">
-                  <div class="p-cat-circle">📦</div>
-                  <span>Belanja</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-          <div class="phone-homeBar"></div>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <h1 id="hero-title">Kamu nggak perlu jadi ahli keuangan untuk tahu hari ini aman belanja berapa.</h1>
+        <p>NataSaku menghitung jatah harian dari pemasukan, pengeluaran tetap, dan target tabunganmu. Cocok untuk pengguna Android yang ingin belanja harian lebih tenang tanpa akun, tanpa backend, dan tanpa data keluar dari perangkat.</p>
+        <div class="cta-row" aria-label="Aksi utama">
+          <a class="btn btn-primary" href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v1.0.5-release.apk">
+            <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v2.2c0 .5.4.8.8.8h12.4c.4 0 .8-.3.8-.8V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download APK
+          </a>
+          <a class="btn" href="https://github.com/haysan10/natasaku">
+            <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none">
+              <path d="M9 19c-4.5 1.3-4.5-2-6.3-2.4M15 22v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.8-1.4 5.8-6.2 0-1.4-.5-2.5-1.3-3.4.1-.4.6-1.8-.1-3.5 0 0-1.1-.4-3.6 1.3a12.4 12.4 0 0 0-6.6 0C6.2 3 5.1 3.4 5.1 3.4c-.7 1.7-.2 3.1-.1 3.5a4.8 4.8 0 0 0-1.3 3.4c0 4.8 3 5.9 5.8 6.2-.6.6-.8 1.1-.8 2.2V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Lihat di GitHub
+          </a>
+        </div>
+        <div class="hero-note">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3 5.5 5.6v5.2c0 4 2.6 7.6 6.5 9.2 3.9-1.6 6.5-5.2 6.5-9.2V5.6L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Offline-first. MIT License. Android APK siap diunduh.
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- SECTION 3: STORYTELLING -->
-  <section class="story-section" id="cerita">
-    <div class="text-center">
-      <span class="section-label">Kenapa NataSaku Ada?</span>
-    </div>
-
-    <!-- Block A -->
-    <div class="story-block fade-slide-up">
-      <div class="story-text-container">
-        <h2 class="story-headline">Gajian, senang.<br>Seminggu kemudian, bingung.</h2>
-        <p>
-          Saya pernah ada di titik itu — pemasukan cukup, tapi selalu habis sebelum akhir bulan. Bukan karena boros. Tapi karena tidak pernah tahu berapa nominal yang sebenarnya aman dipakai hari ini.
-        </p>
-      </div>
-      <div class="story-visual-container">
-        <div class="story-visual-card" id="story-visual-card">
-          <div class="card-header-bank">
-            <span class="bank-title">SALDO REKENING UTAMA</span>
-            <div class="bank-logo"></div>
-          </div>
-          <span class="card-balance-label">Total Saldo Aktif</span>
-          <span class="counter-val" id="story-counter">Rp 3.000.000</span>
-          
-          <div class="story-warning-lbl" id="story-warning-label">
-            <span>🚨 Sisa saldo menipis! Tagihan belum terbayar.</span>
-          </div>
-
-          <div class="story-tx-list">
-            <div class="story-tx-item">
-              <span class="story-tx-name">Bayar Langganan Bulanan</span>
-              <span class="story-tx-val">-Rp 150.000</span>
-            </div>
-            <div class="story-tx-item">
-              <span class="story-tx-name">Makan Siang & Ojol Hangout</span>
-              <span class="story-tx-val">-Rp 350.000</span>
-            </div>
-            <div class="story-tx-item">
-              <span class="story-tx-name">Jajan Sore Kopi</span>
-              <span class="story-tx-val">-Rp 45.000</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Block B -->
-    <div class="story-block reversed fade-slide-up">
-      <div class="story-text-container">
-        <h2 class="story-headline">Semua aplikasi terlalu rumit untuk pertanyaan sesederhana itu.</h2>
-        <p>
-          Grafik, puluhan kategori, budget per merchant — semuanya bagus, tapi bukan itu yang saya butuhkan jam 11 siang di depan warung makan. Saya butuh satu angka final yang ringkas. Hari ini aman belanja berapa?
-        </p>
-      </div>
-      <div class="story-visual-container">
-        <div class="phone-chassis" style="box-shadow: 0 15px 35px rgba(0,0,0,0.5);">
+      <div class="hero-phone" aria-label="Mockup dashboard NataSaku">
+        <div class="phone large">
           <div class="phone-screen">
-            <div class="phone-notch"><div class="phone-camera"></div></div>
-            <div class="phone-statusBar">
-              <span>11:30</span>
-              <div class="phone-statusBar-icons">
-                <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-                <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+            <div class="mock">
+              <div class="screen-head">
+                <div>
+                  <p class="screen-kicker">Selamat pagi</p>
+                  <h2 class="screen-title">Kondisi uang kamu hari ini</h2>
+                </div>
+                <span class="icon-circle" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 7.5h14M7 4v5M17 4v5M6 6h12c.8 0 1.5.7 1.5 1.5v10c0 .8-.7 1.5-1.5 1.5H6c-.8 0-1.5-.7-1.5-1.5v-10C4.5 6.7 5.2 6 6 6Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                  </svg>
+                </span>
+              </div>
+              <div class="daily-card hero-card">
+                <div class="daily-row">
+                  <span class="muted-on-accent">Jatah hari ini</span>
+                  <span class="status-pill">Aman</span>
+                </div>
+                <strong class="amount">Rp 85.000</strong>
+                <div class="progress" style="--value: 42%"><span></span></div>
+                <div class="daily-row">
+                  <span class="muted-on-accent">Sisa periode: 14 hari</span>
+                  <span class="muted-on-accent">Terpakai 42%</span>
+                </div>
+              </div>
+              <div class="tiny-grid">
+                <div class="tiny-tile">
+                  <span class="tiny-label">Pemasukan</span>
+                  <strong class="tiny-value">Rp 5.300.000</strong>
+                </div>
+                <div class="tiny-tile">
+                  <span class="tiny-label">Pengeluaran tetap</span>
+                  <strong class="tiny-value">Rp 2.100.000</strong>
+                </div>
+                <div class="tiny-tile">
+                  <span class="tiny-label">Target tabungan</span>
+                  <strong class="tiny-value">Rp 1.000.000</strong>
+                </div>
+                <div class="tiny-tile">
+                  <span class="tiny-label">Dana fleksibel</span>
+                  <strong class="tiny-value">Rp 2.200.000</strong>
+                </div>
+              </div>
+              <div class="screen-list">
+                <div class="screen-row">
+                  <div>
+                    <strong>Makan siang</strong>
+                    <small>Warung dekat kantor</small>
+                  </div>
+                  <span class="money-out">-Rp 28.000</span>
+                </div>
+                <div class="screen-row">
+                  <div>
+                    <strong>Transport</strong>
+                    <small>KRL pulang</small>
+                  </div>
+                  <span class="money-out">-Rp 12.000</span>
+                </div>
+              </div>
+              <div class="bottom-nav" aria-hidden="true">
+                <span class="active"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10.5 12 4l8 6.5V20h-5v-5H9v5H4v-9.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Beranda</span>
+                <span><svg viewBox="0 0 24 24" fill="none"><path d="M6 6h12M6 12h12M6 18h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Catat</span>
+                <span><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16v11H4zM8 11h3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Budget</span>
+                <span><svg viewBox="0 0 24 24" fill="none"><path d="M6 7h12v12H6zM9 7V5h6v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Tabung</span>
+                <span><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V5h14v14H5Zm4-4V9m4 6v-4m4 4V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Laporan</span>
               </div>
             </div>
-            
-            <div class="phone-content" style="justify-content: center; align-items: center; text-align: center;">
-              <span class="p-label" style="font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 8px;">Jatah kamu hari ini</span>
-              <h3 style="font-family: var(--font-mono); font-size: 2rem; color: var(--color-accent); margin-bottom: var(--space-3);">Rp 87.500</h3>
-              <div class="p-badge p-badge-success" style="margin-bottom: var(--space-6);">
-                <span>Aman Belanja</span>
-              </div>
-              <p style="font-size: 0.75rem; max-width: 180px; margin-bottom: var(--space-6);">
-                Satu angka harian yang melindungimu dari overbudget tanpa ribet.
-              </p>
-              <div class="p-btn-mock" style="width: 80%; pointer-events: none;">Catat Pengeluaran</div>
-            </div>
-            <div class="phone-homeBar"></div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- SECTION 4: PHONE MOCKUP SHOWCASE (CAROUSEL) -->
-  <section class="showcase-section">
-    <div class="showcase-container">
-      <div class="showcase-title-area">
-        <span class="section-label">Alur Layar Utama</span>
-        <h2 style="margin-top: 10px;">Setiap layar dibuat untuk satu keputusan</h2>
+  <main id="main">
+    <section class="section hook" aria-label="Masalah yang dijawab NataSaku">
+      <div class="narrow">
+        <p>Bulan baru dimulai, gajian masuk, niat nabung juga sudah rapi. Lalu tiba-tiba tengah bulan terasa kering karena pengeluaran kecil numpuk tanpa terasa. NataSaku membantu kamu melihat batas aman hari ini, bukan menghakimi belanja kemarin.</p>
       </div>
+    </section>
 
-      <div class="carousel-wrapper">
-        <div class="carousel-track" id="carousel-track">
-          
-          <!-- Phone 1: SETUP -->
-          <div class="carousel-item active" data-index="0">
-            <div class="phone-chassis">
+    <section class="section" aria-labelledby="how-title">
+      <div class="wrap">
+        <div class="narrow">
+          <h2 class="section-title" id="how-title">Cara kerjanya sederhana.</h2>
+          <p class="section-lead">NataSaku memakai formula yang jelas: dana fleksibel dibagi sisa hari periode, lalu disesuaikan saat kamu mencatat transaksi.</p>
+        </div>
+        <div class="steps-grid">
+          <article class="step">
+            <p class="step-number">01</p>
+            <h3>Masukkan angka utama</h3>
+            <p>Isi pemasukan, pengeluaran tetap, dan target tabungan untuk satu periode.</p>
+            <svg class="step-art" aria-hidden="true" viewBox="0 0 240 104">
+              <rect x="24" y="22" width="192" height="18" rx="9" fill="currentColor" opacity=".16"/>
+              <rect x="24" y="50" width="130" height="18" rx="9" fill="currentColor" opacity=".28"/>
+              <rect x="24" y="78" width="164" height="18" rx="9" fill="currentColor" opacity=".2"/>
+              <circle cx="198" cy="58" r="18" fill="currentColor" opacity=".18"/>
+              <path d="M190 58h16M198 50v16" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+          </article>
+          <article class="step">
+            <p class="step-number">02</p>
+            <h3>Jatah harian dihitung otomatis</h3>
+            <p>NataSaku membagi dana fleksibel dengan sisa hari agar batasnya realistis.</p>
+            <svg class="step-art" aria-hidden="true" viewBox="0 0 240 104">
+              <circle cx="72" cy="52" r="34" fill="currentColor" opacity=".16"/>
+              <path d="M72 30v22l16 12" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="128" y="30" width="74" height="14" rx="7" fill="currentColor" opacity=".28"/>
+              <rect x="128" y="56" width="54" height="14" rx="7" fill="currentColor" opacity=".2"/>
+            </svg>
+          </article>
+          <article class="step">
+            <p class="step-number">03</p>
+            <h3>Catat harian, dashboard ikut bergerak</h3>
+            <p>Setiap pengeluaran mengubah sisa jatah dan status tanpa perlu hitung manual.</p>
+            <svg class="step-art" aria-hidden="true" viewBox="0 0 240 104">
+              <rect x="28" y="24" width="76" height="56" rx="14" fill="currentColor" opacity=".16"/>
+              <path d="M48 53h36M66 35v36" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+              <path d="M132 72c17-36 37-42 72-30" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+              <path d="M190 34h20v20" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="showcase-title">
+      <div class="wrap">
+        <div class="showcase-head">
+          <div>
+            <h2 class="section-title" id="showcase-title">Lihat alurnya di layar.</h2>
+          </div>
+          <p class="section-lead">Mockup ini memakai data fiktif, tapi cara bacanya sama seperti pemakaian harian: lihat batas aman, catat transaksi, cek tabungan, lalu evaluasi akhir bulan.</p>
+        </div>
+
+        <div class="showcase-grid">
+          <article class="showcase-item">
+            <div class="phone">
               <div class="phone-screen">
-                <div class="phone-notch"><div class="phone-camera"></div></div>
-                <div class="phone-statusBar">
-                  <span>09:00</span>
-                  <div class="phone-statusBar-icons">
-                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Periode Mei</p>
+                      <h3 class="screen-title">Dashboard Harian</h3>
+                    </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 13h5V6h4v11h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                  </div>
+                  <div class="daily-card">
+                    <div class="daily-row">
+                      <span class="muted-on-accent">Jatah hari ini</span>
+                      <span class="status-pill">Aman</span>
+                    </div>
+                    <strong class="amount">Rp 85.000</strong>
+                    <div class="progress" style="--value: 46%"><span></span></div>
+                    <div class="daily-row">
+                      <span class="muted-on-accent">Sisa periode 14 hari</span>
+                      <span class="muted-on-accent">Rp 1.190.000</span>
+                    </div>
+                  </div>
+                  <div class="tiny-grid">
+                    <div class="tiny-tile"><span class="tiny-label">Terpakai hari ini</span><strong class="tiny-value">Rp 39.000</strong></div>
+                    <div class="tiny-tile"><span class="tiny-label">Status</span><strong class="tiny-value">Aman</strong></div>
+                  </div>
+                  <div class="screen-list">
+                    <div class="screen-row"><div><strong>Kopi</strong><small>Jam 09.20</small></div><span class="money-out">-Rp 18.000</span></div>
+                    <div class="screen-row"><div><strong>Makan</strong><small>Jam 12.40</small></div><span class="money-out">-Rp 21.000</span></div>
+                  </div>
+                  <div class="bottom-nav" aria-hidden="true">
+                    <span class="active"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10.5 12 4l8 6.5V20h-5v-5H9v5H4v-9.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Beranda</span><span><svg viewBox="0 0 24 24" fill="none"><path d="M6 6h12M6 12h12M6 18h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Catat</span><span><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16v11H4zM8 11h3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Budget</span><span><svg viewBox="0 0 24 24" fill="none"><path d="M6 7h12v12H6zM9 7V5h6v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Tabung</span><span><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V5h14v14H5Zm4-4V9m4 6v-4m4 4V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Laporan</span>
                   </div>
                 </div>
-                <div class="phone-content">
-                  <div class="p-header">Langkah Awal</div>
-                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-3);">Atur Budget Bulanan</div>
-                  
-                  <div class="p-form-group">
-                    <span class="p-label">Pemasukan Bersih Sebulan</span>
-                    <div class="p-input-box">
-                      <span>Rp 3.500.000</span>
-                      <span class="p-cursor"></span>
-                    </div>
-                  </div>
-
-                  <div class="p-form-group">
-                    <span class="p-label">Total Pengeluaran Tetap</span>
-                    <div class="p-input-box">
-                      <span>Rp 1.200.000</span>
-                    </div>
-                  </div>
-
-                  <div class="p-form-group" style="margin-bottom: 20px;">
-                    <span class="p-label">Target Tabungan Bulan Ini</span>
-                    <div class="p-input-box">
-                      <span>Rp 500.000</span>
-                    </div>
-                  </div>
-
-                  <div class="p-btn-mock" style="margin-top: auto; background-color: var(--color-accent);">Simpan & Hitung Jatah</div>
-                </div>
-                <div class="phone-homeBar"></div>
               </div>
             </div>
-            <span class="carousel-description">1. Masukkan Pemasukan & Alokasikan Tabungan</span>
-          </div>
+            <div class="showcase-copy">
+              <h3>Dashboard harian</h3>
+              <p>Menjawab kondisi uang kamu hari ini dengan jatah, status, dan progress yang mudah dibaca.</p>
+            </div>
+          </article>
 
-          <!-- Phone 2: DASHBOARD -->
-          <div class="carousel-item" data-index="1">
-            <div class="phone-chassis">
+          <article class="showcase-item">
+            <div class="phone">
               <div class="phone-screen">
-                <div class="phone-notch"><div class="phone-camera"></div></div>
-                <div class="phone-statusBar">
-                  <span>09:41</span>
-                  <div class="phone-statusBar-icons">
-                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
-                  </div>
-                </div>
-                <div class="phone-content">
-                  <div class="p-header">Dashboard Utama</div>
-                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-3);">Pantau Angka Amanmu</div>
-                  
-                  <div class="p-card p-card-accent" style="margin-bottom: 12px;">
-                    <span class="p-label">Jatah Kamu Hari Ini</span>
-                    <span class="p-number">Rp 87.500</span>
-                    <div class="p-badge p-badge-success">Aman Belanja</div>
-                    <div class="p-progress">
-                      <div class="p-progress-bar" style="width: 0%;"></div>
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Catat cepat</p>
+                      <h3 class="screen-title">Tambah Transaksi</h3>
                     </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
                   </div>
-
-                  <div class="p-card" style="margin-bottom: 12px; padding: 10px 14px;">
-                    <span class="p-label">Tabungan Berjalan</span>
-                    <div style="display:flex; justify-content:space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-top:2px;">
-                      <span>Rp 500.000</span>
-                      <span class="accent-text">100%</span>
-                    </div>
-                  </div>
-
-                  <div class="p-card" style="margin-bottom: 12px; padding: 10px 14px;">
-                    <span class="p-label">Dana Fleksibel Bulan Ini</span>
-                    <span style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; display:block; margin-top:2px;">Rp 1.800.000</span>
-                  </div>
-
-                  <div class="p-btn-mock" style="margin-top: auto; background-color: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary);">Catat Transaksi</div>
+                  <div class="form-tabs"><div class="tab active">Pengeluaran</div><div class="tab">Pemasukan</div></div>
+                  <div class="amount-field">Rp 73.000</div>
+                  <div class="chips"><span class="chip">24 Mei</span><span class="chip">Makan</span><span class="chip">Catatan</span></div>
+                  <div class="field"><span>Kategori</span><strong>Makan</strong></div>
+                  <div class="field" style="margin-top:.55rem"><span>Catatan</span><strong>Nasi padang</strong></div>
+                  <div class="keypad" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>C</span><span>0</span><span>⌫</span></div>
+                  <div class="save-button">Simpan</div>
                 </div>
-                <div class="phone-homeBar"></div>
               </div>
             </div>
-            <span class="carousel-description">2. Dashboard Menampilkan Satu Angka Utama</span>
-          </div>
+            <div class="showcase-copy">
+              <h3>Catat transaksi</h3>
+              <p>Nominal, kategori, dan catatan dibuat singkat supaya pengeluaran bisa dicatat saat masih ingat.</p>
+            </div>
+          </article>
 
-          <!-- Phone 3: CATAT TRANSAKSI -->
-          <div class="carousel-item" data-index="2">
-            <div class="phone-chassis">
+          <article class="showcase-item">
+            <div class="phone">
               <div class="phone-screen">
-                <div class="phone-notch"><div class="phone-camera"></div></div>
-                <div class="phone-statusBar">
-                  <span>12:15</span>
-                  <div class="phone-statusBar-icons">
-                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Budget Planner</p>
+                      <h3 class="screen-title">Budgeting Engine</h3>
+                    </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M6 5h12v14H6zM9 9h6M9 13h2m4 0h.1M9 16h2m4 0h.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                  </div>
+                  <div class="budget-panel">
+                    <small>Jatah aman harian</small>
+                    <strong class="amount">Rp 102.000</strong>
+                    <div class="formula">
+                      <div class="formula-row"><span>Pemasukan</span><strong>Rp 5.300.000</strong></div>
+                      <div class="formula-row"><span>Pengeluaran tetap</span><strong>-Rp 2.100.000</strong></div>
+                      <div class="formula-row"><span>Target tabungan</span><strong>-Rp 1.000.000</strong></div>
+                    </div>
+                  </div>
+                  <div class="prediction">
+                    <small>Dana fleksibel</small>
+                    <strong style="display:block">Rp 2.200.000</strong>
+                    <small>22 hari tersisa, jatah disesuaikan saat transaksi berubah.</small>
+                  </div>
+                  <div class="screen-list">
+                    <div class="screen-row"><div><strong>Prediksi besok</strong><small>Jika hari ini hemat Rp 20.000</small></div><span style="color:var(--nata);font-weight:850">Rp 104.000</span></div>
+                    <div class="screen-row"><div><strong>Batas kategori</strong><small>Makan masih aman</small></div><span style="color:var(--success);font-weight:850">68%</span></div>
                   </div>
                 </div>
-                <div class="phone-content" style="padding: 10px 12px;">
-                  <div class="p-header">Catat Pengeluaran</div>
-                  <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>Rp 15.000</span>
-                    <span class="p-cursor"></span>
-                  </div>
-
-                  <div class="p-chips-row">
-                    <span class="p-chip active">🍔 Makan</span>
-                    <span class="p-chip">☕ Jajan</span>
-                    <span class="p-chip">🚗 Transport</span>
-                    <span class="p-chip">🛍️ Belanja</span>
-                  </div>
-
-                  <div class="p-input-box" style="padding: 6px 10px; font-size: 0.75rem; margin-bottom: 8px;">
-                    <span style="color:var(--color-text-muted);">Catatan: Kopi Siang</span>
-                  </div>
-
-                  <!-- Mini Numeric Keypad -->
-                  <div class="p-keyboard">
-                    <div class="p-key">1</div><div class="p-key">2</div><div class="p-key">3</div>
-                    <div class="p-key">4</div><div class="p-key">5</div><div class="p-key">6</div>
-                    <div class="p-key">7</div><div class="p-key">8</div><div class="p-key">9</div>
-                    <div class="p-key">000</div><div class="p-key">0</div><div class="p-key">⌫</div>
-                  </div>
-
-                  <div class="p-btn-mock" style="margin-top: 6px; padding: 10px;">Simpan Pengeluaran</div>
-                </div>
-                <div class="phone-homeBar"></div>
               </div>
             </div>
-            <span class="carousel-description">3. Catat Cepat Dengan Keypad Khusus</span>
-          </div>
+            <div class="showcase-copy">
+              <h3>Jatah harian realistis</h3>
+              <p>Perhitungan memakai sisa hari periode, bukan angka rata-rata yang sudah basi setelah beberapa transaksi.</p>
+            </div>
+          </article>
 
-          <!-- Phone 4: DAILY CLOSING -->
-          <div class="carousel-item" data-index="3">
-            <div class="phone-chassis">
+          <article class="showcase-item">
+            <div class="phone">
               <div class="phone-screen">
-                <div class="phone-notch"><div class="phone-camera"></div></div>
-                <div class="phone-statusBar">
-                  <span>21:00</span>
-                  <div class="phone-statusBar-icons">
-                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Tabungan</p>
+                      <h3 class="screen-title">Savings Tracker</h3>
+                    </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M6 11.5c0-2.8 2.6-5 6-5s6 2.2 6 5-2.6 5-6 5-6-2.2-6-5Z" stroke="currentColor" stroke-width="1.7"/><path d="M8 16.2v2.3M16 16.2v2.3M18 11h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                    </span>
+                  </div>
+                  <div class="saving-hero">
+                    <div class="saving-target">
+                      <div><strong>Dana darurat</strong><small>Target Rp 8.000.000</small></div>
+                      <strong>52%</strong>
+                    </div>
+                    <div class="saving-total">Rp 4.200.000</div>
+                    <div class="progress" style="--value:52%;color:var(--nata)"><span></span></div>
+                    <div class="date-card"><strong>Estimasi tercapai: Agustus 2026</strong><br>Jika setoran bulanan tetap Rp 950.000.</div>
+                  </div>
+                  <div class="screen-list">
+                    <div class="screen-row"><div><strong>Setoran terakhir</strong><small>20 Mei 2026</small></div><span style="color:var(--nata);font-weight:850">Rp 500.000</span></div>
+                    <div class="screen-row"><div><strong>Sisa target</strong><small>Masih bisa dicicil</small></div><span style="font-weight:850">Rp 3.800.000</span></div>
                   </div>
                 </div>
-                <div class="phone-content">
-                  <div class="p-header">Review Malam Hari</div>
-                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-2);">Ada Sisa Jatah Hari Ini</div>
-                  
-                  <div class="p-card p-card-accent" style="margin-bottom: 12px; padding: 10px var(--space-4); text-align:center;">
-                    <span class="p-label">Sisa Jatah Kamu</span>
-                    <span class="p-number" style="font-size:1.4rem; color:var(--color-accent); display:block;">Rp 25.000</span>
-                  </div>
-
-                  <span class="p-label" style="display:block; margin-bottom: 6px;">Mau dialokasikan ke mana?</span>
-                  
-                  <div class="p-option-list">
-                    <div class="p-option selected">
-                      <div class="p-radio"></div>
-                      <span>Masukkan ke tabungan</span>
-                    </div>
-                    <div class="p-option">
-                      <div class="p-radio"></div>
-                      <span>Tambah ke jatah besok</span>
-                    </div>
-                    <div class="p-option">
-                      <div class="p-radio"></div>
-                      <span>Simpan sebagai dana bebas</span>
-                    </div>
-                  </div>
-
-                  <div class="p-btn-mock" style="margin-top: auto;">Simpan Alokasi</div>
-                </div>
-                <div class="phone-homeBar"></div>
               </div>
             </div>
-            <span class="carousel-description">4. Sisa Jatah Harian Dialokasikan</span>
-          </div>
+            <div class="showcase-copy">
+              <h3>Savings tracker</h3>
+              <p>Target tabungan terlihat jelas, termasuk progress dan estimasi kapan targetnya masuk akal tercapai.</p>
+            </div>
+          </article>
 
-          <!-- Phone 5: LAPORAN -->
-          <div class="carousel-item" data-index="4">
-            <div class="phone-chassis">
+          <article class="showcase-item">
+            <div class="phone">
               <div class="phone-screen">
-                <div class="phone-notch"><div class="phone-camera"></div></div>
-                <div class="phone-statusBar">
-                  <span>22:00</span>
-                  <div class="phone-statusBar-icons">
-                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M2 22h20V2z"/></svg>
-                    <svg viewBox="0 0 24 24" width="12" height="12"><rect x="1" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="9" width="3" height="6" rx="1" fill="currentColor"/></svg>
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Laporan</p>
+                      <h3 class="screen-title">Laporan Bulanan</h3>
+                    </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 19V5h14v14H5Zm4-4V9m4 6v-4m4 4V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                  </div>
+                  <div class="bar-chart" aria-label="Grafik pengeluaran bulanan">
+                    <span class="bar" style="--height:48%"></span><span class="bar" style="--height:76%"></span><span class="bar" style="--height:54%"></span><span class="bar" style="--height:88%"></span><span class="bar" style="--height:62%"></span><span class="bar" style="--height:35%"></span>
+                  </div>
+                  <div class="category-list">
+                    <div class="category-row"><span>Makan</span><strong>Rp 1.180.000</strong></div>
+                    <div class="category-row"><span>Transport</span><strong>Rp 410.000</strong></div>
+                    <div class="category-row"><span>Belanja</span><strong>Rp 525.000</strong></div>
+                    <div class="category-row"><span>Tagihan</span><strong>Rp 2.100.000</strong></div>
+                  </div>
+                  <div class="tiny-grid">
+                    <div class="tiny-tile"><span class="tiny-label">Masuk</span><strong class="tiny-value">Rp 5.300.000</strong></div>
+                    <div class="tiny-tile"><span class="tiny-label">Keluar</span><strong class="tiny-value">Rp 4.215.000</strong></div>
                   </div>
                 </div>
-                <div class="phone-content" style="padding: 12px;">
-                  <div class="p-header">Ringkasan Bulan Ini</div>
-                  <div class="p-title" style="font-size: 0.95rem; margin-bottom: var(--space-2);">Laporan Bulanan</div>
-                  
-                  <div class="p-card" style="margin-bottom: 8px; padding: 10px;">
-                    <span class="p-label">Total Penghematan Tambahan</span>
-                    <span class="p-number" style="font-size: 1.25rem; color:var(--color-accent); display:block;">Rp 420.000</span>
-                  </div>
-
-                  <!-- Mini Calendar Dot Chart -->
-                  <span class="p-label" style="display:block; margin-bottom: 4px;">Kalender Penggunaan Uang</span>
-                  <div class="p-mini-calendar">
-                    <div class="p-cal-dot"></div><div class="p-cal-dot"></div><div class="p-cal-dot warning"></div><div class="p-cal-dot"></div>
-                    <div class="p-cal-dot"></div><div class="p-cal-dot danger"></div><div class="p-cal-dot"></div><div class="p-cal-dot"></div>
-                    <div class="p-cal-dot"></div><div class="p-cal-dot"></div><div class="p-cal-dot"></div><div class="p-cal-dot warning"></div>
-                    <div class="p-cal-dot"></div><div class="p-cal-dot"></div>
-                  </div>
-
-                  <!-- Vertical Bar Charts -->
-                  <div class="p-charts-row">
-                    <div class="p-chart-bar-container">
-                      <div class="p-chart-bar" style="height: 48px;"></div>
-                      <span class="p-chart-bar-lbl">Tabung</span>
-                    </div>
-                    <div class="p-chart-bar-container">
-                      <div class="p-chart-bar grey" style="height: 38px;"></div>
-                      <span class="p-chart-bar-lbl">Tetap</span>
-                    </div>
-                    <div class="p-chart-bar-container">
-                      <div class="p-chart-bar" style="height: 28px;"></div>
-                      <span class="p-chart-bar-lbl">Harian</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="phone-homeBar"></div>
               </div>
             </div>
-            <span class="carousel-description">5. Visualisasi Kalender Sederhana</span>
-          </div>
+            <div class="showcase-copy">
+              <h3>Laporan bulanan</h3>
+              <p>Ringkasan kategori dan grafik mini membantu kamu melihat kebiasaan, bukan menebak-nebak.</p>
+            </div>
+          </article>
 
-        </div>
+          <article class="showcase-item">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Kalender</p>
+                      <h3 class="screen-title">Kalender Uang</h3>
+                    </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 7.5h14M7 4v4M17 4v4M6 6h12c.8 0 1.5.7 1.5 1.5v10c0 .8-.7 1.5-1.5 1.5H6c-.8 0-1.5-.7-1.5-1.5v-10C4.5 6.7 5.2 6 6 6Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                    </span>
+                  </div>
+                  <div class="calendar" aria-label="Status harian dalam kalender">
+                    <span class="day">1</span><span class="day safe">2</span><span class="day safe">3</span><span class="day warn">4</span><span class="day safe">5</span><span class="day safe">6</span><span class="day over">7</span>
+                    <span class="day safe">8</span><span class="day safe">9</span><span class="day warn">10</span><span class="day safe">11</span><span class="day safe">12</span><span class="day over">13</span><span class="day safe">14</span>
+                    <span class="day safe">15</span><span class="day warn">16</span><span class="day safe">17</span><span class="day safe">18</span><span class="day safe">19</span><span class="day warn">20</span><span class="day safe">21</span>
+                    <span class="day safe">22</span><span class="day safe">23</span><span class="day safe">24</span><span class="day">25</span><span class="day">26</span><span class="day">27</span><span class="day">28</span>
+                  </div>
+                  <div class="legend"><span><i class="dot"></i>Aman</span><span><i class="dot warn"></i>Mepet</span><span><i class="dot over"></i>Overbudget</span></div>
+                  <div class="screen-list">
+                    <div class="screen-row"><div><strong>Hari paling hemat</strong><small>3 Mei</small></div><span style="color:var(--success);font-weight:850">Rp 18.000</span></div>
+                    <div class="screen-row"><div><strong>Perlu perhatian</strong><small>13 Mei</small></div><span class="money-out">Rp 142.000</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="showcase-copy">
+              <h3>Kalender uang</h3>
+              <p>Setiap hari punya warna status supaya pola pengeluaran bulanan lebih cepat terlihat.</p>
+            </div>
+          </article>
 
-        <!-- Dots & Arrow Controls -->
-        <div class="carousel-controls">
-          <button class="carousel-btn" id="carousel-prev" aria-label="Layar sebelumnya">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          
-          <div class="carousel-dots" id="carousel-dots">
-            <div class="carousel-dot active"></div>
-            <div class="carousel-dot"></div>
-            <div class="carousel-dot"></div>
-            <div class="carousel-dot"></div>
-            <div class="carousel-dot"></div>
-          </div>
-
-          <button class="carousel-btn" id="carousel-next" aria-label="Layar berikutnya">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+          <article class="showcase-item">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="mock">
+                  <div class="screen-head">
+                    <div>
+                      <p class="screen-kicker">Recovery</p>
+                      <h3 class="screen-title">Overbudget Screen</h3>
+                    </div>
+                    <span class="icon-circle" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 17h.01M10.4 4.6 3.5 17.1c-.5.9.1 1.9 1.1 1.9h14.8c1 0 1.6-1.1 1.1-1.9L13.6 4.6c-.5-.9-1.7-.9-2.2 0Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                  </div>
+                  <div class="over-card">
+                    <h4>Jatah hari ini terlewati</h4>
+                    <p>Pengeluaran hari ini lewat Rp 38.000. Budget bulanan masih bisa dijaga dengan penyesuaian kecil.</p>
+                  </div>
+                  <div class="recovery-list">
+                    <div>Besok mulai dari Rp 78.000.</div>
+                    <div>Tunda belanja non-rutin sampai Jumat.</div>
+                    <div>Alihkan sisa kategori transport jika tidak terpakai.</div>
+                  </div>
+                  <div class="screen-list">
+                    <div class="screen-row"><div><strong>Sisa periode</strong><small>14 hari</small></div><span style="font-weight:850">Rp 1.092.000</span></div>
+                    <div class="screen-row"><div><strong>Status baru</strong><small>Butuh perhatian</small></div><span style="color:var(--warning);font-weight:850">Mepet</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="showcase-copy">
+              <h3>Recovery overbudget</h3>
+              <p>Saat lewat batas, NataSaku memberi penyesuaian yang bisa dilakukan tanpa menyalahkan kamu.</p>
+            </div>
+          </article>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- SECTION 5: FITUR UNGGULAN -->
-  <section class="features-section" id="fitur">
-    <div class="features-title-area">
-      <span class="section-label">Fitur Utama</span>
-      <h2 style="margin-top: 10px;">Satu tujuan. Banyak cara bantu.</h2>
-      <p>NataSaku dirancang agar pengelolaan keuangan harianmu terasa tenang dan mudah dipahami, tanpa overhead administrasi.</p>
-    </div>
+    <section class="section" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="narrow">
+          <h2 class="section-title" id="features-title">Fitur yang fokus ke pemakaian harian.</h2>
+          <p class="section-lead">NataSaku dibuat untuk menjawab keputusan kecil setiap hari, lalu menjaga gambaran bulanannya tetap mudah dibaca.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7 8.5a5 5 0 0 1 8.8-3.2A4 4 0 1 1 17 13H8a4 4 0 0 1-1-7.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 20 20 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <h3>Offline Total</h3>
+            <p>Aplikasi tetap bisa dipakai tanpa internet. Data budget, transaksi, dan target tabungan disimpan di perangkat.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3 5.5 5.6v5.2c0 4 2.6 7.6 6.5 9.2 3.9-1.6 6.5-5.2 6.5-9.2V5.6L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 12.3 11.2 14l3.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3>Privasi Penuh</h3>
+            <p>Tidak ada akun dan tidak ada backend yang menerima data keuanganmu. Kamu memegang kendali atas data sendiri.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 5h12v14H6zM9 9h6M9 13h2m4 0h.1M9 16h2m4 0h.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3>Jatah Harian Otomatis</h3>
+            <p>Dana fleksibel dihitung dari pemasukan dikurangi pengeluaran tetap dan target tabungan. Hasilnya dibagi dengan sisa hari periode.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 11.5c0-2.8 2.6-5 6-5s6 2.2 6 5-2.6 5-6 5-6-2.2-6-5Z" stroke="currentColor" stroke-width="1.8"/><path d="M8 16.2v2.3M16 16.2v2.3M18 11h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <h3>Savings Tracker</h3>
+            <p>Target tabungan tidak hilang di kepala. Progress, nominal terkumpul, dan estimasi tercapai tampil di satu tempat.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 19V5h14v14H5Zm4-4V9m4 6v-4m4 4V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3>Laporan &amp; Kalender</h3>
+            <p>Laporan bulanan merangkum kategori pengeluaran dan pemasukan. Kalender uang memperlihatkan hari aman, mepet, dan overbudget.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 18h8M9 18a3 3 0 0 0 6 0M6 15h12l-1.4-2.2V9a4.6 4.6 0 0 0-9.2 0v3.8L6 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3>Notifikasi Cerdas</h3>
+            <p>Pengingat dan quick tools Android membantu pencatatan tetap dekat. Kamu bisa mencatat lebih cepat tanpa membuka banyak layar.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-    <div class="features-grid">
-      <!-- Card 1 -->
-      <div class="feature-card fade-slide-up">
-        <div class="feature-icon-container">
-          <!-- Inline Budgeting Engine Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
+    <section class="section open-source" aria-labelledby="opensource-title">
+      <div class="wrap">
+        <h2 class="section-title" id="opensource-title">NataSaku adalah proyek open-source.</h2>
+        <p class="section-lead">Lisensi MIT. Kamu bebas pakai, modifikasi, dan berkontribusi.</p>
+        <div class="contribution-grid">
+          <article class="contribution">
+            <span class="contribution-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 8.2A4.7 4.7 0 0 1 12 6c2.9 0 5.2 2.4 5.2 5.4v.9c0 3-2.3 5.4-5.2 5.4s-5.2-2.4-5.2-5.4v-.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 13h4M16 13h4M7 4l2.2 2.2M17 4l-2.2 2.2M9 18.5 7 21M15 18.5l2 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <h3>Bug fix</h3>
+            <p>Bantu rapikan bug UI, perhitungan, notifikasi, atau alur Android yang terasa belum pas.</p>
+          </article>
+          <article class="contribution">
+            <span class="contribution-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 4h9l3 3v13H6V4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 4v4h4M8.5 14l2 2 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3>Tambah test</h3>
+            <p>Tambahkan test untuk budgeting engine, model data, dan skenario transaksi yang sering terjadi.</p>
+          </article>
+          <article class="contribution">
+            <span class="contribution-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 5h14M5 10h10M5 15h12M5 20h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m17 18 2 2 3-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3>Perbaiki copywriting</h3>
+            <p>Bantu membuat pesan aplikasi tetap jelas, ramah, dan tidak membuat pengguna merasa disalahkan.</p>
+          </article>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/haysan10/natasaku">Lihat Repo</a>
+          <a class="btn" href="https://github.com/haysan10/natasaku/blob/main/CONTRIBUTING.md">Baca CONTRIBUTING.md</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section final-cta" aria-labelledby="download-title">
+      <div class="wrap">
+        <h2 id="download-title">Mulai dari satu pertanyaan: hari ini aman belanja berapa?</h2>
+        <p>Android 7.0+. Gratis. Selamanya.</p>
+        <a class="btn btn-primary" href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v1.0.5-release.apk">
+          <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v2.2c0 .5.4.8.8.8h12.4c.4 0 .8-.3.8-.8V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-        </div>
-        <h3 class="feature-name">Budgeting Engine</h3>
-        <p class="feature-desc">Hitung jatah belanja harian secara otomatis dari pemasukan bulanan dan pengeluaran tetapmu.</p>
-      </div>
-
-      <!-- Card 2 -->
-      <div class="feature-card fade-slide-up">
-        <div class="feature-icon-container">
-          <!-- Inline Dashboard Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <line x1="9" y1="17" x2="9" y2="9"/>
-            <line x1="13" y1="17" x2="13" y2="13"/>
-            <line x1="17" y1="17" x2="17" y2="7"/>
-          </svg>
-        </div>
-        <h3 class="feature-name">Dashboard Harian</h3>
-        <p class="feature-desc">Fokus pada satu angka utama hari ini: Apakah belanja kamu aman atau perlu waspada.</p>
-      </div>
-
-      <!-- Card 3 -->
-      <div class="feature-card fade-slide-up">
-        <div class="feature-icon-container">
-          <!-- Inline Edit/Transac Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-        </div>
-        <h3 class="feature-name">Catat Transaksi Cepat</h3>
-        <p class="feature-desc">Input pengeluaran kilat dengan numpad kustom terintegrasi. Tanpa form panjang yang melelahkan.</p>
-      </div>
-
-      <!-- Card 4 -->
-      <div class="feature-card fade-slide-up">
-        <div class="feature-icon-container">
-          <!-- Inline Savings Tracker Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"/>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-          </svg>
-        </div>
-        <h3 class="feature-name">Savings Tracker</h3>
-        <p class="feature-desc">Tentukan nominal target tabungan bulanan. Amankan uang tabunganmu di awal secara otomatis.</p>
-      </div>
-
-      <!-- Card 5 -->
-      <div class="feature-card fade-slide-up">
-        <div class="feature-icon-container">
-          <!-- Inline Calendar/Laporan Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-        </div>
-        <h3 class="feature-name">Laporan Bulanan</h3>
-        <p class="feature-desc">Visualisasi ringkasan pengeluaran menggunakan kalender berkode warna untuk melacak pola belanja.</p>
-      </div>
-
-      <!-- Card 6 -->
-      <div class="feature-card fade-slide-up">
-        <div class="feature-icon-container">
-          <!-- Inline Offline Icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
-          </svg>
-        </div>
-        <h3 class="feature-name">Offline Total</h3>
-        <p class="feature-desc">Tanpa internet, tanpa sync cloud. Seluruh data keuanganmu aman disimpan di memori lokal perangkat.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 6: DOWNLOAD CTA -->
-  <section class="cta-section" id="download">
-    <div class="cta-content fade-slide-up">
-      <h2 class="cta-title">Sudah siap tahu angka amanmu hari ini?</h2>
-      <p class="cta-subtitle">GRATIS • OFFLINE • ANDROID 7.0+</p>
-      
-      <a href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v0.1.1-release.apk" class="btn btn-primary cta-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        <span>Download APK NataSaku</span>
-      </a>
-
-      <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="cta-link">
-        atau build sendiri langsung dari source code →
-      </a>
-    </div>
-  </section>
-
-  <!-- SECTION 7: FOOTER -->
-  <footer>
-    <div class="footer-container">
-      <div class="footer-left">
-        <div class="footer-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9"/>
-            <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
-          </svg>
-          <span>NataSaku</span>
-        </div>
-        <span class="footer-copy">© 2025 NataSaku — MIT License</span>
-      </div>
-
-      <div class="footer-center">
-        <a href="https://github.com/haysan10/natasaku#readme" target="_blank" rel="noopener noreferrer" class="footer-link">Dokumentasi</a>
-        <a href="https://github.com/haysan10/natasaku/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" class="footer-link">Contributing</a>
-        <a href="https://github.com/haysan10/natasaku/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer" class="footer-link">Security</a>
-        <a href="https://github.com/haysan10/natasaku/releases" target="_blank" rel="noopener noreferrer" class="footer-link">Changelog</a>
-      </div>
-
-      <div class="footer-right">
-        <a href="https://github.com/haysan10/natasaku" target="_blank" rel="noopener noreferrer" class="footer-github" aria-label="GitHub Repository">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-          </svg>
+          Download APK
         </a>
-        <span class="footer-badge">Made with Flutter 💙</span>
       </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <a class="brand" href="#top" aria-label="NataSaku">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+              <path d="M5 6.5h9.5a4.5 4.5 0 0 1 0 9H5v-9Z" fill="currentColor" opacity=".95"/>
+              <path d="M7 9.2h7.7a1.8 1.8 0 0 1 0 3.6H7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M17.5 16.5 20 19" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>NataSaku</span>
+        </a>
+        <p class="credit">Dibuat oleh @haysan10 · MIT License · Open Source</p>
+      </div>
+      <nav class="footer-links" aria-label="Link footer">
+        <a href="https://github.com/haysan10/natasaku">GitHub</a>
+        <a href="https://github.com/haysan10/natasaku/raw/main/_releases/natasaku-v1.0.5-release.apk">Download APK</a>
+        <a href="https://github.com/haysan10/natasaku/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>
+        <a href="https://github.com/haysan10/natasaku/blob/main/LICENSE">LICENSE</a>
+      </nav>
     </div>
   </footer>
-
-  <!-- JAVASCRIPT LOGIC -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      
-      // ==========================================
-      // THEME SWITCHER TOGGLE ACTION
-      // ==========================================
-      const themeToggle = document.getElementById('theme-toggle');
-      const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
-
-      const toggleHandler = () => {
-        const isLight = document.documentElement.classList.contains('light-mode');
-        if (isLight) {
-          document.documentElement.classList.remove('light-mode');
-          localStorage.setItem('theme', 'dark');
-        } else {
-          document.documentElement.classList.add('light-mode');
-          localStorage.setItem('theme', 'light');
-        }
-      };
-
-      if (themeToggle) themeToggle.addEventListener('click', toggleHandler);
-      if (mobileThemeToggle) mobileThemeToggle.addEventListener('click', toggleHandler);
-
-      // ==========================================
-      // SECTION 1: HEADER & MOBILE DRAWER
-      // ==========================================
-      const navbar = document.getElementById('navbar');
-      const menuToggle = document.getElementById('menu-toggle');
-      const mobileDrawer = document.getElementById('mobile-drawer');
-
-      // Scroll event for sticky glass navbar
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 80) {
-          navbar.classList.add('scrolled');
-        } else {
-          navbar.classList.remove('scrolled');
-        }
-      }, { passive: true });
-
-      // Hamburger menu trigger
-      menuToggle.addEventListener('click', () => {
-        const isActive = menuToggle.classList.toggle('active');
-        mobileDrawer.classList.toggle('active');
-        menuToggle.setAttribute('aria-expanded', isActive ? 'true' : 'false');
-      });
-
-      // Close mobile drawer on navigation link click
-      const mobileLinks = mobileDrawer.querySelectorAll('a');
-      mobileLinks.forEach(link => {
-        link.addEventListener('click', () => {
-          menuToggle.classList.remove('active');
-          mobileDrawer.classList.remove('active');
-          menuToggle.setAttribute('aria-expanded', 'false');
-        });
-      });
-
-
-      // ==========================================
-      // SECTION 2: HERO TITLE LETTER SPLIT
-      // ==========================================
-      const titleEl = document.getElementById('hero-title');
-      if (titleEl) {
-        const originalText = titleEl.textContent.trim();
-        titleEl.innerHTML = '';
-        
-        // Prevent layout reflow during split transition
-        titleEl.style.minHeight = titleEl.offsetHeight + 'px';
-        
-        const words = originalText.split(' ');
-        words.forEach((word, wordIdx) => {
-          const wordSpan = document.createElement('span');
-          wordSpan.className = 'word';
-          wordSpan.style.display = 'inline-block';
-          wordSpan.style.whiteSpace = 'nowrap';
-          
-          const letters = word.split('');
-          letters.forEach((char, charIdx) => {
-            const charSpan = document.createElement('span');
-            charSpan.className = 'letter';
-            charSpan.textContent = char;
-            charSpan.style.display = 'inline-block';
-            charSpan.style.willChange = 'transform, opacity';
-            
-            // Stagger animations based on approximate character indices
-            const globalIndex = (wordIdx * 4) + charIdx;
-            charSpan.style.animationDelay = `${globalIndex * 0.04}s`;
-            wordSpan.appendChild(charSpan);
-          });
-          
-          titleEl.appendChild(wordSpan);
-          if (wordIdx < words.length - 1) {
-            titleEl.appendChild(document.createTextNode(' '));
-          }
-        });
-        
-        // Remove minHeight constraint after animation completes
-        setTimeout(() => {
-          titleEl.style.minHeight = '';
-        }, 1500);
-      }
-
-
-      // ==========================================
-      // SECTION 3: STORYTELLING COUNTER
-      // ==========================================
-      const counterEl = document.getElementById('story-counter');
-      const warningLabel = document.getElementById('story-warning-label');
-      const visualCard = document.getElementById('story-visual-card');
-      let counterAnimated = false;
-
-      function formatRupiah(number) {
-        return 'Rp ' + number.toLocaleString('id-ID');
-      }
-
-      function startCounterAnimation() {
-        if (counterAnimated) return;
-        counterAnimated = true;
-
-        const duration = 2200; // 2.2 seconds animation
-        const startVal = 3000000;
-        const endVal = 0;
-        let startTimestamp = null;
-
-        function step(timestamp) {
-          if (!startTimestamp) startTimestamp = timestamp;
-          const elapsed = timestamp - startTimestamp;
-          const progress = Math.min(elapsed / duration, 1);
-          
-          // Cubic ease-out transition
-          const easeProgress = 1 - Math.pow(1 - progress, 3);
-          const currentVal = Math.floor(startVal - (startVal - endVal) * easeProgress);
-          
-          counterEl.textContent = formatRupiah(currentVal);
-
-          if (progress < 1) {
-            window.requestAnimationFrame(step);
-          } else {
-            // Apply danger states once it hits Rp 0
-            counterEl.classList.add('danger-text');
-            visualCard.classList.add('danger-border');
-            warningLabel.style.opacity = '1';
-          }
-        }
-        window.requestAnimationFrame(step);
-      }
-
-
-      // ==========================================
-      // INTERSECTION OBSERVER FOR SCROLL TRIGGERS
-      // ==========================================
-      const scrollItems = document.querySelectorAll('.fade-slide-up');
-      
-      const scrollObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            
-            // If the intersecting element is the story section block containing the counter, trigger it
-            if (entry.target.querySelector('#story-counter')) {
-              startCounterAnimation();
-            }
-            
-            observer.unobserve(entry.target);
-          }
-        });
-      }, {
-        threshold: 0.15,
-        rootMargin: '0px 0px -50px 0px'
-      });
-
-      scrollItems.forEach(item => {
-        scrollObserver.observe(item);
-      });
-
-
-      // ==========================================
-      // SECTION 4: SHOWCASE CAROUSEL
-      // ==========================================
-      const carouselTrack = document.getElementById('carousel-track');
-      const carouselItems = Array.from(carouselTrack.querySelectorAll('.carousel-item'));
-      const dotsContainer = document.getElementById('carousel-dots');
-      const dots = Array.from(dotsContainer.querySelectorAll('.carousel-dot'));
-      const prevBtn = document.getElementById('carousel-prev');
-      const nextBtn = document.getElementById('carousel-next');
-      
-      let currentIndex = 0;
-      let autoplayTimer = null;
-      let isTransitioning = false;
-
-      // Update Carousel visual states based on active index
-      function updateCarousel(targetIndex) {
-        if (isTransitioning) return;
-        isTransitioning = true;
-
-        // Constraint check
-        if (targetIndex < 0) {
-          targetIndex = carouselItems.length - 1;
-        } else if (targetIndex >= carouselItems.length) {
-          targetIndex = 0;
-        }
-
-        currentIndex = targetIndex;
-
-        // Highlight active layout elements
-        carouselItems.forEach((item, idx) => {
-          if (idx === currentIndex) {
-            item.classList.add('active');
-          } else {
-            item.classList.remove('active');
-          }
-        });
-
-        dots.forEach((dot, idx) => {
-          if (idx === currentIndex) {
-            dot.classList.add('active');
-          } else {
-            dot.classList.remove('active');
-          }
-        });
-
-        // Dynamic horizontal scroll centering calculations
-        const activeItem = carouselItems[currentIndex];
-        const trackWidth = carouselTrack.offsetWidth;
-        const itemWidth = activeItem.offsetWidth;
-        
-        // Compute offset required to center the item inside the container
-        const targetScrollLeft = activeItem.offsetLeft - (trackWidth - itemWidth) / 2;
-        
-        carouselTrack.scrollTo({
-          left: targetScrollLeft,
-          behavior: 'smooth'
-        });
-
-        // Release transition block after animation completion
-        setTimeout(() => {
-          isTransitioning = false;
-        }, 500);
-      }
-
-      // Autoplay rotations
-      function startAutoplay() {
-        stopAutoplay();
-        autoplayTimer = setInterval(() => {
-          updateCarousel(currentIndex + 1);
-        }, 4000);
-      }
-
-      function stopAutoplay() {
-        if (autoplayTimer) {
-          clearInterval(autoplayTimer);
-          autoplayTimer = null;
-        }
-      }
-
-      // Event listeners for controls
-      nextBtn.addEventListener('click', () => {
-        stopAutoplay();
-        updateCarousel(currentIndex + 1);
-        startAutoplay();
-      });
-
-      prevBtn.addEventListener('click', () => {
-        stopAutoplay();
-        updateCarousel(currentIndex - 1);
-        startAutoplay();
-      });
-
-      dots.forEach((dot, idx) => {
-        dot.addEventListener('click', () => {
-          stopAutoplay();
-          updateCarousel(idx);
-          startAutoplay();
-        });
-      });
-
-      // Hover controls to pause autoplay on desktop
-      carouselTrack.addEventListener('mouseenter', stopAutoplay);
-      carouselTrack.addEventListener('mouseleave', startAutoplay);
-      
-      // Update dot active state on manual touch swipes (mobile viewports)
-      let scrollTimeout = null;
-      carouselTrack.addEventListener('scroll', () => {
-        if (isTransitioning) return;
-        
-        // Debounce scroll listener
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-          const trackWidth = carouselTrack.offsetWidth;
-          const scrollLeft = carouselTrack.scrollLeft;
-          
-          // Find which item is closest to the horizontal center of the scroll view
-          let closestIndex = 0;
-          let minDistance = Infinity;
-
-          carouselItems.forEach((item, idx) => {
-            const itemCenter = item.offsetLeft + item.offsetWidth / 2;
-            const scrollCenter = scrollLeft + trackWidth / 2;
-            const distance = Math.abs(itemCenter - scrollCenter);
-
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestIndex = idx;
-            }
-          });
-
-          if (closestIndex !== currentIndex) {
-            currentIndex = closestIndex;
-            
-            // Adjust highlighting classes
-            carouselItems.forEach((item, idx) => {
-              if (idx === currentIndex) {
-                item.classList.add('active');
-              } else {
-                item.classList.remove('active');
-              }
-            });
-
-            dots.forEach((dot, idx) => {
-              if (idx === currentIndex) {
-                dot.classList.add('active');
-              } else {
-                dot.classList.remove('active');
-              }
-            });
-          }
-        }, 100);
-      }, { passive: true });
-
-      // Initialize auto rotation
-      startAutoplay();
-      
-      // Handle page resizing adjustments
-      window.addEventListener('resize', () => {
-        // Recenter current active slide on screen resize
-        updateCarousel(currentIndex);
-      }, { passive: true });
-    });
-  </script>
-
 </body>
 </html>
-
-<!--
-GITHUB PAGES DEPLOYMENT:
-1. Save this file as: docs/index.html in the natasaku repo
-2. Go to: GitHub repo → Settings → Pages
-3. Source: Deploy from branch
-4. Branch: main | Folder: /docs
-5. Save → wait 2-3 minutes
-6. Live at: https://haysan10.github.io/natasaku/
-
-To update: edit docs/index.html → commit → push → auto-deploys
-No build step required.
--->

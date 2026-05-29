@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
 
 class NataSectionHeader extends StatelessWidget {
   const NataSectionHeader({
@@ -43,7 +43,7 @@ class NataMetricTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.color = AppTheme.primary,
+    this.color = AppColors.primary,
   });
 
   final String label;
@@ -57,10 +57,11 @@ class NataMetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceVariantDark : AppTheme.surfaceVariant,
+        color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: (isDark ? AppTheme.borderDark : AppTheme.border).withValues(alpha: 0.7),
+          color: (isDark ? AppColors.borderDark : AppColors.borderLight)
+              .withValues(alpha: 0.7),
         ),
       ),
       child: Column(

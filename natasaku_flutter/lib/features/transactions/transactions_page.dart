@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/services/currency_service.dart';
 import '../../data/models/transaction_model.dart';
 import '../../shared/widgets/main_shell.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 import '../../shared/widgets/transaction_entry_sheet.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/nata_shimmer.dart';
@@ -42,7 +43,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     });
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-        if (_visibleCount < _filteredItems.length) {
+        final expenseCount =
+            _filteredItems.where((tx) => tx.isExpense).length;
+        if (_visibleCount < expenseCount) {
           setState(() {
             _visibleCount += 30;
           });
@@ -79,6 +82,8 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
       isExpense: draft.isExpense,
       note: draft.note,
       category: draft.category,
+      photoPath: draft.photoPath,
+      isNeed: draft.isNeed,
     );
     
     await ref.read(dashboardProvider.notifier).addTransaction(transaction);
@@ -111,11 +116,11 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
       initialCategory: tx.category,
       initialNote: tx.note,
       initialDate: tx.date,
+      initialPhotoPath: tx.photoPath,
+      initialNeed: tx.isNeed,
     );
     if (draft == null) return;
 
-    // Delete old, add new
-    await ref.read(dashboardProvider.notifier).deleteTransaction(tx.id);
     final updatedTx = TransactionModel(
       id: tx.id,
       date: draft.date,
@@ -123,8 +128,10 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
       isExpense: draft.isExpense,
       note: draft.note,
       category: draft.category,
+      photoPath: draft.photoPath,
+      isNeed: draft.isNeed,
     );
-    await ref.read(dashboardProvider.notifier).addTransaction(updatedTx);
+    await ref.read(dashboardProvider.notifier).updateTransaction(updatedTx);
   }
 
   Future<void> _deleteTransaction(TransactionModel tx) async {
@@ -192,12 +199,10 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   
   String _dateLabel(DateTime date) {
     final now = DateTime.now();
-    if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      return 'Hari Ini';
-    }
-    if (date.year == now.year && date.month == now.month && date.day == now.day - 1) {
-      return 'Kemarin';
-    }
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    if (target == today) return 'Hari Ini';
+    if (target == today.subtract(const Duration(days: 1))) return 'Kemarin';
     return DateFormat('dd MMM yyyy', 'id_ID').format(date);
   }
 
@@ -205,7 +210,16 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
     final filtered = _filteredItems;
-    final paginated = filtered.take(_visibleCount).toList();
+    final incomeItems =
+        filtered.where((tx) => !tx.isExpense).toList(growable: false);
+    final expenseItems =
+        filtered.where((tx) => tx.isExpense).toList(growable: false);
+    final paginated = _filter == _TransactionFilter.all
+        ? <TransactionModel>[
+            ...incomeItems,
+            ...expenseItems.take(_visibleCount),
+          ]
+        : filtered.take(_visibleCount).toList();
     final grouped = _groupByDate(paginated);
     final totalExpense = filtered.where((tx) => tx.isExpense).fold(0.0, (sum, tx) => sum + tx.amount);
     final totalIncome = filtered.where((tx) => !tx.isExpense).fold(0.0, (sum, tx) => sum + tx.amount);
@@ -247,10 +261,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                                 ).animate().fade().slideX(begin: -0.1),
                                 
                                 IconButton(
-                                  onPressed: () {
-                                    // context.push(AppRouter.settings);
-                                  },
-                                  icon: const PhosphorIcon(PhosphorIconsRegular.faders),
+                                  tooltip: 'Pengaturan',
+                                  onPressed: () => context.push(AppRouter.settings),
+                                  icon: const PhosphorIcon(PhosphorIconsRegular.gear),
                                 ).animate().fade(delay: 200.ms),
                               ],
                             ),
@@ -259,6 +272,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                             
                             // Custom Search Bar
                             Container(
+                              key: TourKeys.transactionSearch,
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(20),
@@ -674,6 +688,14 @@ class _TransactionRow extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (transaction.photoPath != null) ...[
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.camera_alt_rounded,
+                    size: 14,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  ),
+                ],
               ],
             ),
           ),

@@ -243,7 +243,14 @@ class NotificationsService {
 
     final totalExpense = expenses.fold(0, (a, b) => a + b.amount);
     final totalIncome = incomes.fold(0, (a, b) => a + b.amount);
-    final remainingFund = period.flexibleFund + totalIncome - totalExpense;
+    final remainingFund = BudgetingEngine.calculateRemainingFund(
+      flexibleFund: period.flexibleFund,
+      fixedExpenses: period.fixedExpenses,
+      monthlySavingAllocation: period.monthlySavingAllocation,
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
+      incomeAmounts: incomes.map((t) => t.amount),
+    );
 
     final today = DateTime.now();
     final remainingDays = BudgetingEngine.calculateRemainingDays(

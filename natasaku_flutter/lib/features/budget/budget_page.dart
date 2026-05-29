@@ -15,7 +15,10 @@ import '../../core/services/currency_service.dart';
 import '../../data/models/budget_mode.dart';
 import '../../data/models/budget_status.dart';
 import '../../data/models/category_budget.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/main_shell.dart';
+import '../../shared/widgets/nata_shimmer.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 import '../../shared/widgets/nata_money_input.dart';
 import '../../shared/widgets/transaction_entry_sheet.dart'; // contains nataCategories
 import '../budgeting/budgeting_engine.dart';
@@ -78,10 +81,27 @@ class _BudgetPageState extends ConsumerState<BudgetPage>
     final content = Scaffold(
       body: SafeArea(
         child: state.isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary))
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    NataCardShimmer(height: 180),
+                    SizedBox(height: 16),
+                    NataCardShimmer(height: 120),
+                    SizedBox(height: 16),
+                    NataCardShimmer(height: 200),
+                  ],
+                ),
+              )
             : state.period == null
-                ? const _EmptyBudgetView()
+                ? NataEmptyState(
+                    icon: PhosphorIconsRegular.wallet,
+                    title: 'Budget belum diatur',
+                    subtitle:
+                        'Atur periode gajian dan dana fleksibelmu agar kami bisa menghitung jatah harian yang aman.',
+                    buttonLabel: 'Mulai Atur Keuangan',
+                    onButtonTap: () => context.push(AppRouter.setup),
+                  )
                 : NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) {
                       return [
@@ -107,7 +127,7 @@ class _BudgetPageState extends ConsumerState<BudgetPage>
                                             ),
                                       ),
                                       Text(
-                                        'Budget Planner',
+                                        'Perencana Budget',
                                         style: Theme.of(context)
                                             .textTheme
                                             .headlineLarge
@@ -241,9 +261,13 @@ class _BudgetContent extends ConsumerWidget {
       mode: period.mode,
     );
 
+    final totalDays = max(1, period.endDate.difference(period.startDate).inDays + 1);
+    
     final periodStatus = BudgetingEngine.getPeriodFundStatus(
       remainingFund: remainingFund,
       remainingDays: remainingDays,
+      flexibleFund: period.flexibleFund,
+      totalDays: totalDays,
     );
 
     final tomorrowBudget = BudgetingEngine.calculateTomorrowSafeBudget(
@@ -257,6 +281,7 @@ class _BudgetContent extends ConsumerWidget {
       children: [
         // Status Card
         Hero(
+          key: TourKeys.budgetCard,
           tag: 'main_balance_card',
           child: Material(
             type: MaterialType.transparency,
@@ -446,7 +471,7 @@ class _BudgetContent extends ConsumerWidget {
 
         const SizedBox(height: 20),
 
-        _BudgetBreakdownSection(period: period),
+        _BudgetBreakdownSection(period: period, remainingFund: remainingFund),
 
         const SizedBox(height: 20),
 
@@ -1385,51 +1410,13 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _EmptyBudgetView extends StatelessWidget {
-  const _EmptyBudgetView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const PhosphorIcon(PhosphorIconsRegular.wallet,
-                  color: AppColors.primary, size: 64),
-            ).animate().scale(curve: Curves.easeOutBack, duration: 600.ms),
-            const SizedBox(height: 24),
-            Text('Budget belum diatur',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              'Atur periode gajian dan dana fleksibelmu agar kami bisa menghitung jatah harian yang aman.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => context.push(AppRouter.setup),
-              icon: const PhosphorIcon(PhosphorIconsRegular.rocketLaunch),
-              label: const Text('Mulai Atur Keuangan'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _BudgetBreakdownSection extends ConsumerStatefulWidget {
   final BudgetPeriod period;
-  const _BudgetBreakdownSection({required this.period});
+  final int remainingFund;
+  const _BudgetBreakdownSection({
+    required this.period,
+    required this.remainingFund,
+  });
 
   @override
   ConsumerState<_BudgetBreakdownSection> createState() =>
@@ -1800,7 +1787,7 @@ class _BudgetBreakdownSectionState
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            'Dana aman untuk jatah harian',
+                            'Sisa setelah transaksi periode ini',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -1810,9 +1797,7 @@ class _BudgetBreakdownSectionState
                       ),
                     ),
                     Text(
-                      CurrencyService.formatRupiah(period.flexibleFund -
-                          period.fixedExpenses -
-                          period.monthlySavingAllocation),
+                      CurrencyService.formatRupiah(widget.remainingFund),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.primary),

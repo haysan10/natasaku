@@ -9,10 +9,17 @@ import '../../../data/models/budget_status.dart';
 import '../../../data/models/saving_goal.dart';
 import '../../../data/models/user_settings.dart';
 import '../../../data/models/bill_model.dart';
+import '../../../data/models/achievement_model.dart';
+import '../../../data/models/recurring_transaction.dart';
 import '../../budgeting/budgeting_engine.dart';
 import '../../../core/services/android_widget_service.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/habit_service.dart';
+import '../../../core/services/achievement_service.dart';
 import '../../../core/sound/nata_sound_player.dart';
+import '../../../data/models/daily_closing.dart';
+import '../../../data/models/daily_habit_log.dart';
+import '../../../data/models/in_app_notification.dart';
 
 class DashboardState {
   final BudgetPeriod? period;
@@ -21,6 +28,19 @@ class DashboardState {
   final List<SavingGoal> savingGoals;
   final UserSettings? userSettings;
   final bool isLoading;
+  final int loggingStreak;
+  final int savingStreak;
+  final bool eveningClosedToday;
+  final String? yesterdayInsight;
+  final List<String> weeklyInsightLines;
+  final List<Achievement> achievements;
+  final List<Achievement> newlyEarnedAchievements;
+  final int dailyAdjustment;
+  final String? dailyAdjustmentDate;
+
+  final int userXp;
+  final int userLevel;
+  final List<InAppNotification> inAppNotifications;
 
   const DashboardState({
     this.period,
@@ -29,6 +49,18 @@ class DashboardState {
     this.savingGoals = const [],
     this.userSettings,
     this.isLoading = true,
+    this.loggingStreak = 0,
+    this.savingStreak = 0,
+    this.eveningClosedToday = false,
+    this.yesterdayInsight,
+    this.weeklyInsightLines = const [],
+    this.achievements = const [],
+    this.newlyEarnedAchievements = const [],
+    this.dailyAdjustment = 0,
+    this.dailyAdjustmentDate,
+    this.userXp = 0,
+    this.userLevel = 1,
+    this.inAppNotifications = const [],
   });
 
   DashboardState copyWith({
@@ -38,6 +70,18 @@ class DashboardState {
     List<SavingGoal>? savingGoals,
     UserSettings? userSettings,
     bool? isLoading,
+    int? loggingStreak,
+    int? savingStreak,
+    bool? eveningClosedToday,
+    String? yesterdayInsight,
+    List<String>? weeklyInsightLines,
+    List<Achievement>? achievements,
+    List<Achievement>? newlyEarnedAchievements,
+    int? dailyAdjustment,
+    String? dailyAdjustmentDate,
+    int? userXp,
+    int? userLevel,
+    List<InAppNotification>? inAppNotifications,
   }) {
     return DashboardState(
       period: period ?? this.period,
@@ -46,6 +90,18 @@ class DashboardState {
       savingGoals: savingGoals ?? this.savingGoals,
       userSettings: userSettings ?? this.userSettings,
       isLoading: isLoading ?? this.isLoading,
+      loggingStreak: loggingStreak ?? this.loggingStreak,
+      savingStreak: savingStreak ?? this.savingStreak,
+      eveningClosedToday: eveningClosedToday ?? this.eveningClosedToday,
+      yesterdayInsight: yesterdayInsight ?? this.yesterdayInsight,
+      weeklyInsightLines: weeklyInsightLines ?? this.weeklyInsightLines,
+      achievements: achievements ?? this.achievements,
+      newlyEarnedAchievements: newlyEarnedAchievements ?? this.newlyEarnedAchievements,
+      dailyAdjustment: dailyAdjustment ?? this.dailyAdjustment,
+      dailyAdjustmentDate: dailyAdjustmentDate ?? this.dailyAdjustmentDate,
+      userXp: userXp ?? this.userXp,
+      userLevel: userLevel ?? this.userLevel,
+      inAppNotifications: inAppNotifications ?? this.inAppNotifications,
     );
   }
 
@@ -55,11 +111,15 @@ class DashboardState {
   
   int get remainingFund {
     if (period == null) return 0;
-    return period!.flexibleFund
-        - period!.fixedExpenses
-        - period!.monthlySavingAllocation
-        + totalIncome
-        - totalExpense;
+    return BudgetingEngine.calculateRemainingFund(
+      flexibleFund: period!.flexibleFund,
+      fixedExpenses: period!.fixedExpenses,
+      monthlySavingAllocation: period!.monthlySavingAllocation,
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
+      incomeAmounts:
+          transactions.where((t) => !t.isExpense).map((t) => t.amount),
+    );
   }
 
   int get todayExpense {
@@ -83,11 +143,38 @@ class DashboardState {
 
   int get dailySafeBudget {
     if (period == null) return 0;
+    
+    final today = DateTime.now();
+    final todayStr = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+    final isActiveToday = dailyAdjustmentDate == todayStr;
+    
+    int fund = remainingFund;
+    int adj = 0;
+    
+    if (isActiveToday) {
+      adj = dailyAdjustment;
+      if (adj > 0) {
+        fund = max(0, fund - adj);
+      } else if (adj < 0) {
+        fund = max(0, fund + adj.abs());
+      }
+    }
+    
     final baseDaily = BudgetingEngine.calculateDailySafeBudget(
-      remainingFund: max(remainingFund, 0),
+      remainingFund: max(fund, 0),
       remainingDays: remainingDays,
     );
-    return BudgetingEngine.applyBudgetMode(baseDailyBudget: baseDaily, mode: period!.mode);
+    
+    final baseline = BudgetingEngine.applyBudgetMode(baseDailyBudget: baseDaily, mode: period!.mode);
+    
+    if (isActiveToday) {
+      if (adj > 0) {
+        return baseline + adj;
+      } else if (adj < 0) {
+        return max(0, baseline - adj.abs());
+      }
+    }
+    return baseline;
   }
 
   DailyBudgetStatus get dailyStatus {
@@ -97,17 +184,30 @@ class DashboardState {
   int get healthScore {
     var score = 78;
     final netBalance = remainingFund;
-    final periodUsage = period == null || period!.flexibleFund <= 0 
+    
+    // If there's no period, return a default safe score.
+    if (period == null) return 80;
+
+    final totalDays = max(1, period!.endDate.difference(period!.startDate).inDays + 1);
+    
+    final periodUsage = period!.flexibleFund <= 0 
         ? 0.0 : (totalExpense / period!.flexibleFund);
     
-    final periodStatus = period == null ? null : BudgetingEngine.getPeriodFundStatus(
+    final periodStatus = BudgetingEngine.getPeriodFundStatus(
       remainingFund: netBalance,
       remainingDays: remainingDays,
+      flexibleFund: period!.flexibleFund,
+      totalDays: totalDays,
     );
 
     if (netBalance < 0) score -= 28;
-    if (periodUsage > 0.85) score -= 16;
-    if (periodUsage < 0.55) score += 8;
+    
+    // Only apply usage penalties/bonuses if they've actually started spending or are deep into the period
+    if (totalExpense > 0) {
+      if (periodUsage > 0.85) score -= 16;
+      if (periodUsage < 0.55) score += 8;
+    }
+    
     if (periodStatus == PeriodFundStatus.aman) score += 8;
     if (periodStatus == PeriodFundStatus.kritis || periodStatus == PeriodFundStatus.danaHabis) score -= 18;
     return score.clamp(0, 100);
@@ -140,6 +240,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     // Automated Scheduler Check
     if (period != null) {
       final today = DateTime.now();
+      await repo.resolveDailyBudgetAdjustment(today, period, transactions);
       bool dataChanged = false;
 
       // 1. Process Automated Bill Payments
@@ -163,6 +264,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
         if (bill.isAutoPay && !bill.isPaid && bill.dueDate != null) {
           if (today.day >= bill.dueDate! && (lastPayDate == null || lastPayDate.isBefore(currentMonthStart))) {
+            final txId = 'autobill_${bill.id}_${today.year}_${today.month}';
+            final txExists = transactions.any((t) => t.id == txId);
+
             bills[i] = bill.copyWith(
               isPaid: true,
               lastPaymentDate: today.toIso8601String(),
@@ -171,15 +275,17 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
             billsChanged = true;
             dataChanged = true;
 
-            final tx = TransactionModel(
-              id: 'autobill_${bill.id}_${today.year}_${today.month}',
-              date: today,
-              amount: bill.amount,
-              isExpense: true,
-              category: 'Tagihan',
-              note: 'Pembayaran otomatis: ${bill.name}',
-            );
-            await repo.addTransaction(tx);
+            if (!txExists) {
+              final tx = TransactionModel(
+                id: txId,
+                date: today,
+                amount: bill.amount,
+                isExpense: true,
+                category: 'Tagihan',
+                note: 'Pembayaran otomatis: ${bill.name}',
+              );
+              await repo.addTransaction(tx);
+            }
           }
         }
       }
@@ -192,46 +298,127 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       for (int i = 0; i < savingGoals.length; i++) {
         final goal = savingGoals[i];
         if (goal.autoSaveAmount != null && goal.autoSaveAmount! > 0 && goal.autoSaveFrequency != null) {
-          final lastSave = goal.lastAutoSaveDate;
-          bool isDue = false;
+          var lastSave = goal.lastAutoSaveDate;
+          final todayZero = DateTime(today.year, today.month, today.day);
+          
+          bool goalChangedForThisItem = false;
+          int accumulatedAmount = 0;
+          
           if (lastSave == null) {
-            isDue = true;
+            // First time, save once for today
+            final txId = 'autosave_${goal.id}_${todayZero.year}_${todayZero.month}_${todayZero.day}';
+            final txExists = transactions.any((t) => t.id == txId);
+            if (!txExists) {
+              final tx = TransactionModel(
+                id: txId,
+                date: today,
+                amount: goal.autoSaveAmount!,
+                isExpense: true,
+                category: 'Menabung',
+                note: 'Tabungan otomatis: ${goal.name}',
+              );
+              await repo.addTransaction(tx);
+              dataChanged = true;
+            }
+            lastSave = today;
+            accumulatedAmount = goal.autoSaveAmount!;
+            goalChangedForThisItem = true;
           } else {
-            final todayZero = DateTime(today.year, today.month, today.day);
-            final lastSaveZero = DateTime(lastSave.year, lastSave.month, lastSave.day);
-            final diff = todayZero.difference(lastSaveZero).inDays;
-            
-            if (goal.autoSaveFrequency == 'daily' && diff >= 1) {
-              isDue = true;
-            } else if (goal.autoSaveFrequency == 'weekly' && diff >= 7) {
-              isDue = true;
-            } else if (goal.autoSaveFrequency == 'monthly' && diff >= 30) {
-              isDue = true;
+            var tempDate = DateTime(lastSave.year, lastSave.month, lastSave.day);
+            while (true) {
+              // Calculate next save date
+              if (goal.autoSaveFrequency == 'daily') {
+                tempDate = tempDate.add(const Duration(days: 1));
+              } else if (goal.autoSaveFrequency == 'weekly') {
+                tempDate = tempDate.add(const Duration(days: 7));
+              } else if (goal.autoSaveFrequency == 'monthly') {
+                tempDate = DateTime(tempDate.year, tempDate.month + 1, tempDate.day);
+              } else {
+                break;
+              }
+              
+              if (tempDate.isAfter(todayZero)) {
+                break;
+              }
+              
+              final txId = 'autosave_${goal.id}_${tempDate.year}_${tempDate.month}_${tempDate.day}';
+              final txExists = transactions.any((t) => t.id == txId);
+              if (!txExists) {
+                final tx = TransactionModel(
+                  id: txId,
+                  date: tempDate,
+                  amount: goal.autoSaveAmount!,
+                  isExpense: true,
+                  category: 'Menabung',
+                  note: 'Tabungan otomatis: ${goal.name}',
+                );
+                await repo.addTransaction(tx);
+                dataChanged = true;
+              }
+              lastSave = tempDate;
+              accumulatedAmount += goal.autoSaveAmount!;
+              goalChangedForThisItem = true;
             }
           }
-
-          if (isDue) {
+          
+          if (goalChangedForThisItem) {
             savingGoals[i] = goal.copyWith(
-              currentAmount: goal.currentAmount + goal.autoSaveAmount!,
-              lastAutoSaveDate: today,
+              currentAmount: goal.currentAmount + accumulatedAmount,
+              lastAutoSaveDate: lastSave,
             );
             goalsChanged = true;
             dataChanged = true;
-
-            final tx = TransactionModel(
-              id: 'autosave_${goal.id}_${today.millisecondsSinceEpoch}',
-              date: today,
-              amount: goal.autoSaveAmount!,
-              isExpense: true,
-              category: 'Menabung',
-              note: 'Tabungan otomatis: ${goal.name}',
-            );
-            await repo.addTransaction(tx);
           }
         }
       }
       if (goalsChanged) {
         await repo.saveAllSavingGoals(savingGoals);
+      }
+
+      // 3. Process Recurring Transactions
+      List<RecurringTransaction> recurringItems = await repo.loadRecurringTransactions();
+      bool recurringChanged = false;
+      for (int i = 0; i < recurringItems.length; i++) {
+        var item = recurringItems[i];
+        var currentDueDate = item.nextDueDate;
+        final todayZero = DateTime(today.year, today.month, today.day);
+        
+        bool itemChanged = false;
+        while (true) {
+          final dueZero = DateTime(currentDueDate.year, currentDueDate.month, currentDueDate.day);
+          if (dueZero.isAfter(todayZero)) {
+            break;
+          }
+          
+          final txId = 'recurring_${item.id}_${dueZero.year}_${dueZero.month}_${dueZero.day}';
+          final txExists = transactions.any((t) => t.id == txId);
+          if (!txExists) {
+            final tx = TransactionModel(
+              id: txId,
+              date: dueZero,
+              amount: item.amount,
+              isExpense: item.isExpense,
+              category: item.categoryName,
+              note: '⚙️ Otomatis: ${item.note ?? item.categoryName}',
+            );
+            await repo.addTransaction(tx);
+            dataChanged = true;
+          }
+          
+          currentDueDate = item.copyWith(nextDueDate: currentDueDate).computeNextDueDate();
+          itemChanged = true;
+        }
+        
+        if (itemChanged) {
+          recurringItems[i] = item.copyWith(
+            lastExecutedDate: today,
+            nextDueDate: currentDueDate,
+          );
+          recurringChanged = true;
+        }
+      }
+      if (recurringChanged) {
+        await repo.saveAllRecurringTransactions(recurringItems);
       }
 
       // If transactions or saving goals were updated, reload them!
@@ -241,7 +428,81 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         savingGoal = await repo.loadSavingGoal();
       }
     }
-    
+
+    var loggingStreak = 0;
+    var savingStreak = 0;
+    var eveningClosedToday = false;
+    String? yesterdayInsight;
+    var weeklyInsightLines = <String>[];
+    List<DailyClosing> closings = [];
+    List<DailyHabitLog> habitLogs = [];
+
+    if (period != null) {
+      closings = await repo.loadDailyClosings();
+      habitLogs = await repo.loadHabitLogs();
+      final today = DateTime.now();
+      await repo.saveHabitLog(
+        HabitService.upsertLog(habitLogs, today, morningCheckDone: true),
+      );
+      habitLogs = await repo.loadHabitLogs();
+
+      loggingStreak = HabitService.computeLoggingStreak(
+        transactions,
+        closings,
+        habitLogs,
+      );
+      final tempState = DashboardState(
+        period: period,
+        transactions: transactions,
+      );
+      savingStreak = HabitService.computeSavingStreak(
+        transactions: transactions,
+        dailySafeBudget: tempState.dailySafeBudget,
+      );
+      eveningClosedToday = HabitService.isEveningClosedToday(closings, habitLogs);
+      yesterdayInsight = HabitService.yesterdayCarrySummary(closings);
+      weeklyInsightLines = HabitService.buildWeeklyInsights(
+        transactions: transactions,
+        averageDailySafeBudget: HabitService.averageDailySafe(
+          remainingFund: tempState.remainingFund,
+          remainingDays: tempState.remainingDays,
+          mode: period.mode,
+        ),
+      ).lines;
+    }
+
+    // 4. Check & award achievements
+    final existingAchievements = await repo.loadAchievements();
+    final achievementResult = AchievementService.checkAndAward(
+      current: existingAchievements,
+      transactions: transactions,
+      closings: closings,
+      loggingStreak: loggingStreak,
+      savingStreak: savingStreak,
+      savingGoals: savingGoals,
+    );
+    if (achievementResult.newlyEarned.isNotEmpty) {
+      await repo.saveAchievements(achievementResult.all);
+      for (final ach in achievementResult.newlyEarned) {
+        await repo.addInAppNotification(
+          InAppNotification(
+            id: '${DateTime.now().microsecondsSinceEpoch}_${ach.id}',
+            title: 'Lencana Baru: ${ach.title}',
+            message: 'Kamu berhasil menyelesaikan misi: ${ach.description}!',
+            date: DateTime.now(),
+            type: 'achievement',
+          ),
+        );
+      }
+    }
+
+    final dailyAdjustment = await repo.getDailyBudgetAdjustment();
+    final dailyAdjustmentDate = await repo.getDailyBudgetAdjustmentDate();
+    final xp = await repo.getXp();
+    final level = (xp ~/ 100) + 1;
+    final notifications = await repo.loadInAppNotifications();
+    notifications.sort((a, b) => b.date.compareTo(a.date));
+
     state = state.copyWith(
       period: period,
       transactions: transactions,
@@ -249,8 +510,20 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       savingGoals: savingGoals,
       userSettings: userSettings,
       isLoading: false,
+      loggingStreak: loggingStreak,
+      savingStreak: savingStreak,
+      eveningClosedToday: eveningClosedToday,
+      yesterdayInsight: yesterdayInsight,
+      weeklyInsightLines: weeklyInsightLines,
+      achievements: achievementResult.all,
+      newlyEarnedAchievements: achievementResult.newlyEarned,
+      dailyAdjustment: dailyAdjustment,
+      dailyAdjustmentDate: dailyAdjustmentDate,
+      userXp: xp,
+      userLevel: level,
+      inAppNotifications: notifications,
     );
-    
+
     _syncHomeWidget();
   }
 
@@ -281,6 +554,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       targetDate: goal.targetDate,
     );
     await repo.saveSavingGoal(updatedGoal);
+
+    await addXp(20);
 
     final wasReached = goal.currentAmount >= goal.targetAmount;
     final isReached = updatedGoal.currentAmount >= goal.targetAmount;
@@ -321,6 +596,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     );
     await repo.upsertSavingGoal(updatedGoal);
 
+    await addXp(20);
+
     final wasReached = goal.currentAmount >= goal.targetAmount;
     final isReached = updatedGoal.currentAmount >= goal.targetAmount;
 
@@ -346,10 +623,21 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     
     final repo = _ref.read(budgetRepositoryProvider);
     await repo.addTransaction(transaction);
+    await addXp(10);
     await loadData();
 
     final isOver = state.todayExpense > state.dailySafeBudget;
     if (isOver && !wasOver && transaction.isExpense) {
+      await repo.addInAppNotification(
+        InAppNotification(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          title: 'Jatah Harian Terlampaui 🚨',
+          message: 'Pengeluaran hari ini sudah melewati jatah aman harianmu. Rem dulu belanjanya ya!',
+          date: DateTime.now(),
+          type: 'alert',
+        ),
+      );
+      await loadData();
       if (!_hasPlayedWarningThisSession) {
         _hasPlayedWarningThisSession = true;
         _playSound(NataSoundPlayer.playWarning);
@@ -359,26 +647,51 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     }
   }
 
+  Future<void> updateTransaction(TransactionModel transaction) async {
+    final repo = _ref.read(budgetRepositoryProvider);
+    await repo.updateTransaction(transaction);
+    await loadData();
+    _playSound(NataSoundPlayer.playSuccess);
+  }
+
   Future<void> deleteTransaction(String id) async {
     final repo = _ref.read(budgetRepositoryProvider);
-    final all = await repo.loadTransactions();
-    final filtered = all.where((item) => item.id != id).toList();
-    
-    // Save back
-    final storage = _ref.read(localStorageProvider);
-    await storage.saveTransactions(
-      filtered.map((t) => {
-        'id': t.id,
-        'date': t.date.toIso8601String(),
-        'amount': t.amount,
-        'isExpense': t.isExpense,
-        'note': t.note,
-        'category': t.category,
-      }).toList(),
-    );
+    await repo.deleteTransaction(id);
     
     await loadData();
     _playSound(NataSoundPlayer.playDelete);
+  }
+
+  Future<void> addXp(int amount) async {
+    final repo = _ref.read(budgetRepositoryProvider);
+    final currentXp = await repo.getXp();
+    final newXp = currentXp + amount;
+    await repo.saveXp(newXp);
+    
+    final currentLevel = (currentXp ~/ 100) + 1;
+    final newLevel = (newXp ~/ 100) + 1;
+    
+    if (newLevel > currentLevel) {
+      final levelUpNotif = InAppNotification(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        title: 'Naik Level! 🌟 Level $newLevel',
+        message: 'Selamat! Finansialmu semakin terarah. Kamu naik ke level baru!',
+        date: DateTime.now(),
+        type: 'level',
+      );
+      await repo.addInAppNotification(levelUpNotif);
+      _playSound(NataSoundPlayer.playAchievement);
+    }
+  }
+
+  Future<void> markAllNotificationsAsRead() async {
+    final repo = _ref.read(budgetRepositoryProvider);
+    await repo.markNotificationsAsRead();
+    await loadData();
+  }
+
+  void clearNewlyEarnedAchievements() {
+    state = state.copyWith(newlyEarnedAchievements: const []);
   }
 
   Future<void> _syncHomeWidget() async {
@@ -422,9 +735,13 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       );
       
       final dailyStatus = state.dailyStatus;
+      final totalDays = max(1, period.endDate.difference(period.startDate).inDays + 1);
+      
       final periodStatus = BudgetingEngine.getPeriodFundStatus(
         remainingFund: remainingFund,
         remainingDays: remainingDays,
+        flexibleFund: period.flexibleFund,
+        totalDays: totalDays,
       );
       
       final adviceText = BudgetingEngine.generateDynamicRecommendation(

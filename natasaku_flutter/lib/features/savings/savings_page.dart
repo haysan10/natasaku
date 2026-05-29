@@ -10,6 +10,7 @@ import '../../core/animations/nata_animations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/services/currency_service.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 import '../../data/models/saving_goal.dart';
 import '../../data/models/user_settings.dart';
 import '../../shared/widgets/nata_shimmer.dart';
@@ -945,6 +946,7 @@ class _SavingsPageState extends ConsumerState<SavingsPage> {
 
                     // Premium Multi-Savings Summary Hero Card
                     Container(
+                      key: TourKeys.savingsGoal,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,

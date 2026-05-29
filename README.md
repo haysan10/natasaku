@@ -1,13 +1,13 @@
 # NataSaku
 
 [![Build Status](https://img.shields.io/badge/Build-Verified-success.svg)](#)
-[![Download APK](https://img.shields.io/badge/Download-Release%20APK-blue.svg)](_releases/natasaku-v0.1.1-release.apk)
+[![Download APK](https://img.shields.io/badge/Download-Release%20APK-blue.svg)](_releases/natasaku-v1.0.5-release.apk)
 
 **NataSaku** adalah aplikasi Android offline-first yang dirancang untuk membantu pengguna mengelola keuangan pribadi dengan pendekatan alokasi dana harian yang adaptif dan bebas stres.
 
 > "Atur uang bulanan, nikmati hidup harian."
 
-### Status Project: 🚀 Stable Release Candidate (v0.1.1+2)
+### Status Project: 🚀 Stable Production (v1.0.5)
 Aplikasi telah melalui pengerasan (*hardening*) kode sumber, pembersihan scaffolding AI development, pengujian fungsionalitas asinkronus lokal, dan berhasil dikompilasi ke APK Rilis final dengan SDK target Android 36 (kompatibel hingga Android 7.0+ / API 24).
 
 ---
@@ -78,7 +78,7 @@ Untuk mengompilasi APK rilis dengan pembagian arsitektur untuk meminimalkan ukur
 cd natasaku_flutter
 flutter build apk --release --split-per-abi
 ```
-File APK rilis final hasil kompilasi siap unduh juga disediakan langsung di folder [`_releases/natasaku-v0.1.1-release.apk`](_releases/natasaku-v0.1.1-release.apk).
+File APK rilis final hasil kompilasi siap unduh juga disediakan langsung di folder [`_releases/natasaku-v1.0.5-release.apk`](_releases/natasaku-v1.0.5-release.apk).
 
 ---
 

@@ -31,6 +31,9 @@ object QuickToolsContract {
     const val receiverActionCheck = "com.natasaku.app.quicktools.CHECK"
     const val receiverActionQuickExpense10k = "com.natasaku.app.quicktools.EXPENSE_10K"
     const val receiverActionQuickExpense50k = "com.natasaku.app.quicktools.EXPENSE_50K"
+    const val receiverActionSimulasi = "com.natasaku.app.quicktools.SIMULASI"
+    const val receiverActionQuickAdd = "com.natasaku.app.quicktools.QUICK_ADD"
+    const val actionSimulasi = "action_simulasi"
 
     const val notificationChannelId = "natasaku_quick_tools"
     const val notificationId = 9031

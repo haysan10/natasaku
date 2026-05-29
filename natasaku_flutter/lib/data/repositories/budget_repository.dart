@@ -1,14 +1,23 @@
+import 'dart:math';
 import '../datasources/local/local_storage.dart';
 import '../models/budget_mode.dart';
 import '../models/budget_period.dart';
 import '../models/category_budget.dart';
 import '../models/daily_closing.dart';
+import '../models/daily_habit_log.dart';
 import '../models/saving_goal.dart';
 import '../models/transaction_model.dart';
+import '../models/recurring_transaction.dart';
+import '../models/achievement_model.dart';
 import '../models/fixed_expense_item.dart';
 import '../models/usage_style.dart';
 import '../models/user_settings.dart';
+import '../models/debt_model.dart';
+import '../models/in_app_notification.dart';
 import 'package:flutter/material.dart';
+
+import '../../core/services/habit_service.dart';
+import '../../features/budgeting/budgeting_engine.dart';
 
 class BudgetRepository {
   BudgetRepository(this._localStorage);
@@ -67,17 +76,7 @@ class BudgetRepository {
         final id = item['id'] as String?;
         final dateStr = item['date'] as String?;
         if (id == null || dateStr == null) continue;
-
-        list.add(
-          TransactionModel(
-            id: id,
-            date: DateTime.parse(dateStr),
-            amount: _readMoney(item['amount']),
-            isExpense: item['isExpense'] as bool? ?? true,
-            note: item['note'] as String?,
-            category: item['category'] as String?,
-          ),
-        );
+        list.add(TransactionModel.fromJson(item));
       } catch (_) {
         // Skip corrupt transaction item
       }
@@ -89,18 +88,7 @@ class BudgetRepository {
     final all = await loadTransactions();
     all.add(transaction);
     await _localStorage.saveTransactions(
-      all
-          .map(
-            (t) => {
-              'id': t.id,
-              'date': t.date.toIso8601String(),
-              'amount': t.amount,
-              'isExpense': t.isExpense,
-              'note': t.note,
-              'category': t.category,
-            },
-          )
-          .toList(),
+      all.map((t) => t.toJson()).toList(),
     );
   }
 
@@ -113,37 +101,14 @@ class BudgetRepository {
       all[index] = transaction;
     }
     await _localStorage.saveTransactions(
-      all
-          .map(
-            (t) => {
-              'id': t.id,
-              'date': t.date.toIso8601String(),
-              'amount': t.amount,
-              'isExpense': t.isExpense,
-              'note': t.note,
-              'category': t.category,
-            },
-          )
-          .toList(),
+      all.map((t) => t.toJson()).toList(),
     );
   }
 
   Future<void> deleteTransaction(String id) async {
     final all = await loadTransactions();
     await _localStorage.saveTransactions(
-      all
-          .where((item) => item.id != id)
-          .map(
-            (t) => {
-              'id': t.id,
-              'date': t.date.toIso8601String(),
-              'amount': t.amount,
-              'isExpense': t.isExpense,
-              'note': t.note,
-              'category': t.category,
-            },
-          )
-          .toList(),
+      all.where((item) => item.id != id).map((t) => t.toJson()).toList(),
     );
   }
 
@@ -179,6 +144,28 @@ class BudgetRepository {
           )
           .toList(),
     );
+
+    await saveHabitLog(
+      HabitService.upsertLog(
+        await loadHabitLogs(),
+        closing.date,
+        eveningCloseDone: true,
+      ),
+    );
+  }
+
+  Future<List<DailyHabitLog>> loadHabitLogs() async {
+    final items = await _localStorage.getDailyHabitLogs();
+    return items.map(DailyHabitLog.fromJson).toList();
+  }
+
+  Future<void> saveHabitLogs(List<DailyHabitLog> logs) async {
+    await _localStorage.saveDailyHabitLogs(logs.map((l) => l.toJson()).toList());
+  }
+
+  Future<void> saveHabitLog(DailyHabitLog log) async {
+    final merged = HabitService.mergeLog(await loadHabitLogs(), log);
+    await saveHabitLogs(merged);
   }
 
   bool _isSameDay(DateTime a, DateTime b) {
@@ -387,4 +374,181 @@ class BudgetRepository {
       items.map((i) => i.toJson()).toList(),
     );
   }
+
+  // ─── Recurring Transactions ─────────────────────────────────────────────────
+
+  Future<List<RecurringTransaction>> loadRecurringTransactions() async {
+    final items = await _localStorage.getRecurringTransactions();
+    return items.map((m) => RecurringTransaction.fromJson(m)).toList();
+  }
+
+  Future<void> saveAllRecurringTransactions(List<RecurringTransaction> items) {
+    return _localStorage.saveRecurringTransactions(
+      items.map((r) => r.toJson()).toList(),
+    );
+  }
+
+  Future<void> upsertRecurringTransaction(RecurringTransaction item) async {
+    final all = await loadRecurringTransactions();
+    final idx = all.indexWhere((r) => r.id == item.id);
+    if (idx >= 0) {
+      all[idx] = item;
+    } else {
+      all.add(item);
+    }
+    await saveAllRecurringTransactions(all);
+  }
+
+  Future<void> deleteRecurringTransaction(String id) async {
+    final all = await loadRecurringTransactions();
+    await saveAllRecurringTransactions(all.where((r) => r.id != id).toList());
+  }
+
+  // ─── Achievements ──────────────────────────────────────────────────────────
+
+  Future<List<Achievement>> loadAchievements() async {
+    final items = await _localStorage.getAchievements();
+    return items.map((m) => Achievement.fromJson(m)).toList();
+  }
+
+  Future<void> saveAchievements(List<Achievement> achievements) {
+    return _localStorage.saveAchievements(
+      achievements.map((a) => a.toJson()).toList(),
+    );
+  }
+
+  // ─── Quick Amount Presets ──────────────────────────────────────────────────
+
+  Future<List<int>> loadQuickAmountPresets() async {
+    final presets = await _localStorage.getQuickAmountPresets();
+    if (presets.isEmpty) return [10000, 25000, 50000, 100000];
+    return presets;
+  }
+
+  Future<void> saveQuickAmountPresets(List<int> presets) {
+    return _localStorage.saveQuickAmountPresets(presets);
+  }
+
+  // ─── Daily Budget Adjustment ───────────────────────────────────────────────
+
+  Future<void> saveDailyBudgetAdjustment(int value) =>
+      _localStorage.saveDailyBudgetAdjustment(value);
+
+  Future<int> getDailyBudgetAdjustment() =>
+      _localStorage.getDailyBudgetAdjustment();
+
+  Future<void> saveDailyBudgetAdjustmentDate(String? value) =>
+      _localStorage.saveDailyBudgetAdjustmentDate(value);
+
+  Future<String?> getDailyBudgetAdjustmentDate() =>
+      _localStorage.getDailyBudgetAdjustmentDate();
+
+  Future<void> resolveDailyBudgetAdjustment(
+    DateTime today,
+    BudgetPeriod period,
+    List<TransactionModel> transactions,
+  ) async {
+    final adj = await getDailyBudgetAdjustment();
+    if (adj == 0) return;
+    final adjDateStr = await getDailyBudgetAdjustmentDate();
+    if (adjDateStr == null) return;
+
+    final todayStr = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+    if (adjDateStr == todayStr) return; // Still active today
+
+    final adjDate = DateTime.parse(adjDateStr);
+    if (adj > 0) {
+      // Positive carryover is single-day. Clear it once that day passes.
+      await saveDailyBudgetAdjustment(0);
+      await saveDailyBudgetAdjustmentDate(null);
+    } else {
+      // Deficit debt. Compute baseDaily of the adjDate.
+      final remainingDaysOnAdjDate = max<int>(1, period.endDate.difference(adjDate).inDays + 1);
+      
+      // Load all transactions before the adjDate
+      final txsBeforeAdjDate = transactions
+          .where((t) => t.date.isBefore(DateTime(adjDate.year, adjDate.month, adjDate.day)))
+          .toList();
+      
+      final totalIncomeBefore = txsBeforeAdjDate.where((t) => !t.isExpense).fold(0, (a, b) => a + b.amount);
+      final totalExpenseBefore = txsBeforeAdjDate.where((t) => t.isExpense).fold(0, (a, b) => a + b.amount);
+
+      final remainingFundBefore = BudgetingEngine.calculateRemainingFund(
+        flexibleFund: period.flexibleFund,
+        fixedExpenses: period.fixedExpenses,
+        monthlySavingAllocation: period.monthlySavingAllocation,
+        totalIncome: totalIncomeBefore,
+        totalExpense: totalExpenseBefore,
+        incomeAmounts: txsBeforeAdjDate.where((t) => !t.isExpense).map((t) => t.amount),
+      );
+
+      final baseDaily = BudgetingEngine.calculateDailySafeBudget(
+        remainingFund: remainingFundBefore,
+        remainingDays: remainingDaysOnAdjDate,
+      );
+
+      final debtPaid = baseDaily;
+      final remainingDebt = (adj.abs() - debtPaid).toInt();
+
+      if (remainingDebt <= 0) {
+        await saveDailyBudgetAdjustment(0);
+        await saveDailyBudgetAdjustmentDate(null);
+      } else {
+        await saveDailyBudgetAdjustment(-remainingDebt);
+        await saveDailyBudgetAdjustmentDate(todayStr);
+      }
+    }
+  }
+
+  // ─── Debts ─────────────────────────────────────────────────────────────────
+  Future<List<DebtModel>> loadDebts() async {
+    final items = await _localStorage.getDebts();
+    return items.map((m) => DebtModel.fromJson(m)).toList();
+  }
+
+  Future<void> saveAllDebts(List<DebtModel> debts) async {
+    await _localStorage.saveDebts(debts.map((d) => d.toJson()).toList());
+  }
+
+  Future<void> upsertDebt(DebtModel debt) async {
+    final all = await loadDebts();
+    final idx = all.indexWhere((d) => d.id == debt.id);
+    if (idx >= 0) {
+      all[idx] = debt;
+    } else {
+      all.add(debt);
+    }
+    await saveAllDebts(all);
+  }
+
+  Future<void> deleteDebt(String id) async {
+    final all = await loadDebts();
+    await saveAllDebts(all.where((d) => d.id != id).toList());
+  }
+
+  // ─── In-App Notifications ──────────────────────────────────────────────────
+  Future<List<InAppNotification>> loadInAppNotifications() async {
+    final items = await _localStorage.getInAppNotifications();
+    return items.map((m) => InAppNotification.fromJson(m)).toList();
+  }
+
+  Future<void> saveInAppNotifications(List<InAppNotification> notifications) async {
+    await _localStorage.saveInAppNotifications(notifications.map((n) => n.toJson()).toList());
+  }
+
+  Future<void> addInAppNotification(InAppNotification notification) async {
+    final all = await loadInAppNotifications();
+    all.add(notification);
+    await saveInAppNotifications(all);
+  }
+
+  Future<void> markNotificationsAsRead() async {
+    final all = await loadInAppNotifications();
+    final updated = all.map((n) => n.copyWith(isRead: true)).toList();
+    await saveInAppNotifications(updated);
+  }
+
+  // ─── XP & Gamification ────────────────────────────────────────────────────
+  Future<int> getXp() => _localStorage.getUserXp();
+  Future<void> saveXp(int value) => _localStorage.saveUserXp(value);
 }

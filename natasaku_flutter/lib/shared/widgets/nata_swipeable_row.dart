@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Swipeable list row dengan reveal action kiri dan kanan.
-/// - Swipe kiri (dari kanan ke kiri) → aksi edit (biru)  
-/// - Swipe kanan (dari kiri ke kanan) → aksi hapus (rose soft)
+/// Swipeable list row with spring animation and gradient reveal actions.
+/// - Swipe left (right to left) → edit action (blue gradient)
+/// - Swipe right (left to right) → delete action (rose gradient)
 ///
-/// Delete memicu konfirmasi via bottom sheet, bukan langsung hapus.
+/// Delete triggers confirmation via bottom sheet.
 class NataSwipeableRow extends StatefulWidget {
   const NataSwipeableRow({
     super.key,
@@ -16,6 +16,7 @@ class NataSwipeableRow extends StatefulWidget {
     this.deleteConfirmSubtitle = 'Tindakan ini tidak bisa dibatalkan.',
     this.editLabel = 'Edit',
     this.deleteLabel = 'Hapus',
+    this.undoLabel,
   });
 
   final Widget child;
@@ -26,6 +27,9 @@ class NataSwipeableRow extends StatefulWidget {
   final String editLabel;
   final String deleteLabel;
 
+  /// If set, an undo snackbar is shown after delete with this label.
+  final String? undoLabel;
+
   @override
   State<NataSwipeableRow> createState() => _NataSwipeableRowState();
 }
@@ -33,8 +37,10 @@ class NataSwipeableRow extends StatefulWidget {
 class _NataSwipeableRowState extends State<NataSwipeableRow>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  late Animation<double> _animation;
   double _dragOffset = 0;
   bool _isDeleting = false;
+  bool _hasTriggeredHaptic = false;
   static const double _threshold = 80;
   static const double _maxReveal = 96;
 
@@ -43,7 +49,10 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 350),
+    );
+    _animation = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
   }
 
@@ -55,21 +64,36 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
 
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {
-      _dragOffset = (_dragOffset + details.delta.dx).clamp(-_maxReveal, _maxReveal);
+      _dragOffset =
+          (_dragOffset + details.delta.dx).clamp(-_maxReveal, _maxReveal);
     });
+
+    // Haptic feedback at threshold
+    if (!_hasTriggeredHaptic && _dragOffset.abs() > _threshold) {
+      _hasTriggeredHaptic = true;
+      HapticFeedback.selectionClick();
+    } else if (_dragOffset.abs() <= _threshold) {
+      _hasTriggeredHaptic = false;
+    }
   }
 
   void _onDragEnd(DragEndDetails details) {
     if (_dragOffset < -_threshold && widget.onEdit != null) {
-      // swipe left → reveal edit
       HapticFeedback.selectionClick();
       widget.onEdit!();
     } else if (_dragOffset > _threshold && widget.onDeleteConfirmed != null) {
-      // swipe right → show delete confirm
       HapticFeedback.mediumImpact();
       _showDeleteConfirm();
     }
-    setState(() => _dragOffset = 0);
+
+    // Spring animation back to zero
+    _animation = Tween<double>(begin: _dragOffset, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+    _controller.forward(from: 0);
+    _animation.addListener(() {
+      if (mounted) setState(() => _dragOffset = _animation.value);
+    });
   }
 
   Future<void> _showDeleteConfirm() async {
@@ -93,6 +117,7 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
     final showDelete = _dragOffset > 0;
     final showEdit = _dragOffset < 0;
     final revealAmount = _dragOffset.abs();
+    final progress = (revealAmount / _threshold).clamp(0.0, 1.0);
 
     return AnimatedOpacity(
       opacity: _isDeleting ? 0.0 : 1.0,
@@ -103,7 +128,7 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Background delete action (swipe right, rose soft)
+            // Background delete action (swipe right, rose gradient)
             if (showDelete)
               Positioned(
                 left: 0,
@@ -113,16 +138,34 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        const Color(0xFFF87171).withValues(alpha: 0.05 + progress * 0.25),
+                        const Color(0xFFFEE2E2).withValues(alpha: 0.3 + progress * 0.5),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.delete_outline_rounded,
-                        color: Color(0xFFF87171), size: 24),
+                  child: Center(
+                    child: AnimatedScale(
+                      scale: 0.7 + progress * 0.3,
+                      duration: const Duration(milliseconds: 100),
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Color.lerp(
+                          const Color(0xFFF87171).withValues(alpha: 0.4),
+                          const Color(0xFFF87171),
+                          progress,
+                        ),
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            // Background edit action (swipe left, blue)
+            // Background edit action (swipe left, blue gradient)
             if (showEdit)
               Positioned(
                 right: 0,
@@ -132,12 +175,30 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDBEAFE),
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        const Color(0xFF3B82F6).withValues(alpha: 0.05 + progress * 0.2),
+                        const Color(0xFFDBEAFE).withValues(alpha: 0.3 + progress * 0.5),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.edit_outlined,
-                        color: Color(0xFF3B82F6), size: 24),
+                  child: Center(
+                    child: AnimatedScale(
+                      scale: 0.7 + progress * 0.3,
+                      duration: const Duration(milliseconds: 100),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: Color.lerp(
+                          const Color(0xFF3B82F6).withValues(alpha: 0.4),
+                          const Color(0xFF3B82F6),
+                          progress,
+                        ),
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -154,7 +215,7 @@ class _NataSwipeableRowState extends State<NataSwipeableRow>
   }
 }
 
-/// Delete confirm bottom sheet kecil (tidak fullscreen)
+/// Delete confirm bottom sheet (compact, not fullscreen)
 class _DeleteConfirmSheet extends StatelessWidget {
   const _DeleteConfirmSheet({
     required this.title,
@@ -216,7 +277,7 @@ class _DeleteConfirmSheet extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 28),
-          // Hapus button (rose soft, NOT full red)
+          // Delete button (rose soft, NOT full red)
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(

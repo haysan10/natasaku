@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/dashboard/feature_tour_manager.dart';
 import '../../features/dashboard/providers/dashboard_provider.dart';
 import '../../data/models/transaction_model.dart';
 import './transaction_entry_sheet.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 
 class MainShell extends ConsumerWidget {
   const MainShell({
@@ -32,6 +32,7 @@ class MainShell extends ConsumerWidget {
       isExpense: draft.isExpense,
       note: draft.note,
       category: draft.category,
+      isNeed: draft.isNeed,
     );
     
     await ref.read(dashboardProvider.notifier).addTransaction(transaction);
@@ -76,14 +77,18 @@ class MainShell extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: FloatingActionButton(
-                  onPressed: () => _addTransaction(context, ref),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: const CircleBorder(),
-                  tooltip: 'Catat Pengeluaran',
-                  child: const Icon(Icons.add_rounded, size: 28),
+                child: Semantics(
+                  button: true,
+                  label: 'Catat pengeluaran',
+                  child: FloatingActionButton(
+                    onPressed: () => _addTransaction(context, ref),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: const CircleBorder(),
+                    tooltip: 'Catat Pengeluaran',
+                    child: const Icon(Icons.add_rounded, size: 28),
+                  ),
                 ),
               )
             : null,
@@ -109,30 +114,32 @@ class MainShell extends ConsumerWidget {
                 onNavigate?.call(idx);
               }
             },
-            destinations: const [
-              NavigationDestination(
+            destinations: [
+              const NavigationDestination(
                 icon: Icon(Icons.home_outlined),
                 selectedIcon: Icon(Icons.home_rounded),
                 label: 'Beranda',
               ),
-              NavigationDestination(
+              const NavigationDestination(
                 icon: Icon(Icons.receipt_long_outlined),
                 selectedIcon: Icon(Icons.receipt_long_rounded),
                 label: 'Transaksi',
               ),
-              NavigationDestination(
+              const NavigationDestination(
                 icon: Icon(Icons.account_balance_wallet_outlined),
                 selectedIcon: Icon(Icons.account_balance_wallet_rounded),
                 label: 'Budget',
               ),
               NavigationDestination(
-                icon: Icon(Icons.savings_outlined),
-                selectedIcon: Icon(Icons.savings_rounded),
+                
+                icon: const Icon(Icons.savings_outlined),
+                selectedIcon: const Icon(Icons.savings_rounded),
                 label: 'Tabungan',
               ),
               NavigationDestination(
-                icon: Icon(Icons.analytics_outlined),
-                selectedIcon: Icon(Icons.analytics_rounded),
+                
+                icon: const Icon(Icons.analytics_outlined),
+                selectedIcon: const Icon(Icons.analytics_rounded),
                 label: 'Laporan',
               ),
             ],

@@ -15,6 +15,10 @@ class LocalStorage {
   static const _featureTourCompletedKey = 'feature_tour_completed';
   static const _categoryBudgetsKey = 'category_budgets';
   static const _savingGoalsKey = 'saving_goals';
+  static const _dailyHabitLogsKey = 'daily_habit_logs';
+  static const _recurringTransactionsKey = 'recurring_transactions';
+  static const _achievementsKey = 'achievements';
+  static const _quickAmountPresetsKey = 'quick_amount_presets';
 
   Future<void> saveBudgetPeriod(Map<String, dynamic> payload) async {
     final pref = await SharedPreferences.getInstance();
@@ -288,4 +292,136 @@ class LocalStorage {
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded.map((item) => item as Map<String, dynamic>).toList();
   }
+
+  Future<void> saveDailyHabitLogs(List<Map<String, dynamic>> payload) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_dailyHabitLogsKey, jsonEncode(payload));
+  }
+
+  Future<List<Map<String, dynamic>>> getDailyHabitLogs() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_dailyHabitLogsKey);
+    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => item as Map<String, dynamic>).toList();
+  }
+
+  // ─── Recurring Transactions ─────────────────────────────────────────────────
+
+  Future<void> saveRecurringTransactions(List<Map<String, dynamic>> payload) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_recurringTransactionsKey, jsonEncode(payload));
+  }
+
+  Future<List<Map<String, dynamic>>> getRecurringTransactions() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_recurringTransactionsKey);
+    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => item as Map<String, dynamic>).toList();
+  }
+
+  // ─── Achievements ──────────────────────────────────────────────────────────
+
+  Future<void> saveAchievements(List<Map<String, dynamic>> payload) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_achievementsKey, jsonEncode(payload));
+  }
+
+  Future<List<Map<String, dynamic>>> getAchievements() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_achievementsKey);
+    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => item as Map<String, dynamic>).toList();
+  }
+
+  // ─── Quick Amount Presets ──────────────────────────────────────────────────
+
+  Future<void> saveQuickAmountPresets(List<int> presets) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_quickAmountPresetsKey, jsonEncode(presets));
+  }
+
+  Future<List<int>> getQuickAmountPresets() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_quickAmountPresetsKey);
+    if (raw == null || raw.isEmpty) return <int>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => (item as num).round()).toList();
+  }
+
+  // ─── Daily Budget Adjustment ───────────────────────────────────────────────
+  static const _dailyBudgetAdjustmentKey = 'daily_budget_adjustment';
+  static const _dailyBudgetAdjustmentDateKey = 'daily_budget_adjustment_date';
+
+  Future<void> saveDailyBudgetAdjustment(int value) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setInt(_dailyBudgetAdjustmentKey, value);
+  }
+
+  Future<int> getDailyBudgetAdjustment() async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getInt(_dailyBudgetAdjustmentKey) ?? 0;
+  }
+
+  Future<void> saveDailyBudgetAdjustmentDate(String? value) async {
+    final pref = await SharedPreferences.getInstance();
+    if (value == null) {
+      await pref.remove(_dailyBudgetAdjustmentDateKey);
+    } else {
+      await pref.setString(_dailyBudgetAdjustmentDateKey, value);
+    }
+  }
+
+  Future<String?> getDailyBudgetAdjustmentDate() async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getString(_dailyBudgetAdjustmentDateKey);
+  }
+
+  // ─── Gamification & XP ─────────────────────────────────────────────────────
+  static const _userXpKey = 'user_xp';
+
+  Future<void> saveUserXp(int value) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setInt(_userXpKey, value);
+  }
+
+  Future<int> getUserXp() async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getInt(_userXpKey) ?? 0;
+  }
+
+  // ─── Debts & receivables ──────────────────────────────────────────────────
+  static const _debtsKey = 'debts_list';
+
+  Future<void> saveDebts(List<Map<String, dynamic>> payload) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_debtsKey, jsonEncode(payload));
+  }
+
+  Future<List<Map<String, dynamic>>> getDebts() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_debtsKey);
+    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => item as Map<String, dynamic>).toList();
+  }
+
+  // ─── In-App Notifications ──────────────────────────────────────────────────
+  static const _inAppNotificationsKey = 'in_app_notifications';
+
+  Future<void> saveInAppNotifications(List<Map<String, dynamic>> payload) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(_inAppNotificationsKey, jsonEncode(payload));
+  }
+
+  Future<List<Map<String, dynamic>>> getInAppNotifications() async {
+    final pref = await SharedPreferences.getInstance();
+    final raw = pref.getString(_inAppNotificationsKey);
+    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((item) => item as Map<String, dynamic>).toList();
+  }
 }
+

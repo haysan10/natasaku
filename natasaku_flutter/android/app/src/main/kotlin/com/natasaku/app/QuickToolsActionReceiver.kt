@@ -11,6 +11,8 @@ class QuickToolsActionReceiver : BroadcastReceiver() {
             QuickToolsContract.receiverActionQuickExpense50k -> handleQuickExpense(context, 50_000L)
             QuickToolsContract.receiverActionOpen -> launchApp(context, QuickToolsContract.actionOpen)
             QuickToolsContract.receiverActionCheck -> launchApp(context, QuickToolsContract.actionCheck)
+            QuickToolsContract.receiverActionQuickAdd -> launchApp(context, QuickToolsContract.actionQuickAdd)
+            QuickToolsContract.receiverActionSimulasi -> launchApp(context, QuickToolsContract.actionSimulasi)
         }
     }
 

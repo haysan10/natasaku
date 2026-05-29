@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,11 +18,14 @@ import '../../data/models/transaction_model.dart';
 import '../../shared/widgets/transaction_entry_sheet.dart';
 import '../../core/dev/mock_data_seeder.dart';
 import 'providers/dashboard_provider.dart';
-import 'feature_tour_manager.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 import '../../shared/widgets/nata_shimmer.dart';
 import '../../shared/widgets/nata_status_chip.dart';
 import '../../shared/widgets/nata_progress_bar.dart';
+import '../../shared/widgets/daily_ritual_card.dart';
 import '../../shared/widgets/nata_press_scale.dart';
+import '../../shared/widgets/achievement_celebration_dialog.dart';
+import '../budgeting/budgeting_engine.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -44,6 +48,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(dashboardProvider.notifier).loadData();
+
+      // Listen for newly earned achievements to show celebration dialogs
+      ref.listenManual(dashboardProvider, (previous, next) {
+        if (next.newlyEarnedAchievements.isNotEmpty && mounted) {
+          for (final achievement in next.newlyEarnedAchievements) {
+            showAchievementCelebration(context, achievement);
+          }
+          ref.read(dashboardProvider.notifier).clearNewlyEarnedAchievements();
+        }
+      });
     });
   }
 
@@ -61,24 +75,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
 
-    final content = FeatureTourManager(
-      hasBudget: state.period != null,
-      child: Scaffold(
-        body: SafeArea(
-          child: state.isLoading
-              ? _buildShimmerLoading()
-              : state.period == null
-                  ? const _EmptySetupView()
-                  : _DashboardContent(state: state)
-                  .animate()
-                  .fade(duration: 350.ms)
-                  .slideY(
-                    begin: 0.04,
-                    end: 0.0,
-                    duration: 350.ms,
-                    curve: Curves.fastOutSlowIn, // NataCurve.smooth
-                  ),
-        ),
+    final content = Scaffold(
+      body: SafeArea(
+        child: state.isLoading
+            ? _buildShimmerLoading()
+            : state.period == null
+                ? const _EmptySetupView()
+                : _DashboardContent(state: state)
+                    .animate()
+                    .fade(duration: 350.ms)
+                    .slideY(
+                      begin: 0.04,
+                      end: 0.0,
+                      duration: 350.ms,
+                      curve: Curves.fastOutSlowIn, // NataCurve.smooth
+                    ),
       ),
     );
 
@@ -188,6 +199,8 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
     String safetyInsight = 'Mari atur budget harian pertamamu agar finansial terkontrol 💎';
     if (remainingDays > 0) {
       safetyInsight = 'Sisa $remainingDays hari lagi, masih ada ${CurrencyService.formatRupiah(flexRemaining)} jatah fleksibel ✅';
+    } else if (state.period != null) {
+      safetyInsight = 'Periode anggaranmu telah berakhir. Yuk buat periode baru agar perencanaan berjalan kembali! 📅';
     }
 
     final insights = [weeklyInsight, categoryInsight, safetyInsight];
@@ -478,21 +491,233 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                         ],
                       ).animate().fade().slideX(begin: -0.1),
                       
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const PhosphorIcon(
-                          PhosphorIconsRegular.wallet,
-                          color: AppColors.primary,
-                          size: 28,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Pengaturan',
+                            onPressed: () => context.push(AppRouter.settings),
+                            icon: PhosphorIcon(
+                              PhosphorIconsRegular.gear,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showNotificationsBottomSheet(context, state);
+                            },
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const PhosphorIcon(
+                                    PhosphorIconsRegular.bell,
+                                    color: AppColors.primary,
+                                    size: 28,
+                                  ),
+                                ),
+                                if (state.inAppNotifications.any((n) => !n.isRead))
+                                  Positioned(
+                                    top: -2,
+                                    right: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.alert,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 12,
+                                        minHeight: 12,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack),
                     ],
                   ),
                   
+                  // XP Gamification Bar
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final s = ref.watch(dashboardProvider);
+                      final xp = s.userXp;
+                      final level = s.userLevel;
+                      final xpInCurrentLevel = xp % 100;
+                      final progress = xpInCurrentLevel / 100.0;
+                      final xpNeeded = 100 - xpInCurrentLevel;
+
+                      String levelTitle;
+                      if (level == 1) {
+                        levelTitle = 'Pemula Finansial 👶';
+                      } else if (level == 2) {
+                        levelTitle = 'Pembelajar Anggaran 🛡️';
+                      } else if (level == 3) {
+                        levelTitle = 'Pejuang Celengan ⚔️';
+                      } else if (level == 4) {
+                        levelTitle = 'Ahli Hemat 💎';
+                      } else if (level == 5) {
+                        levelTitle = 'Pengendali Keuangan 🏛️';
+                      } else {
+                        levelTitle = 'Guru Finansial 👑';
+                      }
+
+                      final motivasiList = [
+                        "Mantap! Teruskan kebiasaan baikmu hari ini.",
+                        "Setiap rupiah yang dihemat membawa kamu lebih dekat ke impianmu! 🌟",
+                        "Catat transaksi dengan tertib untuk XP tambahan! 📝",
+                        "Ingat: Kebutuhan selalu didahulukan daripada Keinginan. 💡",
+                        "Celenganmu rindu diisi! Yuk sisihkan uang jajan besok. 🐷",
+                        "Disiplin finansial hari ini adalah kemerdekaan finansial esok hari! 🚀",
+                      ];
+                      final motivasi = motivasiList[(level + xp) % motivasiList.length];
+
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: isDark
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                                )
+                              : LinearGradient(
+                                  colors: [Colors.white, AppColors.primarySoft.withValues(alpha: 0.1)],
+                                ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Level $level',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      levelTitle,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '$xp XP',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 8,
+                                backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    motivasi,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontStyle: FontStyle.italic,
+                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$xpNeeded XP lagi',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+
+                  DailyRitualCard(
+                    remainingBudgetToday: remainingBudgetToday,
+                    eveningClosedToday: state.eveningClosedToday,
+                    loggingStreak: state.loggingStreak,
+                    savingStreak: state.savingStreak,
+                    yesterdayInsight: state.yesterdayInsight,
+                    achievements: state.achievements,
+                    onLogExpense: () async {
+                      final draft = await showTransactionEntrySheet(context);
+                      if (draft == null || !context.mounted) return;
+                      await ref.read(dashboardProvider.notifier).addTransaction(
+                            TransactionModel(
+                              id: DateTime.now().microsecondsSinceEpoch.toString(),
+                              date: draft.date,
+                              amount: draft.amount,
+                              isExpense: draft.isExpense,
+                              note: draft.note,
+                              category: draft.category,
+                              photoPath: draft.photoPath,
+                              isNeed: draft.isNeed,
+                            ),
+                          );
+                    },
+                  ),
+
                   const SizedBox(height: 20),
                   
                   // ── Main Balance Card (Hero) ───────────────────────────
@@ -530,7 +755,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                                   ),
                                   // NataStatusChipOnDark — crossfade animation, rose soft for overbudget
                                   AnimatedSwitcher(
-                                    key: TourKeys.statusChip,
+                                    
                                     duration: const Duration(milliseconds: 400),
                                     transitionBuilder: (child, animation) => FadeTransition(
                                       opacity: animation,
@@ -608,6 +833,18 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                       ),
                     ),
                   ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+
+                  if (state.todayExpense > state.dailySafeBudget &&
+                      state.dailySafeBudget > 0) ...[
+                    const SizedBox(height: 12),
+                    _RecoveryPlanCard(
+                      plan: BudgetingEngine.generateRecoveryPlan(
+                        remainingFund: state.remainingFund,
+                        remainingDays: state.remainingDays,
+                      ),
+                      onViewDetails: () => _showRecoverySheet(context, state),
+                    ),
+                  ],
 
                   const SizedBox(height: 16),
 
@@ -1071,6 +1308,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                                   isExpense: true,
                                   category: draft.category,
                                   note: draft.note,
+                                  isNeed: draft.isNeed,
                                 ),
                               );
                             }
@@ -1098,6 +1336,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
                                   isExpense: false,
                                   category: draft.category,
                                   note: draft.note,
+                                  isNeed: draft.isNeed,
                                 ),
                               );
                             }
@@ -1440,6 +1679,207 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> with Singl
       },
     );
   }
+
+  void _showNotificationsBottomSheet(BuildContext context, DashboardState state) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final s = ref.watch(dashboardProvider);
+            final notifs = s.inAppNotifications;
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.75,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Notifikasi',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        if (notifs.any((n) => !n.isRead))
+                          TextButton(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              ref.read(dashboardProvider.notifier).markAllNotificationsAsRead();
+                            },
+                            child: const Text(
+                              'Tandai dibaca',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  if (notifs.isEmpty)
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              PhosphorIconsRegular.bellSlash,
+                              size: 64,
+                              color: isDark ? Colors.white24 : Colors.black12,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Belum ada notifikasi',
+                              style: TextStyle(
+                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        itemCount: notifs.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final notif = notifs[index];
+                          IconData icon;
+                          Color iconColor;
+                          switch (notif.type) {
+                            case 'level':
+                              icon = PhosphorIconsRegular.sparkle;
+                              iconColor = AppColors.warning;
+                              break;
+                            case 'achievement':
+                              icon = PhosphorIconsRegular.trophy;
+                              iconColor = AppColors.accent;
+                              break;
+                            case 'alert':
+                              icon = PhosphorIconsRegular.warningCircle;
+                              iconColor = AppColors.alert;
+                              break;
+                            default:
+                              icon = PhosphorIconsRegular.info;
+                              iconColor = AppColors.info;
+                          }
+
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: notif.isRead
+                                  ? (isDark ? AppColors.surfaceDark : Colors.white)
+                                  : (isDark ? AppColors.surfaceVariantDark : AppColors.primarySoft.withValues(alpha: 0.2)),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: notif.isRead
+                                    ? (isDark ? AppColors.borderDark : AppColors.borderLight)
+                                    : AppColors.primary.withValues(alpha: 0.3),
+                                width: notif.isRead ? 1 : 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: iconColor.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(icon, color: iconColor, size: 24),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              notif.title,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                              ),
+                                            ),
+                                          ),
+                                          if (!notif.isRead)
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: const BoxDecoration(
+                                                color: AppColors.primary,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        notif.message,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        DateFormat('dd MMM, HH:mm', 'id_ID').format(notif.date),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDark ? Colors.white30 : Colors.black38,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class _SubStat extends StatelessWidget {
@@ -1584,35 +2024,37 @@ class _EmptySetupView extends ConsumerWidget {
               onPressed: () => context.push(AppRouter.setup),
               child: const Text('Atur Keuangan Sekarang'),
             ).animate().fade(delay: 400.ms).slideY(begin: 0.2),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Sedang memuat data tes...'), duration: Duration(seconds: 1)),
-                );
-                try {
-                  await MockDataSeeder.seed();
-                  await ref.read(dashboardProvider.notifier).loadData();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Sukses memuat data tes UMR Jakarta!')),
-                    );
+            if (!kReleaseMode) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Sedang memuat data tes...'), duration: Duration(seconds: 1)),
+                  );
+                  try {
+                    await MockDataSeeder.seed();
+                    await ref.read(dashboardProvider.notifier).loadData();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Sukses memuat data tes UMR Jakarta!')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal memuat data tes: $e')),
+                      );
+                    }
                   }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal memuat data tes: $e')),
-                    );
-                  }
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.purple,
-                side: const BorderSide(color: Colors.purple),
-              ),
-              icon: const Icon(Icons.science_outlined, size: 18),
-              label: const Text('🧪  Muat Data Tes (UMR Jakarta)'),
-            ).animate().fade(delay: 500.ms).slideY(begin: 0.2),
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.purple,
+                  side: const BorderSide(color: Colors.purple),
+                ),
+                icon: const Icon(Icons.science_outlined, size: 18),
+                label: const Text('🧪  Muat Data Tes (UMR Jakarta)'),
+              ).animate().fade(delay: 500.ms).slideY(begin: 0.2),
+            ],
           ],
         ),
       ),
@@ -1680,6 +2122,100 @@ void _showSecureLeftoverSheet(BuildContext context, WidgetRef ref, int amount) {
   );
 }
 
+void _showRecoverySheet(BuildContext context, DashboardState state) {
+  final plan = BudgetingEngine.generateRecoveryPlan(
+    remainingFund: state.remainingFund,
+    remainingDays: state.remainingDays,
+  );
+  final tomorrow = BudgetingEngine.calculateTomorrowSafeBudget(
+    remainingFundAfterToday: state.remainingFund - state.todayExpense,
+    remainingDaysAfterToday: max(state.remainingDays - 1, 0),
+  );
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Rencana Penyesuaian',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            Text(plan, style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 12),
+            Text(
+              'Prediksi jatah besok: ${CurrencyService.formatRupiah(tomorrow)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Mengerti'),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _RecoveryPlanCard extends StatelessWidget {
+  const _RecoveryPlanCard({
+    required this.plan,
+    required this.onViewDetails,
+  });
+
+  final String plan;
+  final VoidCallback onViewDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.warningSoft.withValues(alpha: isDark ? 0.15 : 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              PhosphorIcon(
+                PhosphorIconsRegular.warningCircle,
+                color: AppColors.warning,
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Jatah hari ini terlewati',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(plan, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
+          TextButton(onPressed: onViewDetails, child: const Text('Lihat detail')),
+        ],
+      ),
+    );
+  }
+}
+
 class _HealthDiagnosisCard extends StatelessWidget {
   final DashboardState state;
   final bool showDetails;
@@ -1730,7 +2266,7 @@ class _HealthDiagnosisCard extends StatelessWidget {
       });
     }
     
-    if (state.todayExpense > state.dailySafeBudget) {
+    if (state.todayExpense > state.dailySafeBudget && state.todayExpense > 0) {
       recommendations.add({
         'color': AppColors.alert,
         'icon': Icons.shopping_cart_checkout_rounded,
@@ -1748,7 +2284,7 @@ class _HealthDiagnosisCard extends StatelessWidget {
       });
     }
 
-    if (state.savingGoal != null) {
+    if (state.savingGoal != null && state.savingGoal!.targetAmount > 0) {
       final savingProgress = state.savingGoal!.currentAmount / state.savingGoal!.targetAmount;
       if (savingProgress < 0.5) {
         recommendations.add({

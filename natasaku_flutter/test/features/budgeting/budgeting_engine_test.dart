@@ -76,12 +76,21 @@ void main() {
     test('period status handles finished and empty fund', () {
       expect(
         BudgetingEngine.getPeriodFundStatus(
-            remainingFund: 100000, remainingDays: 0),
+          remainingFund: 100000,
+          remainingDays: 0,
+          flexibleFund: 5000000,
+          totalDays: 30,
+        ),
         PeriodFundStatus.periodeSelesai,
       );
 
       expect(
-        BudgetingEngine.getPeriodFundStatus(remainingFund: 0, remainingDays: 5),
+        BudgetingEngine.getPeriodFundStatus(
+          remainingFund: 0,
+          remainingDays: 5,
+          flexibleFund: 5000000,
+          totalDays: 30,
+        ),
         PeriodFundStatus.danaHabis,
       );
     });
@@ -98,6 +107,43 @@ void main() {
 
       expect(safe.contains('aman') || safe.contains('Posisi aman'), true);
       expect(critical.contains('kritis') || critical.contains('Batasi'), true);
+    });
+
+    test('calculateRemainingFund avoids double counting setup salary transaction', () {
+      const flexibleFund = 5000000;
+      const totalIncome = 5300000; // 5M salary + 300k freelance
+      const totalExpense = 2115000;
+
+      final remaining = BudgetingEngine.calculateRemainingFund(
+        flexibleFund: flexibleFund,
+        fixedExpenses: 0,
+        monthlySavingAllocation: 0,
+        totalIncome: totalIncome,
+        totalExpense: totalExpense,
+        incomeAmounts: [5000000, 300000],
+      );
+
+      expect(remaining, 3185000);
+      expect(
+        BudgetingEngine.calculateDailySafeBudget(
+          remainingFund: remaining,
+          remainingDays: 8,
+        ),
+        398125,
+      );
+    });
+
+    test('calculateRemainingFund still counts supplemental income', () {
+      final remaining = BudgetingEngine.calculateRemainingFund(
+        flexibleFund: 5000000,
+        fixedExpenses: 0,
+        monthlySavingAllocation: 0,
+        totalIncome: 300000,
+        totalExpense: 1000000,
+        incomeAmounts: [300000],
+      );
+
+      expect(remaining, 4300000);
     });
 
     test('budget mode adjusts safe daily budget', () {

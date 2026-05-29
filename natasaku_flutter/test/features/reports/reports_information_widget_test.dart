@@ -70,7 +70,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Executive Report'), findsOneWidget);
+    expect(find.text('Ringkasan Keuangan'), findsWidgets);
     expect(find.text('Laporan Keuangan'), findsWidgets);
     expect(find.text('Skor Kesehatan Finansial'), findsOneWidget);
     expect(find.text('Catatan untuk Kamu'), findsOneWidget);

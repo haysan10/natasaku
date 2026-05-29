@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/providers/theme_mode_provider.dart';
 import '../../core/routing/app_router.dart';
 import '../../core/services/backup_service.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 import '../../core/dev/mock_data_seeder.dart';
 import '../dashboard/providers/dashboard_provider.dart';
 import '../security/pin_lock_page.dart';
@@ -83,6 +85,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _loadMockData() async {
+    if (kReleaseMode) {
+      setState(() => _status = 'Fitur data tes tidak tersedia di APK release.');
+      return;
+    }
     setState(() => _status = 'Sedang memuat data tes...');
     try {
       await MockDataSeeder.seed();
@@ -128,6 +134,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             Card(
               child: ListTile(
+                title: const Text('Transaksi Berulang'),
+                subtitle: const Text(
+                  'Atur pengeluaran/pemasukan otomatis yang berulang setiap hari, minggu, atau bulan.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(AppRouter.recurringTransactions),
+              ),
+            ),
+            Card(
+              key: TourKeys.debtsMenu,
+              child: ListTile(
+                title: const Text('Mode Utang'),
+                subtitle: const Text(
+                  'Catat dan lacak utang piutang dengan mudah agar tidak terlupakan.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(AppRouter.debts),
+              ),
+            ),
+            Card(
+              child: ListTile(
                 title: const Text('Atur Periode'),
                 subtitle: const Text(
                   'Ubah tanggal periode, dana fleksibel awal, dan mode budget.',
@@ -136,24 +163,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 onTap: () => context.push(AppRouter.setup),
               ),
             ),
-            Card(
-              color: Colors.purple.withValues(alpha: 0.08),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.purple.withValues(alpha: 0.3), width: 1),
-              ),
-              child: ListTile(
-                title: const Text(
-                  '🧪 Muat Data Tes (UMR Jakarta)',
-                  style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold),
+            if (!kReleaseMode)
+              Card(
+                color: Colors.purple.withValues(alpha: 0.08),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.purple.withValues(alpha: 0.3), width: 1),
                 ),
-                subtitle: const Text(
-                  'Mengisi transaksi, budget periode, dan tabungan untuk pengujian visual interaktif.',
+                child: ListTile(
+                  title: const Text(
+                    '🧪 Muat Data Tes (UMR Jakarta)',
+                    style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text(
+                    'Mengisi transaksi, budget periode, dan tabungan untuk pengujian visual interaktif.',
+                  ),
+                  trailing: const Icon(Icons.science_outlined, color: Colors.purple),
+                  onTap: _loadMockData,
                 ),
-                trailing: const Icon(Icons.science_outlined, color: Colors.purple),
-                onTap: _loadMockData,
               ),
-            ),
             Card(
               child: ListTile(
                 title: const Text('Pengingat Harian'),

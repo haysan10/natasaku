@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -118,7 +119,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminder & Quick Action')),
+      appBar: AppBar(title: const Text('Pengingat & Quick Tools')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         children: [
@@ -139,7 +140,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Notifikasi persisten yang stay di shade notifikasi untuk memantau sisa jatah harian secara real-time tanpa mengganggu kenyamanan Anda.',
+                    'Notifikasi persisten yang stay di shade notifikasi untuk memantau sisa jatah harian secara real-time tanpa mengganggu kenyamananmu.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 12),
@@ -207,8 +208,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ),
           
-          // simulator notifikasi (hanya muncul saat ongoing notif aktif)
-          if (_settings.quickToolsNotificationEnabled) ...[
+          if (kDebugMode && _settings.quickToolsNotificationEnabled) ...[
             const SizedBox(height: 12),
             Card(
               elevation: 2,

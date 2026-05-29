@@ -10,6 +10,15 @@ class AppColors {
   static const Color accent = Color(0xFF10B981); // Bright Emerald for positive actions
   static const Color alert = Color(0xFFF43F5E); // Bold Rose for negative/expenses
 
+  // Semantic status (shared across features)
+  static const Color success = Color(0xFF22C55E);
+  static const Color successSoft = Color(0xFFDCFCE7);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningSoft = Color(0xFFFEF3C7);
+  static const Color error = Color(0xFFEF4444);
+  static const Color errorSoft = Color(0xFFFEE2E2);
+  static const Color info = Color(0xFF3B82F6);
+
   // Neutral Palette (Light)
   static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color surfaceLight = Color(0xFFFFFFFF);

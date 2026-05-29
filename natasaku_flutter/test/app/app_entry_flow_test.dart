@@ -51,7 +51,7 @@ void main() {
     expect(find.text('MULAI PERJALANAN ANDA'), findsNothing);
   });
 
-  testWidgets('welcome opens animated feature tour before setup',
+  testWidgets('welcome opens setup page directly',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
 
@@ -65,14 +65,6 @@ void main() {
 
     await tester.ensureVisible(find.text('MULAI PERJALANAN ANDA'));
     await tester.tap(find.text('MULAI PERJALANAN ANDA'));
-    await tester.pump();
-    await tester.pumpAndSettle();
-
-    // Now it goes to TourPage (titled "Tour Fitur NataSaku")
-    expect(find.text('Tour Fitur NataSaku'), findsOneWidget);
-
-    // Let's tap 'Lewati' to skip the tour and go to setup
-    await tester.tap(find.text('Lewati'));
     await tester.pump();
     await tester.pumpAndSettle();
 

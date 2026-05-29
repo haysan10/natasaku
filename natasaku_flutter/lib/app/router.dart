@@ -1,3 +1,4 @@
+// DEPRECATED: Use lib/core/routing/app_router.dart (GoRouter). Kept for reference only.
 import 'package:flutter/material.dart';
 
 import '../features/dashboard/dashboard_page.dart';
@@ -10,7 +11,7 @@ import '../features/reports/reports_page.dart';
 import '../features/savings/savings_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/setup/setup_page.dart';
-import '../features/tour/tour_page.dart';
+// import '../features/tour/tour_page.dart';
 import '../features/transactions/transactions_page.dart';
 
 class AppRouter {
@@ -32,7 +33,7 @@ class AppRouter {
       case launch:
         return MaterialPageRoute(builder: (_) => const LaunchPage());
       case tour:
-        return MaterialPageRoute(builder: (_) => const TourPage());
+        return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text('Tour Deprecated'))));
       case setup:
         return MaterialPageRoute(builder: (_) => const SetupPage());
       case dashboard:

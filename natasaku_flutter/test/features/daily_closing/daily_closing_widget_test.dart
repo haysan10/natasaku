@@ -9,6 +9,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('daily closing saves current day summary', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     SharedPreferences.setMockInitialValues({});
     final repo = BudgetRepository(LocalStorage());
 
@@ -38,7 +45,9 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 600));
 
-    await tester.tap(find.text('Simpan Daily Closing'));
+    final saveBtn = find.byType(FilledButton, skipOffstage: false);
+    await tester.ensureVisible(saveBtn);
+    await tester.tap(saveBtn);
     await tester.pumpAndSettle();
 
     final closings = await repo.loadDailyClosings();

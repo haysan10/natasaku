@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +9,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/routing/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/currency_service.dart';
 import '../../core/services/report_export_service.dart';
@@ -17,9 +21,11 @@ import '../../data/models/budget_status.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/budget_period.dart';
 import '../../data/models/budget_mode.dart';
+
 import '../budgeting/budgeting_engine.dart';
 import '../dashboard/providers/dashboard_provider.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/global_feature_tour.dart';
 
 enum ReportInterval { activePeriod, today, thisWeek, thisMonth, thisYear, custom }
 
@@ -283,14 +289,29 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
       t.date.isBefore(range.end.add(const Duration(seconds: 1)))
     ).toList();
 
+    final activePeriod = state.period;
+    final totalDays = activePeriod != null
+        ? activePeriod.endDate.difference(activePeriod.startDate).inDays + 1
+        : 30; // default to 30 days if no period
+    final filteredDays = range.end.difference(range.start).inDays + 1;
+    final ratio = totalDays > 0 ? (filteredDays / totalDays) : 1.0;
+
+    final baseFlexibleFund = activePeriod?.flexibleFund ?? 0;
+    final baseFixedExpenses = activePeriod?.fixedExpenses ?? 0;
+    final baseSavingAllocation = activePeriod?.monthlySavingAllocation ?? 0;
+
+    final proRatedFlexibleFund = (baseFlexibleFund * ratio).round();
+    final proRatedFixedExpenses = (baseFixedExpenses * ratio).round();
+    final proRatedSavingAllocation = (baseSavingAllocation * ratio).round();
+
     final customPeriod = BudgetPeriod(
-      id: state.period?.id ?? 'filtered_period',
+      id: activePeriod?.id ?? 'filtered_period',
       startDate: range.start,
       endDate: range.end,
-      flexibleFund: state.period?.flexibleFund ?? 0,
-      fixedExpenses: state.period?.fixedExpenses ?? 0,
-      monthlySavingAllocation: state.period?.monthlySavingAllocation ?? 0,
-      mode: state.period?.mode ?? BudgetMode.normal,
+      flexibleFund: proRatedFlexibleFund,
+      fixedExpenses: proRatedFixedExpenses,
+      monthlySavingAllocation: proRatedSavingAllocation,
+      mode: activePeriod?.mode ?? BudgetMode.normal,
     );
 
     final filteredState = state.copyWith(
@@ -314,7 +335,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Executive Report',
+                              'Ringkasan Keuangan',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary),
                             ),
                             Text(
@@ -410,10 +431,17 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
                           ),
                           const SizedBox(width: 8),
                           ChoiceChip(
+                            label: const Text('Kalender'),
+                            avatar: const Icon(Icons.calendar_month_rounded, size: 16),
+                            selected: false,
+                            onSelected: (_) => context.push(AppRouter.moneyCalendar),
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
                             label: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🔧 Kustom'),
+                                const Text('Kustom'),
                                 if (_selectedInterval == ReportInterval.custom) ...[
                                   const SizedBox(width: 4),
                                   const Icon(Icons.edit_rounded, size: 12),
@@ -429,6 +457,45 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
                       ),
                     ),
                   ).animate().fade(delay: 50.ms),
+
+                  if (state.weeklyInsightLines.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Refleksi Minggu Ini',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              for (final line in state.weeklyInsightLines)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('• '),
+                                      Expanded(child: Text(line)),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () => context.go(AppRouter.budget),
+                                child: const Text('Atur limit kategori'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // Display Selected Date Range with Interactive Pager Navigation
                   Padding(
@@ -494,6 +561,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with SingleTickerProv
 
                   // Custom Tab Bar
                   Padding(
+                    key: TourKeys.reportsChart,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -607,9 +675,16 @@ class _ExecutiveSummaryTab extends StatelessWidget {
 
     // Manager Advice
     final remainingDays = state.remainingDays;
+    
+    final totalDaysForPeriod = state.period != null
+        ? max(1, state.period!.endDate.difference(state.period!.startDate).inDays + 1)
+        : 30;
+
     final periodStatus = state.period == null ? null : BudgetingEngine.getPeriodFundStatus(
       remainingFund: state.remainingFund,
       remainingDays: remainingDays,
+      flexibleFund: state.period!.flexibleFund,
+      totalDays: totalDaysForPeriod,
     );
 
     String managerNote = '';
@@ -877,6 +952,178 @@ class _ExecutiveSummaryTab extends StatelessWidget {
             ),
           ],
         ).animate().fade(delay: 300.ms).slideY(begin: 0.1),
+
+        const SizedBox(height: 24),
+
+        // Rasio Kebutuhan vs Keinginan Card
+        () {
+          final needsTotal = expenses.where((t) => t.isNeed).fold(0, (sum, t) => sum + t.amount);
+          final wantsTotal = expenses.where((t) => !t.isNeed).fold(0, (sum, t) => sum + t.amount);
+          final totalNeedsWants = needsTotal + wantsTotal;
+          final needsPercent = totalNeedsWants > 0 ? (needsTotal / totalNeedsWants) * 100 : 50.0;
+          final wantsPercent = totalNeedsWants > 0 ? (wantsTotal / totalNeedsWants) * 100 : 50.0;
+
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceVariantDark : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Kebutuhan vs Keinginan',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Rasio Belanja',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    height: 16,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                    ),
+                    child: Row(
+                      children: [
+                        if (needsTotal > 0 || wantsTotal == 0)
+                          Expanded(
+                            flex: needsTotal > 0 ? needsTotal : 1,
+                            child: Container(
+                              color: AppColors.success,
+                            ),
+                          ),
+                        if (wantsTotal > 0)
+                          Expanded(
+                            flex: wantsTotal,
+                            child: Container(
+                              color: AppColors.warning,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kebutuhan (${needsPercent.toStringAsFixed(0)}%)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              CurrencyService.formatRupiah(needsTotal),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: AppColors.warning,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Keinginan (${wantsPercent.toStringAsFixed(0)}%)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              CurrencyService.formatRupiah(wantsTotal),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 4),
+                Text(
+                  needsPercent >= 70
+                      ? 'Bagus! Sebagian besar pengeluaranmu dialokasikan untuk Kebutuhan. 👍'
+                      : needsPercent >= 50
+                          ? 'Seimbang. Jaga terus pengeluaran Keinginan agar tidak overbudget. ⚖️'
+                          : 'Peringatan: Pengeluaran Keinginanmu melebihi Kebutuhan! Rem dulu belanjanya. 🚨',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }().animate().fade(delay: 350.ms).slideY(begin: 0.1),
 
         const SizedBox(height: 24),
 

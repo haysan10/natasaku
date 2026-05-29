@@ -127,7 +127,7 @@ class _PremiumOnboardingView extends StatelessWidget {
                         ],
                       ),
                       child: FilledButton.icon(
-                        onPressed: () => context.go(AppRouter.tour),
+                        onPressed: () => context.go(AppRouter.setup),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 20),
